@@ -2,7 +2,8 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "LINE OA Rich Menu Manager",
-  description: "จัดการ Rich Menu สำหรับ LINE Official Accounts แบบ Multi-tenant",
+  description:
+    "จัดการ Rich Menu สำหรับ LINE Official Accounts แบบ Multi-tenant",
   navItems: [
     { label: "หน้าแรก", href: "/" },
     { label: "เข้าสู่ระบบ", href: "/login" },

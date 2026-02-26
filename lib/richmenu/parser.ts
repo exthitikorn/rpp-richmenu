@@ -6,7 +6,7 @@ export function parseRichMenuJson(jsonString: string): RichMenuJson {
   try {
     data = JSON.parse(jsonString) as unknown;
   } catch (e) {
-    throw new Error("ไฟล์ JSON ไม่ถูกต้อง");
+    throw new Error("ไฟล์ JSON ไม่ถูกต้อง" + e);
   }
   const parsed = richMenuJsonSchema.safeParse(data);
 

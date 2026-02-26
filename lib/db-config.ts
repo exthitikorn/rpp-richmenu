@@ -67,4 +67,3 @@ export function getDbPoolConfig(databaseUrl: string) {
 
   return config;
 }
-

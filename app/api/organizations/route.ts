@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, id: org.id });
   } catch (e) {
     return NextResponse.json(
-      { success: false, error: "เกิดข้อผิดพลาด" },
+      { success: false, error: "เกิดข้อผิดพลาด" + e },
       { status: 500 },
     );
   }

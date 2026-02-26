@@ -82,7 +82,7 @@ export async function PUT(
     return NextResponse.json({ success: true });
   } catch (e) {
     return NextResponse.json(
-      { success: false, error: "บันทึกไม่สำเร็จ" },
+      { success: false, error: "บันทึกไม่สำเร็จ" + e },
       { status: 500 },
     );
   }

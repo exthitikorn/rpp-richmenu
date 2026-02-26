@@ -39,10 +39,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (e) {
     if (process.env.NODE_ENV !== "production") {
-      console.error("[POST /api/auth/register]", e);
+      // console.error("[POST /api/auth/register]", e);
     }
+
     return NextResponse.json(
-      { success: false, error: "เกิดข้อผิดพลาด" },
+      { success: false, error: "เกิดข้อผิดพลาด" + e },
       { status: 500 },
     );
   }

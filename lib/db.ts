@@ -5,5 +5,3 @@ export { prisma };
 export async function getPrisma() {
   return prisma;
 }
-
-

@@ -2,6 +2,7 @@
 
 import type { RichMenuArea } from "@/app/generated/prisma/client";
 
+import Image from "next/image";
 import { useMemo } from "react";
 
 interface RichMenuPreviewProps {
@@ -37,7 +38,7 @@ export function RichMenuPreview({
       className="relative inline-block bg-default-100 rounded-lg overflow-hidden"
       style={{ width: displayWidth, height: displayHeight }}
     >
-      <img
+      <Image
         alt="Rich Menu"
         className="block w-full h-full object-contain"
         draggable={false}
