@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 
+import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 import { RichMenuPreview } from "./RichMenuPreview";
 import { AreaActionForm } from "./AreaActionForm";
 
@@ -22,6 +23,7 @@ export function RichMenuEditor({
     null,
   );
   const [deploying, setDeploying] = useState(false);
+  const [settingDefault, setSettingDefault] = useState(false);
 
   useEffect(() => {
     setRichMenu(initial);
@@ -31,6 +33,8 @@ export function RichMenuEditor({
     selectedAreaIndex !== null
       ? (richMenu.areas[selectedAreaIndex] ?? null)
       : null;
+
+  const aliasId = getRichMenuAliasId(richMenu.id);
 
   function updateArea(index: number, data: Partial<RichMenuArea>) {
     setRichMenu((prev) => ({
@@ -64,18 +68,72 @@ export function RichMenuEditor({
       const res = await fetch(`/api/rich-menus/${richMenu.id}/deploy`, {
         method: "POST",
       });
-      const data = (await res.json()) as { success?: boolean; error?: string };
+      let data: {
+        success?: boolean;
+        error?: string;
+        hint?: string;
+      } = {};
+      const contentType = res.headers.get("content-type") ?? "";
 
-      if (data.success) router.refresh();
-      else alert(data.error ?? "Deploy ไม่สำเร็จ");
+      if (contentType.includes("application/json")) {
+        try {
+          data = (await res.json()) as {
+            success?: boolean;
+            error?: string;
+            hint?: string;
+          };
+        } catch {
+          // ignore JSON parse error and fall back to generic message
+        }
+      }
+
+      if (data.success) {
+        router.refresh();
+        if (data.hint) {
+          alert(`Deploy สำเร็จ\n\n${data.hint}`);
+        }
+      } else {
+        const errorMessage =
+          data.error ??
+          (!res.ok
+            ? `Deploy ไม่สำเร็จ (status ${res.status})`
+            : "Deploy ไม่สำเร็จ");
+        alert(errorMessage);
+      }
     } finally {
       setDeploying(false);
     }
   }
 
+  async function handleSetDefault() {
+    if (!richMenu.lineRichMenuId) return;
+    setSettingDefault(true);
+    try {
+      const res = await fetch(`/api/rich-menus/${richMenu.id}/set-default`, {
+        method: "POST",
+      });
+      const data = (await res.json()) as { success?: boolean; error?: string };
+      if (data.success) {
+        router.refresh();
+        alert("ตั้งเป็น Default แล้ว — เมนูนี้จะแสดงเป็นหน้าแรกให้ผู้ใช้ใหม่");
+      } else {
+        alert(data.error ?? "ตั้ง Default ไม่สำเร็จ");
+      }
+    } finally {
+      setSettingDefault(false);
+    }
+  }
+
+  const canSetDefault =
+    Boolean(richMenu.lineRichMenuId) && richMenu.status === "DEPLOYED";
+
   return (
     <div className="flex flex-col gap-6 lg:flex-row">
       <div className="flex-1">
+        <p className="mb-2 text-sm text-default-500">
+          Rich Menu Alias ID สำหรับใช้ใน action แบบ Switch Rich Menu คือ{" "}
+          <span className="font-mono font-semibold">{aliasId}</span>
+        </p>
         <RichMenuPreview
           areas={richMenu.areas}
           height={richMenu.height}
@@ -84,20 +142,30 @@ export function RichMenuEditor({
           width={richMenu.width}
           onSelectArea={setSelectedAreaIndex}
         />
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button color="primary" onPress={saveAreas}>
             บันทึกการแก้ไข
           </Button>
           <Button
             color="success"
-            isDisabled={richMenu.status === "DEPLOYED"}
             isLoading={deploying}
             onPress={handleDeploy}
           >
             {richMenu.status === "DEPLOYED"
-              ? "Deployed แล้ว"
+              ? "Deploy ใหม่ไป LINE"
               : "Deploy ไป LINE"}
           </Button>
+          {canSetDefault && (
+            <Button
+              color={richMenu.isDefault ? "default" : "secondary"}
+              isDisabled={richMenu.isDefault}
+              isLoading={settingDefault}
+              onPress={handleSetDefault}
+              variant={richMenu.isDefault ? "flat" : "bordered"}
+            >
+              {richMenu.isDefault ? "เป็น Default อยู่แล้ว" : "ตั้งเป็น Default"}
+            </Button>
+          )}
         </div>
       </div>
       <div className="w-full lg:w-80 shrink-0">

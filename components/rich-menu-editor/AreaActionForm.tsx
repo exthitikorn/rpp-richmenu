@@ -31,9 +31,44 @@ export function AreaActionForm({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const payload: ActionPayload = { type: actionType, ...action };
-
+    const payload = buildActionPayload(actionType, action);
     onSave({ actionType, action: payload });
+  }
+
+  function buildActionPayload(
+    type: string,
+    raw: ActionPayload,
+  ): ActionPayload {
+    switch (type) {
+      case "uri":
+        return {
+          type: "uri",
+          uri: (raw.uri as string) ?? "",
+          ...(raw.label ? { label: raw.label } : {}),
+        };
+      case "message":
+        return {
+          type: "message",
+          text: (raw.text as string) ?? "",
+          ...(raw.label ? { label: raw.label } : {}),
+        };
+      case "postback":
+        return {
+          type: "postback",
+          data: (raw.data as string) ?? "",
+          ...(raw.displayText ? { displayText: raw.displayText } : {}),
+          ...(raw.label ? { label: raw.label } : {}),
+        };
+      case "richmenuswitch":
+        return {
+          type: "richmenuswitch",
+          richMenuAliasId: (raw.richMenuAliasId as string) ?? "",
+          data: (raw.data as string) ?? "",
+          ...(raw.label ? { label: raw.label } : {}),
+        };
+      default:
+        return { type: "message", text: "" };
+    }
   }
 
   return (

@@ -5,9 +5,29 @@ import { prisma } from "@/lib/prisma";
 import {
   createRichMenu,
   uploadRichMenuImage,
+  clearDefaultRichMenu,
   setDefaultRichMenu,
+  ensureRichMenuAlias,
+  getFollowerIds,
+  bulkUnlinkRichMenuFromUsers,
+  bulkLinkRichMenuToUsers,
+  deleteRichMenu,
 } from "@/lib/line/client";
+import type { LineRichMenuPayload } from "@/lib/line/types";
+import { normalizeRichMenuAction } from "@/lib/line/types";
+import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 import { DeployStatus, RichMenuStatus } from "@/app/generated/prisma/client";
+
+/** ตัดข้อความให้ไม่เกิน maxBytes (UTF-8) สำหรับคอลัมน์ message ใน MySQL */
+function truncateMessageToBytes(text: string, maxBytes: number): string {
+  const encoder = new TextEncoder();
+  if (encoder.encode(text).length <= maxBytes) return text;
+  for (let len = text.length; len > 0; len--) {
+    const s = text.slice(0, len);
+    if (encoder.encode(s).length <= maxBytes) return s;
+  }
+  return "";
+}
 
 export async function POST(
   _request: Request,
@@ -45,21 +65,23 @@ export async function POST(
       );
     }
 
-    const payload = {
+    const payload: LineRichMenuPayload = {
       size: { width: richMenu.width, height: richMenu.height },
       selected: richMenu.isDefault,
       name: richMenu.name,
+      chatBarText: richMenu.name?.slice(0, 14) || "เมนู",
       areas: richMenu.areas.map((a) => ({
         bounds: { x: a.x, y: a.y, width: a.width, height: a.height },
-        action: a.action as Parameters<
-          typeof createRichMenu
-        >[1]["areas"][0]["action"],
+        action: normalizeRichMenuAction(
+          a.actionType,
+          (a.action as Record<string, unknown>) ?? {},
+        ),
       })),
     };
 
     const { richMenuId: lineRichMenuId } = await createRichMenu(
       richMenu.lineAccount.accessToken,
-      payload as Parameters<typeof createRichMenu>[1],
+      payload,
     );
 
     const imageRes = await fetch(richMenu.imageUrl);
@@ -89,17 +111,52 @@ export async function POST(
       contentType === "image/png" ? "image/png" : "image/jpeg",
     );
 
-    if (richMenu.isDefault) {
-      await setDefaultRichMenu(
-        richMenu.lineAccount.accessToken,
-        lineRichMenuId,
-      );
+    const aliasId = getRichMenuAliasId(richMenu.id);
+    await ensureRichMenuAlias(
+      richMenu.lineAccount.accessToken,
+      aliasId,
+      lineRichMenuId,
+      richMenu.name ?? undefined,
+    );
+
+    const token = richMenu.lineAccount.accessToken;
+    const oldLineRichMenuId = richMenu.lineRichMenuId ?? null;
+    let followerIds: string[] = [];
+
+    try {
+      followerIds = await getFollowerIds(token);
+      const chunkSize = 500;
+      for (let i = 0; i < followerIds.length; i += chunkSize) {
+        const chunk = followerIds.slice(i, i + chunkSize);
+        await bulkUnlinkRichMenuFromUsers(token, chunk);
+      }
+    } catch {
+      // getFollowerIds / bulkUnlink ใช้ได้กับ verified หรือ premium OA เท่านั้น
+    }
+
+    await clearDefaultRichMenu(token);
+    await setDefaultRichMenu(token, lineRichMenuId);
+
+    if (followerIds.length > 0) {
+      try {
+        const chunkSize = 500;
+        for (let i = 0; i < followerIds.length; i += chunkSize) {
+          const chunk = followerIds.slice(i, i + chunkSize);
+          await bulkLinkRichMenuToUsers(token, lineRichMenuId, chunk);
+        }
+      } catch {
+        // bulkLink อาจล้มได้ถ้า OA จำกัด
+      }
     }
 
     await prisma.$transaction([
       prisma.richMenu.update({
         where: { id: richMenu.id },
-        data: { lineRichMenuId, status: RichMenuStatus.DEPLOYED },
+        data: {
+          lineRichMenuId,
+          status: RichMenuStatus.DEPLOYED,
+          isDefault: true,
+        },
       }),
       prisma.deployLog.create({
         data: {
@@ -110,19 +167,33 @@ export async function POST(
       }),
     ]);
 
-    return NextResponse.json({ success: true, lineRichMenuId });
+    if (oldLineRichMenuId) {
+      try {
+        await deleteRichMenu(token, oldLineRichMenuId);
+      } catch {
+        // เมนูเก่าอาจถูกลบไปแล้วหรือไม่มีสิทธิ์
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      lineRichMenuId,
+      hint: "ถ้าแอป LINE ยังไม่เปลี่ยน ลองปิดแอปแล้วเปิดใหม่ หรือปิดแชทแล้วเปิดใหม่",
+    });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Deploy ไม่สำเร็จ";
     const richMenu = await prisma.richMenu.findUnique({
       where: { id: richMenuId },
     });
 
+    const logMessage = truncateMessageToBytes(message, 191);
+
     if (richMenu) {
       await prisma.deployLog.create({
         data: {
           richMenuId: richMenu.id,
           status: DeployStatus.FAILED,
-          message: message,
+          message: logMessage || "Deploy ไม่สำเร็จ",
         },
       });
     }

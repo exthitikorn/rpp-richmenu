@@ -1,0 +1,47 @@
+{
+    "size": {
+      "width": 2500,
+      "height": 1686
+    },
+    "selected": true,
+    "name": "Rich Menu 3",
+    "chatBarText": "Bulletin",
+    "areas": [
+      {
+        "bounds": {
+          "x": 877,
+          "y": 898,
+          "width": 733,
+          "height": 708
+        },
+        "action": {
+          "type": "message",
+          "text": "ทดสอบ 1"
+        }
+      },
+      {
+        "bounds": {
+          "x": 1686,
+          "y": 894,
+          "width": 708,
+          "height": 712
+        },
+        "action": {
+          "type": "message",
+          "text": "Area 2"
+        }
+      },
+      {
+        "bounds": {
+          "x": 97,
+          "y": 898,
+          "width": 725,
+          "height": 704
+        },
+        "action": {
+          "type": "message",
+          "text": "Area 3"
+        }
+      }
+    ]
+  }
