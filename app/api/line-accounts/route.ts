@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth";
 import { requireRole } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
   organizationId: z.string().cuid(),
@@ -37,8 +37,6 @@ export async function POST(request: Request) {
       parsed.data;
 
     await requireRole(organizationId, ["OWNER", "ADMIN"]);
-
-    const prisma = await getPrisma();
 
     await prisma.lineAccount.create({
       data: {

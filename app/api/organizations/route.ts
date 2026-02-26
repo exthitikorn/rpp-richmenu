@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { Role } from "@/app/generated/prisma/client";
 
 const bodySchema = z.object({
@@ -34,7 +34,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
     const { name, slug } = parsed.data;
-    const prisma = await getPrisma();
     const existing = await prisma.organization.findUnique({ where: { slug } });
 
     if (existing) {

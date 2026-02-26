@@ -2,7 +2,7 @@ import { LineAccountList } from "./LineAccountList";
 import { CreateLineAccountForm } from "./CreateLineAccountForm";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export default async function LineAccountsPage({
   searchParams,
@@ -13,7 +13,6 @@ export default async function LineAccountsPage({
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const lineAccounts = await prisma.lineAccount.findMany({
     where: {
       organization: {

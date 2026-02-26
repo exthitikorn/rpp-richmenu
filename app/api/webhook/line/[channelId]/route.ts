@@ -2,7 +2,7 @@ import { createHmac } from "crypto";
 
 import { NextResponse } from "next/server";
 
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 function verifySignature(
   body: string,
@@ -44,7 +44,6 @@ export async function POST(
     request.headers.get("X-Line-Signature");
 
   const rawBody = await request.text();
-  const prisma = await getPrisma();
   const lineAccount = await prisma.lineAccount.findFirst({
     where: { channelId },
   });

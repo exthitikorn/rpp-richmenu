@@ -3,13 +3,12 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { AnalyticsCharts } from "./AnalyticsCharts";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export default async function AnalyticsPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const [byAreaRaw, byMenu, totalClicks] = await Promise.all([
     prisma.clickEvent.groupBy({
       by: ["richMenuId", "areaIndex"],

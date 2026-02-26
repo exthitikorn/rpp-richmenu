@@ -3,7 +3,7 @@ import type { Role } from "@/app/generated/prisma/client";
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth-options";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export async function getSession() {
   return getServerSession(authOptions);
@@ -13,7 +13,6 @@ export async function getCurrentUser() {
   const session = await getSession();
 
   if (!session?.user?.email) return null;
-  const prisma = await getPrisma();
 
   return prisma.user.findUnique({
     where: { email: session.user.email },
@@ -37,7 +36,6 @@ export async function getMembership(organizationId: string) {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
 
   return prisma.membership.findUnique({
     where: {

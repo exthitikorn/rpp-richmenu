@@ -1,13 +1,12 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export default async function DeployLogsPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const logs = await prisma.deployLog.findMany({
     where: {
       richMenu: {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import {
   createRichMenu,
   uploadRichMenuImage,
@@ -25,7 +25,6 @@ export async function POST(
       );
     }
 
-    const prisma = await getPrisma();
     const richMenu = await prisma.richMenu.findFirst({
       where: {
         id: richMenuId,
@@ -114,7 +113,6 @@ export async function POST(
     return NextResponse.json({ success: true, lineRichMenuId });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Deploy ไม่สำเร็จ";
-    const prisma = await getPrisma();
     const richMenu = await prisma.richMenu.findUnique({
       where: { id: richMenuId },
     });

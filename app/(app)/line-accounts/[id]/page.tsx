@@ -4,7 +4,7 @@ import { Link } from "@heroui/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 
 export default async function LineAccountDetailPage({
@@ -16,7 +16,6 @@ export default async function LineAccountDetailPage({
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const account = await prisma.lineAccount.findFirst({
     where: {
       id,

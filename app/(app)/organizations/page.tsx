@@ -1,14 +1,13 @@
 import { OrganizationList } from "./OrganizationList";
 import { CreateOrganizationForm } from "./CreateOrganizationForm";
 
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 
 export default async function OrganizationsPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const organizations = await prisma.organization.findMany({
     where: { memberships: { some: { userId: user.id } } },
     include: {

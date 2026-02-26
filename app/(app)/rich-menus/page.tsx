@@ -3,7 +3,7 @@ import { Link } from "@heroui/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 
 export default async function RichMenusPage({
@@ -15,7 +15,6 @@ export default async function RichMenusPage({
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const richMenus = await prisma.richMenu.findMany({
     where: {
       lineAccount: {

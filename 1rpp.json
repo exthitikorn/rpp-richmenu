@@ -1,0 +1,120 @@
+{
+    "size": {
+      "width": 2500,
+      "height": 1686
+    },
+    "selected": true,
+    "name": "@1rpp",
+    "chatBarText": "Menu",
+    "areas": [
+      {
+        "bounds": {
+          "x": 26,
+          "y": 29,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=1"
+        }
+      },
+      {
+        "bounds": {
+          "x": 854,
+          "y": 35,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=2"
+        }
+      },
+      {
+        "bounds": {
+          "x": 1685,
+          "y": 24,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=3"
+        }
+      },
+      {
+        "bounds": {
+          "x": 26,
+          "y": 584,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "postback",
+          "text": "ขอรับผลการตรวจสุขภาพ",
+          "data": "https://richmenu-stats.vercel.app/api/track?slot_id=4"
+        }
+      },
+      {
+        "bounds": {
+          "x": 854,
+          "y": 590,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=5"
+        }
+      },
+      {
+        "bounds": {
+          "x": 1687,
+          "y": 587,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=6"
+        }
+      },
+      {
+        "bounds": {
+          "x": 18,
+          "y": 1152,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=7"
+        }
+      },
+      {
+        "bounds": {
+          "x": 854,
+          "y": 1150,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=8"
+        }
+      },
+      {
+        "bounds": {
+          "x": 1687,
+          "y": 1147,
+          "width": 783,
+          "height": 513
+        },
+        "action": {
+          "type": "uri",
+          "uri": "https://richmenu-stats.vercel.app/api/track?slot_id=9"
+        }
+      }
+    ]
+  }

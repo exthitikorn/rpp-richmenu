@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { RichMenuEditor } from "@/components/rich-menu-editor/RichMenuEditor";
 
 export default async function RichMenuEditPage({
@@ -13,7 +13,6 @@ export default async function RichMenuEditPage({
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const richMenu = await prisma.richMenu.findFirst({
     where: {
       id,

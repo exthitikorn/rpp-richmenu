@@ -1,13 +1,12 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const prisma = await getPrisma();
   const [orgCount, lineAccountCount, richMenuCount, recentClicks] =
     await Promise.all([
       prisma.organization.count({

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 const areaSchema = z.object({
   x: z.number(),
@@ -36,7 +36,6 @@ export async function PUT(
       );
     }
 
-    const prisma = await getPrisma();
     const richMenu = await prisma.richMenu.findFirst({
       where: {
         id: richMenuId,

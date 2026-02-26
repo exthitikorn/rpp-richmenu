@@ -4,7 +4,7 @@ import sizeOf from "image-size";
 
 import { getCurrentUser } from "@/lib/auth";
 import { requireRole } from "@/lib/auth";
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { parseRichMenuJson, validateImageSize } from "@/lib/richmenu/parser";
 import { RichMenuStatus } from "@/app/generated/prisma/client";
 
@@ -34,7 +34,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const prisma = await getPrisma();
     const lineAccount = await prisma.lineAccount.findFirst({
       where: {
         id: lineAccountId,

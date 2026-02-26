@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 
-import { getPrisma } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
   email: z.string().email(),
@@ -22,7 +22,6 @@ export async function POST(request: Request) {
       );
     }
     const { email, name, password } = parsed.data;
-    const prisma = await getPrisma();
     const existing = await prisma.user.findUnique({ where: { email } });
 
     if (existing) {
