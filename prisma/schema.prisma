@@ -1,0 +1,153 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum RichMenuStatus {
+  DRAFT
+  DEPLOYED
+}
+
+enum DeployStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id             String        @id @default(cuid())
+  email          String        @unique
+  name           String?
+  image          String?
+  emailVerified  DateTime?
+  passwordHash   String?
+  memberships    Membership[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Organization {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  memberships  Membership[]
+  lineAccounts LineAccount[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Membership {
+  id             String        @id @default(cuid())
+  userId         String
+  organizationId String
+  role           Role
+  createdAt      DateTime      @default(now())
+
+  user          User          @relation(fields: [userId], references: [id])
+  organization  Organization  @relation(fields: [organizationId], references: [id])
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, role])
+}
+
+model LineAccount {
+  id             String        @id @default(cuid())
+  organizationId String
+  name           String
+  channelId      String
+  channelSecret  String
+  accessToken    String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  richMenus    RichMenu[]
+  clickEvents  ClickEvent[]
+
+  @@index([organizationId])
+}
+
+model RichMenu {
+  id             String          @id @default(cuid())
+  lineAccountId  String
+  name           String
+  description    String?
+  width          Int
+  height         Int
+  imageUrl       String
+  lineRichMenuId String?        @unique
+  status         RichMenuStatus @default(DRAFT)
+  isDefault      Boolean        @default(false)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  lineAccount LineAccount   @relation(fields: [lineAccountId], references: [id])
+  areas       RichMenuArea[]
+  deployLogs  DeployLog[]
+  clickEvents ClickEvent[]
+
+  @@index([lineAccountId])
+}
+
+model RichMenuArea {
+  id         String   @id @default(cuid())
+  richMenuId String
+  x          Int
+  y          Int
+  width      Int
+  height     Int
+  order      Int
+  actionType String
+  action     Json
+
+  richMenu RichMenu @relation(fields: [richMenuId], references: [id])
+
+  @@index([richMenuId])
+}
+
+model DeployLog {
+  id         String       @id @default(cuid())
+  richMenuId String
+  status     DeployStatus
+  message    String?
+  deployedAt DateTime     @default(now())
+
+  richMenu RichMenu @relation(fields: [richMenuId], references: [id])
+
+  @@index([richMenuId, deployedAt])
+}
+
+model ClickEvent {
+  id           String   @id @default(cuid())
+  lineAccountId String
+  richMenuId    String
+  areaIndex     Int
+  lineUserId    String
+  createdAt     DateTime @default(now())
+
+  lineAccount LineAccount @relation(fields: [lineAccountId], references: [id])
+  richMenu    RichMenu    @relation(fields: [richMenuId], references: [id])
+
+  @@index([lineAccountId, richMenuId, createdAt])
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
