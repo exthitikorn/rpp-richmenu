@@ -14,7 +14,7 @@ export async function getCurrentUser() {
 
   if (!session?.user?.email) return null;
 
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { email: session.user.email },
     include: {
       memberships: {
@@ -22,6 +22,10 @@ export async function getCurrentUser() {
       },
     },
   });
+
+  if (!user?.isApproved) return null;
+
+  return user;
 }
 
 export async function requireAuth() {

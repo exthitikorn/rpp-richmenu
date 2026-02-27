@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import NextLink from "next/link";
 import { Link } from "@heroui/link";
 
@@ -43,13 +42,16 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center">
-      <Card className="w-full max-w-md">
-        <CardHeader className="flex flex-col gap-1 px-8 pt-8 pb-0">
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
+      <div
+        className="rounded-2xl bg-white shadow-lg border border-default-200"
+        style={{ width: "520px", maxWidth: "100%" }}
+      >
+        <div className="flex flex-col gap-1 px-8 pt-8 pb-0">
           <h1 className="text-2xl font-semibold">สมัครสมาชิก</h1>
           <p className="text-default-500 text-sm">LINE OA Rich Menu Manager</p>
-        </CardHeader>
-        <CardBody className="px-8 pb-8 pt-6">
+        </div>
+        <div className="px-8 pb-8 pt-6">
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             {error && (
               <p className="text-danger text-sm" role="alert">
@@ -96,8 +98,8 @@ export default function RegisterPage() {
               เข้าสู่ระบบ
             </Link>
           </p>
-        </CardBody>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

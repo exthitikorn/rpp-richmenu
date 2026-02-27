@@ -20,6 +20,7 @@ export const authOptions: NextAuthOptions = {
         });
 
         if (!user?.passwordHash) return null;
+        if (!user.isApproved) return null;
         const ok = await bcrypt.compare(
           credentials.password,
           user.passwordHash,

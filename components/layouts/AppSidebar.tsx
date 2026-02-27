@@ -20,6 +20,7 @@ const appNavItems = [
   { label: "Import", href: "/import" },
   { label: "Deploy Logs", href: "/deploy-logs" },
   { label: "Analytics", href: "/analytics" },
+  { label: "Users", href: "/users" },
   { label: "Settings", href: "/settings" },
 ] satisfies ReadonlyArray<AppNavItem>;
 

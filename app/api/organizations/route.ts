@@ -13,6 +13,32 @@ const bodySchema = z.object({
     .regex(/^[a-z0-9-]+$/, "slug ใช้ได้เฉพาะ a-z, 0-9, -"),
 });
 
+export async function GET() {
+  try {
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    const organizations = await prisma.organization.findMany({
+      where: { memberships: { some: { userId: user.id } } },
+      select: { id: true, name: true },
+      orderBy: { createdAt: "asc" },
+    });
+
+    return NextResponse.json({ success: true, data: organizations });
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "ไม่สามารถดึงรายการองค์กรได้" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();

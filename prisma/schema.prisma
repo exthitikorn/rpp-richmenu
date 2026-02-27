@@ -34,6 +34,7 @@ model User {
   image          String?
   emailVerified  DateTime?
   passwordHash   String?
+  isApproved     Boolean       @default(false)
   memberships    Membership[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

@@ -8,6 +8,7 @@ const protectedPaths = [
   "/organizations",
   "/line-accounts",
   "/rich-menus",
+  "/users",
   "/import",
   "/deploy-logs",
   "/analytics",

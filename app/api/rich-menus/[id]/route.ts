@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { del } from "@vercel/blob";
 import { z } from "zod";
 
 import { getCurrentUser } from "@/lib/auth";
@@ -134,6 +135,14 @@ export async function DELETE(
         );
       } catch {
         // ถ้าลบบน LINE ไม่สำเร็จ ให้ลบในระบบต่อไป แต่ไม่ fail ทั้งคำขอ
+      }
+    }
+
+    if (richMenu.imageUrl) {
+      try {
+        await del(richMenu.imageUrl);
+      } catch {
+        // ถ้าลบรูปใน Blob ไม่สำเร็จ ให้ลบในระบบต่อไป แต่ไม่ fail ทั้งคำขอ
       }
     }
 

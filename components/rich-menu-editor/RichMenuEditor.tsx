@@ -27,6 +27,7 @@ export function RichMenuEditor({
   );
   const [deploying, setDeploying] = useState(false);
   const [settingDefault, setSettingDefault] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     setRichMenu(initial);
@@ -44,6 +45,44 @@ export function RichMenuEditor({
       ...prev,
       areas: prev.areas.map((a, i) => (i === index ? { ...a, ...data } : a)),
     }));
+  }
+
+  async function handleImageChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const formData = new FormData();
+
+      formData.set("image", file);
+      const res = await fetch(`/api/rich-menus/${richMenu.id}/image`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+        imageUrl?: string;
+      };
+
+      if (!res.ok || !data.success) {
+        alert(data.error ?? "อัปโหลดรูปไม่สำเร็จ");
+
+        return;
+      }
+      if (data.imageUrl) {
+        setRichMenu((prev) => ({
+          ...prev,
+          imageUrl: data.imageUrl ?? prev.imageUrl,
+        }));
+      }
+      router.refresh();
+    } finally {
+      setUploadingImage(false);
+      event.target.value = "";
+    }
   }
 
   async function saveAreas() {
@@ -167,6 +206,25 @@ export function RichMenuEditor({
                   คัดลอก
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-default-700">
+                รูป Rich Menu
+              </p>
+              <p className="text-xs text-default-500">
+                ขนาดต้องตรงกับ {richMenu.width}×{richMenu.height}px และเป็น JPEG
+                หรือ PNG
+              </p>
+              <Input
+                accept="image/jpeg,image/png"
+                aria-label="อัปโหลดรูป Rich Menu ใหม่"
+                className="max-w-xs"
+                isDisabled={uploadingImage}
+                size="sm"
+                type="file"
+                onChange={handleImageChange}
+              />
             </div>
 
             <RichMenuPreview
