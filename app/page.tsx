@@ -1,10 +1,18 @@
 import { Link } from "@heroui/link";
 import { button as buttonStyles } from "@heroui/theme";
+import { redirect } from "next/navigation";
 import NextLink from "next/link";
 
 import { siteConfig } from "@/config/site";
+import { getCurrentUser } from "@/lib/auth";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const user = await getCurrentUser();
+
+  if (user) {
+    redirect("/dashboard");
+  }
+
   return (
     <section className="flex flex-col items-center justify-center gap-6 py-12 md:py-20">
       <div className="text-center">

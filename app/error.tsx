@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
 
 export default function Error({
   error,
@@ -10,22 +12,25 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     /* eslint-disable no-console */
     console.error(error);
   }, [error]);
 
   return (
-    <div>
-      <h2>Something went wrong!</h2>
-      <button
-        onClick={
-          // Attempt to recover by trying to re-render the segment
-          () => reset()
-        }
-      >
-        Try again
-      </button>
+    <div className="min-h-[60vh] flex items-center justify-center px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Something went wrong</h2>
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <p className="text-sm text-default-500">
+            เกิดข้อผิดพลาดขณะโหลดหน้านี้ กรุณาลองใหม่อีกครั้ง
+          </p>
+          <Button color="primary" variant="solid" onPress={() => reset()}>
+            Try again
+          </Button>
+        </CardBody>
+      </Card>
     </div>
   );
 }

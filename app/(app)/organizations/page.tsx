@@ -3,6 +3,7 @@ import { CreateOrganizationForm } from "./CreateOrganizationForm";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { PageHeader } from "@/components/page-header";
 
 export default async function OrganizationsPage() {
   const user = await getCurrentUser();
@@ -19,10 +20,7 @@ export default async function OrganizationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Organizations</h1>
-        <CreateOrganizationForm />
-      </div>
+      <PageHeader actions={<CreateOrganizationForm />} title="Organizations" />
       <OrganizationList organizations={organizations} />
     </div>
   );

@@ -4,11 +4,14 @@ import type { RichMenu, RichMenuArea } from "@/app/generated/prisma/client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
 
-import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 import { RichMenuPreview } from "./RichMenuPreview";
 import { AreaActionForm } from "./AreaActionForm";
+
+import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 
 type RichMenuWithAreas = RichMenu & { areas: RichMenuArea[] };
 
@@ -98,6 +101,7 @@ export function RichMenuEditor({
           (!res.ok
             ? `Deploy ไม่สำเร็จ (status ${res.status})`
             : "Deploy ไม่สำเร็จ");
+
         alert(errorMessage);
       }
     } finally {
@@ -113,6 +117,7 @@ export function RichMenuEditor({
         method: "POST",
       });
       const data = (await res.json()) as { success?: boolean; error?: string };
+
       if (data.success) {
         router.refresh();
         alert("ตั้งเป็น Default แล้ว — เมนูนี้จะแสดงเป็นหน้าแรกให้ผู้ใช้ใหม่");
@@ -128,67 +133,103 @@ export function RichMenuEditor({
     Boolean(richMenu.lineRichMenuId) && richMenu.status === "DEPLOYED";
 
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      <div className="flex-1">
-        <p className="mb-2 text-sm text-default-500">
-          Rich Menu Alias ID สำหรับใช้ใน action แบบ Switch Rich Menu คือ{" "}
-          <span className="font-mono font-semibold">{aliasId}</span>
-        </p>
-        <RichMenuPreview
-          areas={richMenu.areas}
-          height={richMenu.height}
-          imageUrl={richMenu.imageUrl}
-          selectedIndex={selectedAreaIndex}
-          width={richMenu.width}
-          onSelectArea={setSelectedAreaIndex}
-        />
-        <div className="mt-4 flex flex-wrap gap-2">
-          <Button color="primary" onPress={saveAreas}>
-            บันทึกการแก้ไข
-          </Button>
-          <Button
-            color="success"
-            isLoading={deploying}
-            onPress={handleDeploy}
-          >
-            {richMenu.status === "DEPLOYED"
-              ? "Deploy ใหม่ไป LINE"
-              : "Deploy ไป LINE"}
-          </Button>
-          {canSetDefault && (
-            <Button
-              color={richMenu.isDefault ? "default" : "secondary"}
-              isDisabled={richMenu.isDefault}
-              isLoading={settingDefault}
-              onPress={handleSetDefault}
-              variant={richMenu.isDefault ? "flat" : "bordered"}
-            >
-              {richMenu.isDefault ? "เป็น Default อยู่แล้ว" : "ตั้งเป็น Default"}
-            </Button>
-          )}
+    <Card>
+      <CardBody>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          <div className="w-full space-y-4 lg:w-1/2">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-default-700">
+                Rich Menu Alias ID
+              </p>
+              <p className="text-xs text-default-500">
+                ใช้ใน action แบบ Switch Rich Menu
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Input
+                  isReadOnly
+                  aria-label="Rich Menu Alias ID"
+                  className="max-w-xs font-mono"
+                  size="sm"
+                  value={aliasId}
+                  onClick={(event) => {
+                    const target = event.currentTarget;
+
+                    target.select();
+                  }}
+                />
+                <Button
+                  size="sm"
+                  variant="flat"
+                  onPress={() => {
+                    void navigator.clipboard.writeText(aliasId);
+                  }}
+                >
+                  คัดลอก
+                </Button>
+              </div>
+            </div>
+
+            <RichMenuPreview
+              areas={richMenu.areas}
+              height={richMenu.height}
+              imageUrl={richMenu.imageUrl}
+              selectedIndex={selectedAreaIndex}
+              width={richMenu.width}
+              onSelectArea={setSelectedAreaIndex}
+            />
+
+            <div className="flex flex-wrap gap-2">
+              <Button color="primary" onPress={saveAreas}>
+                บันทึกการแก้ไข
+              </Button>
+              <Button
+                color="success"
+                isLoading={deploying}
+                onPress={handleDeploy}
+              >
+                {richMenu.status === "DEPLOYED"
+                  ? "Deploy ใหม่ไป LINE"
+                  : "Deploy ไป LINE"}
+              </Button>
+              {canSetDefault && (
+                <Button
+                  color={richMenu.isDefault ? "default" : "secondary"}
+                  isDisabled={richMenu.isDefault}
+                  isLoading={settingDefault}
+                  variant={richMenu.isDefault ? "flat" : "bordered"}
+                  onPress={handleSetDefault}
+                >
+                  {richMenu.isDefault
+                    ? "เป็น Default อยู่แล้ว"
+                    : "ตั้งเป็น Default"}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="w-full space-y-3 lg:w-1/2 lg:max-w-xl">
+            {selectedArea ? (
+              <AreaActionForm
+                area={selectedArea}
+                onClose={() => setSelectedAreaIndex(null)}
+                onSave={(data) => {
+                  if (selectedAreaIndex !== null) {
+                    updateArea(selectedAreaIndex, {
+                      actionType: data.actionType,
+                      action: data.action as RichMenuArea["action"],
+                    });
+                  }
+                  setSelectedAreaIndex(null);
+                }}
+              />
+            ) : (
+              <p className="text-default-500 text-sm">
+                คลิกที่พื้นที่บนรูปเพื่อแก้ไข action
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="w-full lg:w-80 shrink-0">
-        {selectedArea ? (
-          <AreaActionForm
-            area={selectedArea}
-            onClose={() => setSelectedAreaIndex(null)}
-            onSave={(data) => {
-              if (selectedAreaIndex !== null) {
-                updateArea(selectedAreaIndex, {
-                  actionType: data.actionType,
-                  action: data.action as RichMenuArea["action"],
-                });
-              }
-              setSelectedAreaIndex(null);
-            }}
-          />
-        ) : (
-          <p className="text-default-500 text-sm">
-            คลิกที่พื้นที่บนรูปเพื่อแก้ไข action
-          </p>
-        )}
-      </div>
-    </div>
+      </CardBody>
+    </Card>
   );
 }

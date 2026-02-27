@@ -1,3 +1,5 @@
+import type { LineRichMenuPayload } from "@/lib/line/types";
+
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
@@ -13,7 +15,6 @@ import {
   bulkLinkRichMenuToUsers,
   deleteRichMenu,
 } from "@/lib/line/client";
-import type { LineRichMenuPayload } from "@/lib/line/types";
 import { normalizeRichMenuAction } from "@/lib/line/types";
 import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 import { DeployStatus, RichMenuStatus } from "@/app/generated/prisma/client";
@@ -21,11 +22,14 @@ import { DeployStatus, RichMenuStatus } from "@/app/generated/prisma/client";
 /** ตัดข้อความให้ไม่เกิน maxBytes (UTF-8) สำหรับคอลัมน์ message ใน MySQL */
 function truncateMessageToBytes(text: string, maxBytes: number): string {
   const encoder = new TextEncoder();
+
   if (encoder.encode(text).length <= maxBytes) return text;
   for (let len = text.length; len > 0; len--) {
     const s = text.slice(0, len);
+
     if (encoder.encode(s).length <= maxBytes) return s;
   }
+
   return "";
 }
 
@@ -112,6 +116,7 @@ export async function POST(
     );
 
     const aliasId = getRichMenuAliasId(richMenu.id);
+
     await ensureRichMenuAlias(
       richMenu.lineAccount.accessToken,
       aliasId,
@@ -126,8 +131,10 @@ export async function POST(
     try {
       followerIds = await getFollowerIds(token);
       const chunkSize = 500;
+
       for (let i = 0; i < followerIds.length; i += chunkSize) {
         const chunk = followerIds.slice(i, i + chunkSize);
+
         await bulkUnlinkRichMenuFromUsers(token, chunk);
       }
     } catch {
@@ -140,8 +147,10 @@ export async function POST(
     if (followerIds.length > 0) {
       try {
         const chunkSize = 500;
+
         for (let i = 0; i < followerIds.length; i += chunkSize) {
           const chunk = followerIds.slice(i, i + chunkSize);
+
           await bulkLinkRichMenuToUsers(token, lineRichMenuId, chunk);
         }
       } catch {

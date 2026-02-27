@@ -3,6 +3,7 @@ import { CreateLineAccountForm } from "./CreateLineAccountForm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/page-header";
 
 export default async function LineAccountsPage({
   searchParams,
@@ -34,10 +35,10 @@ export default async function LineAccountsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">LINE Accounts</h1>
-        <CreateLineAccountForm organizations={organizations} />
-      </div>
+      <PageHeader
+        actions={<CreateLineAccountForm organizations={organizations} />}
+        title="LINE Accounts"
+      />
       <LineAccountList
         currentOrganizationId={organizationId ?? null}
         lineAccounts={lineAccounts}

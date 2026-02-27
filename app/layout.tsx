@@ -7,6 +7,7 @@ import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
+import { getSiteSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: {
@@ -23,19 +24,27 @@ export const viewport: Viewport = {
   themeColor: { color: "white" },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const siteSettings = await getSiteSettings();
+  const footerText =
+    siteSettings.footerText ||
+    `${siteSettings.siteName || siteConfig.name} · Powered by HeroUI`;
+
   return (
     <html suppressHydrationWarning className="light" lang="en">
-      <head />
+      <head>
+        <link href={siteSettings.faviconUrl ?? "/favicon.ico"} rel="icon" />
+      </head>
       <body
         className={clsx(
           "min-h-screen text-foreground bg-background font-sans antialiased",
           fontSans.variable,
         )}
+        style={{ backgroundColor: siteSettings.backgroundColor }}
       >
         <Providers
           themeProps={{
@@ -44,15 +53,19 @@ export default function RootLayout({
             forcedTheme: "light",
           }}
         >
-          <div className="relative flex flex-col h-screen">
-            <Navbar />
-            <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
+          <div className="relative flex h-screen flex-col">
+            <Navbar
+              logoUrl={siteSettings.logoUrl}
+              siteName={siteSettings.siteName}
+            />
+            <main
+              className="mx-auto flex w-full flex-grow items-center justify-center"
+              style={{ maxWidth: "100%" }}
+            >
               {children}
             </main>
-            <footer className="w-full flex items-center justify-center py-3">
-              <span className="text-default-500 text-sm">
-                {siteConfig.name} · Powered by HeroUI
-              </span>
+            <footer className="flex w-full items-center justify-center py-3 border-t border-default-200">
+              <span className="text-default-500 text-sm">{footerText}</span>
             </footer>
           </div>
         </Providers>

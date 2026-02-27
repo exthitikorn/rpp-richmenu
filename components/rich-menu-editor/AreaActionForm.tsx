@@ -32,13 +32,11 @@ export function AreaActionForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const payload = buildActionPayload(actionType, action);
+
     onSave({ actionType, action: payload });
   }
 
-  function buildActionPayload(
-    type: string,
-    raw: ActionPayload,
-  ): ActionPayload {
+  function buildActionPayload(type: string, raw: ActionPayload): ActionPayload {
     switch (type) {
       case "uri":
         return {

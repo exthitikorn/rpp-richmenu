@@ -79,9 +79,7 @@ export async function uploadRichMenuImage(
 }
 
 /** ล้าง default rich menu (ทำให้ทุกคนไม่ติดเมนู default ชั่วคราว) */
-export async function clearDefaultRichMenu(
-  accessToken: string,
-): Promise<void> {
+export async function clearDefaultRichMenu(accessToken: string): Promise<void> {
   const res = await lineFetch("/user/all/richmenu", accessToken, {
     method: "DELETE",
   });
@@ -108,15 +106,11 @@ export async function setDefaultRichMenu(
   }
 }
 
-const BULK_UNLINK_CHUNK_SIZE = 500;
-
 /**
  * ดึง user ID ของผู้ติดตามทั้งหมด (ใช้ได้กับ verified / premium OA)
  * @see https://developers.line.biz/en/reference/messaging-api/#get-follower-ids
  */
-export async function getFollowerIds(
-  accessToken: string,
-): Promise<string[]> {
+export async function getFollowerIds(accessToken: string): Promise<string[]> {
   const all: string[] = [];
   let start: string | undefined;
 
@@ -136,6 +130,7 @@ export async function getFollowerIds(
       userIds: string[];
       next?: string;
     };
+
     all.push(...(data.userIds ?? []));
     start = data.next;
   } while (start);
@@ -162,7 +157,9 @@ export async function bulkUnlinkRichMenuFromUsers(
   if (!res.ok) {
     const err = await res.text();
 
-    throw new Error(`LINE API bulkUnlinkRichMenuFromUsers: ${res.status} ${err}`);
+    throw new Error(
+      `LINE API bulkUnlinkRichMenuFromUsers: ${res.status} ${err}`,
+    );
   }
 }
 
@@ -246,7 +243,12 @@ export async function ensureRichMenuAlias(
   description?: string,
 ): Promise<void> {
   try {
-    await createRichMenuAlias(accessToken, richMenuAliasId, richMenuId, description);
+    await createRichMenuAlias(
+      accessToken,
+      richMenuAliasId,
+      richMenuId,
+      description,
+    );
   } catch (error) {
     const isConflict =
       error instanceof Error &&
@@ -261,6 +263,7 @@ export async function ensureRichMenuAlias(
         richMenuId,
         description,
       );
+
       return;
     }
 

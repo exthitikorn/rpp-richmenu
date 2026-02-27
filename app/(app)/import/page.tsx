@@ -2,6 +2,7 @@ import { ImportRichMenuForm } from "./ImportRichMenuForm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/page-header";
 
 export default async function ImportPage({
   searchParams,
@@ -21,7 +22,7 @@ export default async function ImportPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Import Rich Menu</h1>
+      <PageHeader title="Import Rich Menu" />
       <ImportRichMenuForm
         defaultLineAccountId={(await searchParams).lineAccountId ?? null}
         lineAccounts={lineAccounts}

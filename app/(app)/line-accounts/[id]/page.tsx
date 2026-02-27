@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { PageHeader } from "@/components/page-header";
 
 export default async function LineAccountDetailPage({
   params,
@@ -31,31 +32,28 @@ export default async function LineAccountDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{account.name}</h1>
-          <p className="text-default-500">{account.organization.name}</p>
-          <p className="text-xs text-default-400 font-mono">
-            {account.channelId}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            as={NextLink}
-            color="primary"
-            href={`/rich-menus?lineAccountId=${account.id}`}
-          >
-            Rich Menus
-          </Button>
-          <Button
-            as={NextLink}
-            href={`/import?lineAccountId=${account.id}`}
-            variant="bordered"
-          >
-            Import Rich Menu
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        actions={
+          <div className="flex gap-2">
+            <Button
+              as={NextLink}
+              color="primary"
+              href={`/rich-menus?lineAccountId=${account.id}`}
+            >
+              Rich Menus
+            </Button>
+            <Button
+              as={NextLink}
+              href={`/import?lineAccountId=${account.id}`}
+              variant="bordered"
+            >
+              Import Rich Menu
+            </Button>
+          </div>
+        }
+        description={account.organization.name}
+        title={account.name}
+      />
       <Card>
         <CardHeader>Rich Menus ({account.richMenus.length})</CardHeader>
         <CardBody>

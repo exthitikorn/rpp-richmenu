@@ -2,6 +2,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/page-header";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
@@ -43,10 +44,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">Dashboard</h1>
-        <p className="text-default-500">สวัสดี, {user.name ?? user.email}</p>
-      </div>
+      <PageHeader
+        description={`สวัสดี, ${user.name ?? user.email}`}
+        title="Dashboard"
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-0">Organizations</CardHeader>

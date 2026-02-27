@@ -19,4 +19,3 @@ export function getRichMenuAliasId(id: string): string {
 
   return `${ALIAS_PREFIX}${aliasBase}`;
 }
-

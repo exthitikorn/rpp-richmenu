@@ -6,6 +6,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
+import { PageHeader } from "@/components/page-header";
 
 export default async function OrganizationDetailPage({
   params,
@@ -31,19 +32,19 @@ export default async function OrganizationDetailPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{org.name}</h1>
-          <p className="text-default-500">{org.slug}</p>
-        </div>
-        <Button
-          as={NextLink}
-          color="primary"
-          href={`/line-accounts?organizationId=${org.id}`}
-        >
-          เพิ่ม LINE Account
-        </Button>
-      </div>
+      <PageHeader
+        actions={
+          <Button
+            as={NextLink}
+            color="primary"
+            href={`/line-accounts?organizationId=${org.id}`}
+          >
+            เพิ่ม LINE Account
+          </Button>
+        }
+        description={org.slug}
+        title={org.name}
+      />
       <Card>
         <CardHeader>สมาชิก</CardHeader>
         <CardBody>

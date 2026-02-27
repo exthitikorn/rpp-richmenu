@@ -3,15 +3,21 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { SettingsForm } from "./SettingsForm";
 
 import { getCurrentUser } from "@/lib/auth";
+import { getSiteSettings } from "@/lib/site-settings";
+import { PageHeader } from "@/components/page-header";
 
 export default async function SettingsPage() {
   const user = await getCurrentUser();
+  const siteSettings = await getSiteSettings();
 
   if (!user) return null;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Settings</h1>
+      <PageHeader
+        description="ตั้งค่าระบบและการแสดงผลของไซต์"
+        title="Settings"
+      />
       <Card>
         <CardHeader>บัญชี</CardHeader>
         <CardBody>
@@ -19,7 +25,7 @@ export default async function SettingsPage() {
           <p className="text-sm text-default-400">{user.name ?? "—"}</p>
         </CardBody>
       </Card>
-      <SettingsForm />
+      <SettingsForm initialSettings={siteSettings} />
     </div>
   );
 }

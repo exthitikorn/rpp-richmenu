@@ -4,6 +4,7 @@ import { AnalyticsCharts } from "./AnalyticsCharts";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/page-header";
 
 export default async function AnalyticsPage() {
   const user = await getCurrentUser();
@@ -57,7 +58,7 @@ export default async function AnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Analytics</h1>
+      <PageHeader title="Analytics" />
       <Card>
         <CardHeader>จำนวนคลิกรวม</CardHeader>
         <CardBody>

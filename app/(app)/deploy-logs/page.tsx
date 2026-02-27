@@ -2,6 +2,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { PageHeader } from "@/components/page-header";
 
 export default async function DeployLogsPage() {
   const user = await getCurrentUser();
@@ -28,7 +29,7 @@ export default async function DeployLogsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Deploy Logs</h1>
+      <PageHeader title="Deploy Logs" />
       <Card>
         <CardHeader>ประวัติการ Deploy</CardHeader>
         <CardBody>

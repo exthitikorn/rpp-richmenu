@@ -7,6 +7,11 @@ import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
 
+type AppNavItem = {
+  label: string;
+  href: string;
+};
+
 const appNavItems = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Organizations", href: "/organizations" },
@@ -16,7 +21,10 @@ const appNavItems = [
   { label: "Deploy Logs", href: "/deploy-logs" },
   { label: "Analytics", href: "/analytics" },
   { label: "Settings", href: "/settings" },
-];
+] satisfies ReadonlyArray<AppNavItem>;
+
+const isPathActive = (pathname: string, href: string): boolean =>
+  pathname === href || pathname.startsWith(`${href}/`);
 
 export function AppSidebar() {
   const pathname = usePathname();
@@ -24,28 +32,38 @@ export function AppSidebar() {
   return (
     <aside className="w-56 shrink-0 border-r border-default-200 bg-default-50/50 p-4 flex flex-col min-h-0">
       <Link
+        aria-label="กลับไปหน้า Dashboard"
         as={NextLink}
         className="mb-4 gap-2 font-semibold"
         href="/dashboard"
       >
         Rich Menu
       </Link>
-      <nav className="flex flex-col gap-1 flex-1">
-        {appNavItems.map((item) => (
-          <Link
-            key={item.href}
-            as={NextLink}
-            className={clsx(
-              "w-full justify-start",
-              pathname === item.href || pathname.startsWith(item.href + "/")
-                ? "text-primary font-medium"
-                : "text-default-600",
-            )}
-            href={item.href}
-          >
-            {item.label}
-          </Link>
-        ))}
+      <nav
+        aria-label="แถบนำทางสำหรับการจัดการ Rich Menu"
+        className="flex flex-col gap-1 flex-1"
+      >
+        <ul className="flex flex-col gap-1">
+          {appNavItems.map((item) => {
+            const isActive = isPathActive(pathname, item.href);
+
+            return (
+              <li key={item.href}>
+                <Link
+                  aria-current={isActive ? "page" : undefined}
+                  as={NextLink}
+                  className={clsx(
+                    "w-full justify-start",
+                    isActive ? "text-primary font-medium" : "text-default-600",
+                  )}
+                  href={item.href}
+                >
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
       <Button
         className="w-full justify-start"

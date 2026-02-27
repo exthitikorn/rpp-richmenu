@@ -57,7 +57,10 @@ export function normalizeRichMenuAction(
       return {
         type: "richmenuswitch",
         richMenuAliasId: raw.richMenuAliasId ?? "",
-        data: (raw.data && String(raw.data).trim() !== "") ? String(raw.data) : "switch",
+        data:
+          raw.data && String(raw.data).trim() !== ""
+            ? String(raw.data)
+            : "switch",
         ...(raw.label ? { label: raw.label } : {}),
       };
     default:
