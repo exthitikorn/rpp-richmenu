@@ -34,10 +34,12 @@ function truncateMessageToBytes(text: string, maxBytes: number): string {
 }
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id: richMenuId } = await params;
+  const requestUrl = new URL(request.url);
+  const origin = requestUrl.origin;
 
   try {
     const user = await getCurrentUser();
@@ -74,13 +76,33 @@ export async function POST(
       selected: richMenu.isDefault,
       name: richMenu.name,
       chatBarText: richMenu.name?.slice(0, 14) || "เมนู",
-      areas: richMenu.areas.map((a) => ({
-        bounds: { x: a.x, y: a.y, width: a.width, height: a.height },
-        action: normalizeRichMenuAction(
-          a.actionType,
-          (a.action as Record<string, unknown>) ?? {},
-        ),
-      })),
+      areas: richMenu.areas.map((a, index) => {
+        const rawAction = (a.action as Record<string, unknown>) ?? {};
+
+        // ถ้าเป็น URI ให้ห่อเป็น tracking URL เพื่อเก็บ ClickEvent
+        if (a.actionType === "uri") {
+          const raw = rawAction as Record<string, string | undefined>;
+          const target = raw.uri ?? "";
+          const searchParams = new URLSearchParams({
+            channelId: richMenu.lineAccount.channelId,
+            richMenuId: richMenu.id,
+            areaIndex: String(index),
+            target,
+          });
+          const trackingUrl = `${origin}/api/rich-menus/redirect?${searchParams.toString()}`;
+          const mergedAction = { ...rawAction, uri: trackingUrl };
+
+          return {
+            bounds: { x: a.x, y: a.y, width: a.width, height: a.height },
+            action: normalizeRichMenuAction(a.actionType, mergedAction),
+          };
+        }
+
+        return {
+          bounds: { x: a.x, y: a.y, width: a.width, height: a.height },
+          action: normalizeRichMenuAction(a.actionType, rawAction),
+        };
+      }),
     };
 
     const { richMenuId: lineRichMenuId } = await createRichMenu(
