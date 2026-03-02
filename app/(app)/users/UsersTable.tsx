@@ -36,6 +36,35 @@ type UserWithRelations = User & {
 
 type OrganizationOption = Pick<Organization, "id" | "name">;
 
+type MembershipFormState = Record<
+  string,
+  {
+    isMember: boolean;
+    role: Membership["role"];
+  }
+>;
+
+const MEMBERSHIP_ROLE_OPTIONS: { value: Membership["role"]; label: string }[] =
+  [
+    { value: "OWNER", label: "Owner" },
+    { value: "ADMIN", label: "Admin" },
+    { value: "MEMBER", label: "Member" },
+  ];
+
+function formatMembershipDisplay(
+  membership: UserWithRelations["memberships"][number],
+) {
+  const found = MEMBERSHIP_ROLE_OPTIONS.find(
+    (option) => option.value === membership.role,
+  );
+
+  if (!found) {
+    return membership.organization.name;
+  }
+
+  return `${membership.organization.name} (${found.label})`;
+}
+
 type ApiResponse = {
   success?: boolean;
   error?: string;
@@ -122,9 +151,23 @@ function EditUserOrganizationsButton({
 }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
-  const [selectedOrgIds, setSelectedOrgIds] = useState<Set<string>>(
-    () =>
-      new Set(user.memberships.map((membership) => membership.organization.id)),
+  const [membershipsState, setMembershipsState] = useState<MembershipFormState>(
+    () => {
+      const initialState: MembershipFormState = {};
+
+      organizations.forEach((org) => {
+        const existingMembership = user.memberships.find(
+          (membership) => membership.organization.id === org.id,
+        );
+
+        initialState[org.id] = {
+          isMember: Boolean(existingMembership),
+          role: existingMembership?.role ?? "MEMBER",
+        };
+      });
+
+      return initialState;
+    },
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -134,11 +177,16 @@ function EditUserOrganizationsButton({
     setLoading(true);
 
     try {
-      const organizationIds = Array.from(selectedOrgIds);
+      const memberships = organizations
+        .filter((org) => membershipsState[org.id]?.isMember)
+        .map((org) => ({
+          organizationId: org.id,
+          role: membershipsState[org.id].role,
+        }));
       const res = await fetch(`/api/users/${user.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ organizationIds }),
+        body: JSON.stringify({ memberships }),
       });
       const data = (await res.json()) as ApiResponse;
 
@@ -178,38 +226,78 @@ function EditUserOrganizationsButton({
               </p>
             )}
             <p className="text-sm">
-              เลือกองค์กรที่ต้องการผูกกับผู้ใช้{" "}
+              กำหนดองค์กรและสิทธิ์ของผู้ใช้{" "}
               <span className="font-semibold">{user.email}</span>
             </p>
-            <Select
-              aria-label="เลือกองค์กรของผู้ใช้"
-              className="mt-2"
-              items={organizations}
-              label="องค์กร"
-              placeholder="เลือกหนึ่งหรือหลายองค์กร"
-              selectedKeys={selectedOrgIds}
-              selectionMode="multiple"
-              onSelectionChange={(keys) => {
-                if (keys === "all") {
-                  setSelectedOrgIds(
-                    new Set(organizations.map((org) => org.id)),
-                  );
+            <div className="mt-3 space-y-2">
+              {organizations.map((org) => {
+                const state = membershipsState[org.id];
 
-                  return;
+                if (!state) {
+                  return null;
                 }
 
-                const next = new Set<string>();
+                return (
+                  <div
+                    key={org.id}
+                    className="flex items-center justify-between gap-3"
+                  >
+                    <div className="flex-1">
+                      <Switch
+                        aria-label={`กำหนดการเป็นสมาชิกในองค์กร ${org.name}`}
+                        isSelected={state.isMember}
+                        size="sm"
+                        onValueChange={(value) => {
+                          setMembershipsState((prev) => ({
+                            ...prev,
+                            [org.id]: {
+                              ...prev[org.id],
+                              isMember: value,
+                            },
+                          }));
+                        }}
+                      >
+                        {org.name}
+                      </Switch>
+                    </div>
+                    <div className="w-40">
+                      <Select
+                        aria-label={`สิทธิ์ของผู้ใช้ในองค์กร ${org.name}`}
+                        className="w-full"
+                        isDisabled={!state.isMember}
+                        items={MEMBERSHIP_ROLE_OPTIONS}
+                        label="สิทธิ์"
+                        labelPlacement="outside"
+                        placeholder="เลือกสิทธิ์"
+                        selectedKeys={new Set([state.role])}
+                        size="sm"
+                        onSelectionChange={(keys) => {
+                          if (keys === "all") {
+                            return;
+                          }
 
-                (keys as Set<React.Key>).forEach((key) => {
-                  next.add(String(key));
-                });
-                setSelectedOrgIds(next);
-              }}
-            >
-              {(org) => <SelectItem key={org.id}>{org.name}</SelectItem>}
-            </Select>
+                          const [first] = Array.from(keys as Set<string>);
+
+                          setMembershipsState((prev) => ({
+                            ...prev,
+                            [org.id]: {
+                              ...prev[org.id],
+                              role: first as Membership["role"],
+                            },
+                          }));
+                        }}
+                      >
+                        {(item) => (
+                          <SelectItem key={item.value}>{item.label}</SelectItem>
+                        )}
+                      </Select>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
             <p className="text-default-500 text-xs">
-              ถ้าไม่เลือกองค์กรใดเลย ผู้ใช้จะไม่ได้ผูกกับองค์กรใด
+              ถ้าไม่ได้เปิดสวิตช์องค์กรใดเลย ผู้ใช้จะไม่ได้ผูกกับองค์กรใด
             </p>
           </ModalBody>
           <ModalFooter>
@@ -295,7 +383,7 @@ export function UsersTable({
         <TableHeader>
           <TableColumn className="text-center">อีเมล</TableColumn>
           <TableColumn className="text-center">ชื่อ</TableColumn>
-          <TableColumn className="text-center">องค์กร</TableColumn>
+          <TableColumn className="text-center">องค์กร / สิทธิ์</TableColumn>
           <TableColumn className="text-center">อนุมัติ</TableColumn>
           <TableColumn className="text-center">จัดการ</TableColumn>
         </TableHeader>
@@ -307,9 +395,7 @@ export function UsersTable({
               <TableCell className="text-center text-default-500 text-sm">
                 {user.memberships.length === 0
                   ? "—"
-                  : user.memberships
-                      .map((membership) => membership.organization.name)
-                      .join(", ")}
+                  : user.memberships.map(formatMembershipDisplay).join(", ")}
               </TableCell>
               <TableCell className="text-center">
                 <Switch

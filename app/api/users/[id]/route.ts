@@ -13,6 +13,14 @@ const updateUserSchema = z.object({
     .optional()
     .or(z.literal("")),
   organizationIds: z.array(z.string()).optional(),
+  memberships: z
+    .array(
+      z.object({
+        organizationId: z.string(),
+        role: z.enum(["OWNER", "ADMIN", "MEMBER"]),
+      }),
+    )
+    .optional(),
 });
 
 export async function PATCH(
@@ -73,7 +81,8 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
 
-    const { name, isApproved, password, organizationIds } = parsed.data;
+    const { name, isApproved, password, organizationIds, memberships } =
+      parsed.data;
 
     const data: Record<string, unknown> = {};
 
@@ -90,7 +99,53 @@ export async function PATCH(
       }
     }
 
-    if (typeof organizationIds !== "undefined") {
+    if (typeof memberships !== "undefined") {
+      await prisma.$transaction(async (tx) => {
+        if (memberships.length === 0) {
+          await tx.membership.deleteMany({
+            where: { userId: id },
+          });
+        } else {
+          const organizationIdsForMemberships = memberships.map(
+            (membership) => membership.organizationId,
+          );
+
+          await tx.membership.deleteMany({
+            where: {
+              userId: id,
+              organizationId: { notIn: organizationIdsForMemberships },
+            },
+          });
+
+          for (const membership of memberships) {
+            // ใช้ unique constraint [userId, organizationId] ในการ upsert
+            await tx.membership.upsert({
+              where: {
+                userId_organizationId: {
+                  userId: id,
+                  organizationId: membership.organizationId,
+                },
+              },
+              create: {
+                userId: id,
+                organizationId: membership.organizationId,
+                role: membership.role,
+              },
+              update: {
+                role: membership.role,
+              },
+            });
+          }
+        }
+
+        if (Object.keys(data).length > 0) {
+          await tx.user.update({
+            where: { id },
+            data,
+          });
+        }
+      });
+    } else if (typeof organizationIds !== "undefined") {
       await prisma.$transaction(async (tx) => {
         if (organizationIds.length === 0) {
           await tx.membership.deleteMany({

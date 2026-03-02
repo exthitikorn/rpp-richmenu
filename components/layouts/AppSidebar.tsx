@@ -13,15 +13,14 @@ type AppNavItem = {
 };
 
 const appNavItems = [
-  { label: "Dashboard", href: "/dashboard" },
-  { label: "Organizations", href: "/organizations" },
-  { label: "LINE Accounts", href: "/line-accounts" },
+  { label: "แดชบอร์ด", href: "/dashboard" },
+  { label: "องค์กร", href: "/organizations" },
+  { label: "บัญชี LINE", href: "/line-accounts" },
   { label: "Rich Menus", href: "/rich-menus" },
-  { label: "Import", href: "/import" },
-  { label: "Deploy Logs", href: "/deploy-logs" },
-  { label: "Analytics", href: "/analytics" },
-  { label: "Users", href: "/users" },
-  { label: "Settings", href: "/settings" },
+  { label: "นำเข้า", href: "/import" },
+  { label: "บันทึกการ Deploy", href: "/deploy-logs" },
+  { label: "การวิเคราะห์", href: "/analytics" },
+  { label: "จัดการผู้ใช้", href: "/users" },
 ] satisfies ReadonlyArray<AppNavItem>;
 
 const isPathActive = (pathname: string, href: string): boolean =>
