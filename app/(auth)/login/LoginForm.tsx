@@ -86,6 +86,18 @@ export function LoginForm() {
               เข้าสู่ระบบ
             </Button>
           </form>
+          <div className="mt-4">
+            <Button
+              className="w-full"
+              color="success"
+              variant="flat"
+              onPress={() => {
+                void signIn("line", { callbackUrl });
+              }}
+            >
+              เข้าสู่ระบบด้วย LINE
+            </Button>
+          </div>
           <p className="text-center text-default-500 text-sm mt-4">
             ยังไม่มีบัญชี?{" "}
             <Link as={NextLink} className="text-primary" href="/register">

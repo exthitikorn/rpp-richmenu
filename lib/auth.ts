@@ -12,10 +12,10 @@ export async function getSession() {
 export async function getCurrentUser() {
   const session = await getSession();
 
-  if (!session?.user?.email) return null;
+  if (!session?.user?.id) return null;
 
   const user = await prisma.user.findUnique({
-    where: { email: session.user.email },
+    where: { id: session.user.id },
     include: {
       memberships: {
         include: { organization: true },

@@ -8,13 +8,23 @@ export default async function ProfilePage() {
 
   if (!user) return null;
 
+  const userWithLine = user as typeof user & {
+    lineUserId?: string | null;
+    lineDisplayName?: string | null;
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
         description="จัดการข้อมูลโปรไฟล์และรหัสผ่านของบัญชีของคุณ"
         title="Profile"
       />
-      <ProfileForm email={user.email} initialName={user.name} />
+      <ProfileForm
+        email={user.email}
+        initialName={user.name}
+        lineConnected={Boolean(userWithLine.lineUserId)}
+        lineDisplayName={userWithLine.lineDisplayName ?? null}
+      />
     </div>
   );
 }

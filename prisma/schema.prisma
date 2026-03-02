@@ -35,6 +35,12 @@ model User {
   emailVerified  DateTime?
   passwordHash   String?
   isApproved     Boolean       @default(false)
+
+  // LINE Login binding
+  lineUserId      String?      @unique
+  lineDisplayName String?
+  linePictureUrl  String?
+
   memberships    Membership[]
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt

@@ -9,9 +9,16 @@ import { Button } from "@heroui/button";
 interface ProfileFormProps {
   initialName: string | null;
   email: string;
+  lineConnected: boolean;
+  lineDisplayName?: string | null;
 }
 
-export function ProfileForm({ initialName, email }: ProfileFormProps) {
+export function ProfileForm({
+  initialName,
+  email,
+  lineConnected,
+  lineDisplayName,
+}: ProfileFormProps) {
   const router = useRouter();
   const [name, setName] = useState(initialName ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -21,6 +28,17 @@ export function ProfileForm({ initialName, email }: ProfileFormProps) {
   const [saving, setSaving] = useState<"profile" | "password" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const [linking, setLinking] = useState(false);
+
+  function handleConnectLine() {
+    setError(null);
+    setSuccessMessage(null);
+    setLinking(true);
+
+    // redirect ออกไปทำ LINE Login
+    window.location.href = "/api/line/connect";
+  }
 
   async function handleSaveProfile() {
     setError(null);
@@ -187,6 +205,40 @@ export function ProfileForm({ initialName, email }: ProfileFormProps) {
             value={confirmPassword}
             onValueChange={setConfirmPassword}
           />
+        </CardBody>
+      </Card>
+
+      <Card as="section">
+        <CardHeader className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">เชื่อมต่อบัญชี LINE</h2>
+            <p className="text-sm text-default-500">
+              เชื่อมบัญชี LINE ของคุณกับบัญชีในระบบ
+              เพื่อให้ระบุตัวผู้ใช้จากกิจกรรมใน LINE ได้
+            </p>
+          </div>
+          <Button
+            color="success"
+            isDisabled={lineConnected}
+            isLoading={linking}
+            size="sm"
+            type="button"
+            onPress={handleConnectLine}
+          >
+            {lineConnected ? "เชื่อมต่อแล้ว" : "เชื่อมต่อ LINE"}
+          </Button>
+        </CardHeader>
+        <CardBody className="space-y-2">
+          {lineConnected ? (
+            <p className="text-sm text-default-600">
+              เชื่อมต่อกับ LINE แล้ว
+              {lineDisplayName ? ` (${lineDisplayName})` : ""}
+            </p>
+          ) : (
+            <p className="text-sm text-default-500">
+              ยังไม่ได้เชื่อมต่อบัญชี LINE
+            </p>
+          )}
         </CardBody>
       </Card>
     </div>
