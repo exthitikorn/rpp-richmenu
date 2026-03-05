@@ -38,6 +38,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
+  // ผู้ใช้ที่ล็อกอินด้วย LINE (หรืออื่น) ที่ยังไม่อนุมัติ → ไปกรอกข้อมูลที่ /register-line
+  const isApproved = (token.isApproved as boolean | undefined) === true;
+
+  if (!isApproved) {
+    return NextResponse.redirect(new URL("/register-line", request.url));
+  }
+
   return NextResponse.next();
 }
 

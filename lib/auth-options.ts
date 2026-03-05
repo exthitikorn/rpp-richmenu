@@ -104,6 +104,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: user.name ?? undefined,
           image: user.image ?? undefined,
+          isApproved: user.isApproved,
         };
       },
     }),
@@ -125,6 +126,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         (user as ProviderUser).id = dbUser.id;
+        (user as ProviderUser & { isApproved?: boolean }).isApproved =
+          dbUser.isApproved;
       }
 
       return true;
@@ -132,6 +135,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as { id: string }).id;
+        token.isApproved = (user as { isApproved?: boolean }).isApproved;
       }
 
       return token;

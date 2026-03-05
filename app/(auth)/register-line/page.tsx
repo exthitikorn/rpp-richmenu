@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { RegisterLineForm } from "./register-line-form";
+import { AwaitingApprovalMessage } from "./awaiting-approval-message";
 
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -22,6 +23,13 @@ export default async function RegisterLinePage() {
 
   if (dbUser.isApproved) {
     redirect("/dashboard");
+  }
+
+  // เคยกรอก register-line แล้ว (มีรหัสผ่าน) แต่ยังไม่อนุมัติ → แสดงข้อความรออนุมัติ ไม่ต้องกรอกฟอร์มอีก
+  const hasCompletedRegistration = Boolean(dbUser.passwordHash);
+
+  if (hasCompletedRegistration) {
+    return <AwaitingApprovalMessage />;
   }
 
   return <RegisterLineForm />;
