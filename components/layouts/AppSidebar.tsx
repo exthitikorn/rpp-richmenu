@@ -19,7 +19,6 @@ const appNavItems = [
   { label: "Rich Menus", href: "/rich-menus" },
   { label: "นำเข้า", href: "/import" },
   { label: "บันทึกการ Deploy", href: "/deploy-logs" },
-  { label: "การวิเคราะห์", href: "/analytics" },
   { label: "จัดการผู้ใช้", href: "/users" },
 ] satisfies ReadonlyArray<AppNavItem>;
 

@@ -30,6 +30,7 @@ export function ProfileForm({
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const [linking, setLinking] = useState(false);
+  const [unlinking, setUnlinking] = useState(false);
 
   function handleConnectLine() {
     setError(null);
@@ -38,6 +39,44 @@ export function ProfileForm({
 
     // redirect ออกไปทำ LINE Login
     window.location.href = "/api/line/connect";
+  }
+
+  async function handleDisconnectLine() {
+    setError(null);
+    setSuccessMessage(null);
+
+    const confirmed = window.confirm(
+      "คุณต้องการยกเลิกการเชื่อมต่อบัญชี LINE หรือไม่?",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setUnlinking(true);
+      const response = await fetch("/api/line/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error ?? "ยกเลิกการเชื่อมต่อ LINE ไม่สำเร็จ");
+      }
+
+      setSuccessMessage("ยกเลิกการเชื่อมต่อ LINE เรียบร้อยแล้ว");
+      router.refresh();
+    } catch (e) {
+      const message =
+        e instanceof Error ? e.message : "ยกเลิกการเชื่อมต่อ LINE ไม่สำเร็จ";
+
+      setError(message);
+    } finally {
+      setUnlinking(false);
+    }
   }
 
   async function handleSaveProfile() {
@@ -217,16 +256,30 @@ export function ProfileForm({
               เพื่อให้ระบุตัวผู้ใช้จากกิจกรรมใน LINE ได้
             </p>
           </div>
-          <Button
-            color="success"
-            isDisabled={lineConnected}
-            isLoading={linking}
-            size="sm"
-            type="button"
-            onPress={handleConnectLine}
-          >
-            {lineConnected ? "เชื่อมต่อแล้ว" : "เชื่อมต่อ LINE"}
-          </Button>
+          {lineConnected ? (
+            <Button
+              color="danger"
+              isLoading={unlinking}
+              size="sm"
+              type="button"
+              variant="flat"
+              onPress={() => {
+                void handleDisconnectLine();
+              }}
+            >
+              ยกเลิกการเชื่อมต่อ
+            </Button>
+          ) : (
+            <Button
+              color="success"
+              isLoading={linking}
+              size="sm"
+              type="button"
+              onPress={handleConnectLine}
+            >
+              เชื่อมต่อ LINE
+            </Button>
+          )}
         </CardHeader>
         <CardBody className="space-y-2">
           {lineConnected ? (

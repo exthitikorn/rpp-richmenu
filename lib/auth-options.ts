@@ -6,6 +6,76 @@ import bcrypt from "bcryptjs";
 
 import { prisma } from "@/lib/prisma";
 
+type LineProfile = {
+  sub?: string;
+  name?: string;
+  picture?: string;
+  email?: string;
+};
+
+type ProviderUser = {
+  id?: string;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+};
+
+async function upsertUserFromLineProfile(
+  lineProfile: LineProfile | null | undefined,
+  providerUser: ProviderUser | null | undefined,
+) {
+  const lineUserId = lineProfile?.sub;
+
+  if (!lineUserId) {
+    return null;
+  }
+
+  const displayName = lineProfile?.name ?? providerUser?.name ?? null;
+  const picture = lineProfile?.picture ?? providerUser?.image ?? null;
+  const emailFromLine = lineProfile?.email ?? providerUser?.email ?? null;
+
+  // 1) หา user จาก lineUserId ก่อน
+  let dbUser =
+    (await prisma.user.findUnique({
+      where: { lineUserId },
+    })) ?? null;
+
+  // 2) ถ้ายังไม่เจอและมีอีเมล ให้ลอง match ตามอีเมล (ผูก LINE เข้ากับ user เดิม)
+  if (!dbUser && emailFromLine) {
+    const byEmail = await prisma.user.findUnique({
+      where: { email: emailFromLine },
+    });
+
+    if (byEmail) {
+      dbUser = await prisma.user.update({
+        where: { id: byEmail.id },
+        data: {
+          lineUserId,
+          lineDisplayName: displayName,
+          linePictureUrl: picture,
+        },
+      });
+    }
+  }
+
+  // 3) ถ้ายังไม่มีก็สร้าง user ใหม่ (ให้รอ admin อนุมัติก่อน)
+  if (!dbUser) {
+    dbUser = await prisma.user.create({
+      data: {
+        email: emailFromLine ?? `${lineUserId}@line.local`, // fallback ให้ email เป็น unique
+        name: displayName,
+        image: picture,
+        isApproved: false,
+        lineUserId,
+        lineDisplayName: displayName,
+        linePictureUrl: picture,
+      },
+    });
+  }
+
+  return dbUser;
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -43,86 +113,54 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user, account, profile }) {
-      // Login ด้วย LINE
+    async signIn({ user, account, profile }) {
       if (account?.provider === "line") {
-        const lineProfile = profile as
-          | {
-              sub?: string;
-              name?: string;
-              picture?: string;
-              email?: string;
-            }
-          | null
-          | undefined;
+        const dbUser = await upsertUserFromLineProfile(
+          profile as LineProfile | null | undefined,
+          user as ProviderUser | null | undefined,
+        );
 
-        const lineUserId = lineProfile?.sub;
-
-        if (!lineUserId) {
-          return token;
-        }
-
-        const displayName = lineProfile?.name ?? user?.name ?? undefined;
-        const picture = lineProfile?.picture ?? user?.image ?? undefined;
-        const emailFromLine = lineProfile?.email ?? user?.email ?? undefined;
-
-        // 1) หา user จาก lineUserId ก่อน
-        let dbUser =
-          (await prisma.user.findUnique({
-            where: { lineUserId },
-          })) ?? null;
-
-        // 2) ถ้ายังไม่เจอและมีอีเมล ให้ลอง match ตามอีเมล (ผูก LINE เข้ากับ user เดิม)
-        if (!dbUser && emailFromLine) {
-          const byEmail = await prisma.user.findUnique({
-            where: { email: emailFromLine },
-          });
-
-          if (byEmail) {
-            dbUser = await prisma.user.update({
-              where: { id: byEmail.id },
-              data: {
-                lineUserId,
-                lineDisplayName: displayName ?? null,
-                linePictureUrl: picture ?? null,
-              },
-            });
-          }
-        }
-
-        // 3) ถ้ายังไม่มีก็สร้าง user ใหม่ (อนุมัติให้ใช้งานได้เลย)
         if (!dbUser) {
-          dbUser = await prisma.user.create({
-            data: {
-              email: emailFromLine ?? `${lineUserId}@line.local`, // fallback ให้ email เป็น unique
-              name: displayName ?? null,
-              image: picture ?? null,
-              isApproved: true,
-              lineUserId,
-              lineDisplayName: displayName ?? null,
-              linePictureUrl: picture ?? null,
-            },
-          });
+          return "/login?error=LineProfileMissing";
         }
 
-        token.id = dbUser.id;
-
-        return token;
+        (user as ProviderUser).id = dbUser.id;
       }
 
-      // Login แบบอีเมล/รหัสผ่าน
-      if (user) token.id = (user as { id: string }).id;
+      return true;
+    },
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = (user as { id: string }).id;
+      }
 
       return token;
     },
     async session({ session, token }) {
-      if (session.user) session.user.id = token.id as string;
+      if (!session.user) return session;
+
+      const dbUser = await prisma.user.findUnique({
+        where: { id: token.id as string },
+      });
+
+      if (dbUser) {
+        session.user.id = dbUser.id;
+        session.user.email = dbUser.email ?? session.user.email ?? null;
+        session.user.name =
+          dbUser.name ?? dbUser.lineDisplayName ?? session.user.name ?? null;
+        session.user.image =
+          dbUser.image ?? dbUser.linePictureUrl ?? session.user.image ?? null;
+        session.user.isApproved = dbUser.isApproved;
+      } else {
+        session.user.id = token.id as string;
+      }
 
       return session;
     },
   },
   pages: {
     signIn: "/login",
+    error: "/login",
   },
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   secret:
@@ -136,6 +174,7 @@ declare module "next-auth" {
       email?: string | null;
       name?: string | null;
       image?: string | null;
+      isApproved?: boolean;
     };
   }
 }

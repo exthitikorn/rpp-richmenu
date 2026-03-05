@@ -72,7 +72,7 @@ export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
         className="hidden sm:flex basis-1/5 sm:basis-full"
         justify="end"
       >
-        {status === "loading" ? null : session?.user ? (
+        {status === "loading" ? null : session?.user?.isApproved ? (
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Button

@@ -1,5 +1,12 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
+import { AnalyticsCharts } from "../analytics/AnalyticsCharts";
+
+import {
+  type RichMenuAnalyticsMenu,
+  RichMenuAnalyticsSection,
+} from "./RichMenuAnalyticsSection";
+
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
@@ -8,39 +15,168 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const [orgCount, lineAccountCount, richMenuCount, recentClicks] =
-    await Promise.all([
-      prisma.organization.count({
-        where: {
+
+  const isOwner = user.memberships.some((m) => m.role === "OWNER");
+
+  const [
+    orgCount,
+    lineAccountCount,
+    richMenuCount,
+    totalClicks,
+    byAreaRaw,
+    byMenuRaw,
+    pendingSummary,
+  ] = await Promise.all([
+    prisma.organization.count({
+      where: {
+        memberships: { some: { userId: user.id } },
+      },
+    }),
+    prisma.lineAccount.count({
+      where: {
+        organization: {
           memberships: { some: { userId: user.id } },
         },
-      }),
-      prisma.lineAccount.count({
-        where: {
+      },
+    }),
+    prisma.richMenu.count({
+      where: {
+        lineAccount: {
           organization: {
             memberships: { some: { userId: user.id } },
           },
         },
-      }),
-      prisma.richMenu.count({
-        where: {
-          lineAccount: {
-            organization: {
-              memberships: { some: { userId: user.id } },
-            },
+      },
+    }),
+    prisma.clickEvent.count({
+      where: {
+        lineAccount: {
+          organization: {
+            memberships: { some: { userId: user.id } },
           },
         },
-      }),
-      prisma.clickEvent.count({
-        where: {
-          lineAccount: {
-            organization: {
-              memberships: { some: { userId: user.id } },
-            },
-          },
+      },
+    }),
+    prisma.clickEvent.groupBy({
+      by: ["richMenuId", "areaIndex"],
+      where: {
+        lineAccount: {
+          organization: { memberships: { some: { userId: user.id } } },
         },
-      }),
-    ]);
+      },
+      _count: true,
+    }),
+    prisma.clickEvent.groupBy({
+      by: ["richMenuId"],
+      where: {
+        lineAccount: {
+          organization: { memberships: { some: { userId: user.id } } },
+        },
+      },
+      _count: true,
+    }),
+    isOwner
+      ? (async () => {
+          const [users, count] = await Promise.all([
+            prisma.user.findMany({
+              where: { isApproved: false },
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              select: {
+                id: true,
+                email: true,
+                name: true,
+                createdAt: true,
+              },
+            }),
+            prisma.user.count({
+              where: { isApproved: false },
+            }),
+          ]);
+
+          return { users, count };
+        })()
+      : Promise.resolve({ users: [], count: 0 }),
+  ]);
+
+  const richMenuIds = Array.from(
+    new Set(byMenuRaw.map((m) => m.richMenuId)),
+  ).filter(Boolean);
+
+  const richMenus =
+    richMenuIds.length > 0
+      ? await prisma.richMenu.findMany({
+          where: { id: { in: richMenuIds } },
+          include: {
+            areas: { orderBy: { order: "asc" } },
+            lineAccount: true,
+          },
+        })
+      : [];
+
+  const menuNames: Record<string, string> = {};
+
+  richMenus.forEach((menu) => {
+    menuNames[menu.id] = menu.name;
+  });
+
+  const byArea = [...byAreaRaw].sort(
+    (a, b) =>
+      ((b as { _count: number })._count ?? 0) -
+      ((a as { _count: number })._count ?? 0),
+  );
+
+  const byMenu = byMenuRaw.map((m) => ({
+    richMenuId: m.richMenuId,
+    count: (m as { _count: number })._count ?? 0,
+  }));
+
+  const areaCountsByMenu = new Map<string, Map<number, number>>();
+
+  byAreaRaw.forEach((item) => {
+    const current =
+      areaCountsByMenu.get(item.richMenuId) ?? new Map<number, number>();
+
+    current.set(item.areaIndex, (item as { _count: number })._count ?? 0);
+    areaCountsByMenu.set(item.richMenuId, current);
+  });
+
+  const totalClicksByMenu = new Map<string, number>();
+
+  byMenu.forEach((item) => {
+    totalClicksByMenu.set(item.richMenuId, item.count);
+  });
+
+  const richMenuAnalyticsMenus: RichMenuAnalyticsMenu[] = richMenus.map(
+    (menu) => {
+      const areaCounts = areaCountsByMenu.get(menu.id);
+      const areas = menu.areas
+        .slice()
+        .sort((a, b) => a.order - b.order)
+        .map((area, index) => ({
+          id: area.id,
+          x: area.x,
+          y: area.y,
+          width: area.width,
+          height: area.height,
+          index,
+          clickCount: areaCounts?.get(index) ?? 0,
+        }));
+
+      const menuTotalClicks = totalClicksByMenu.get(menu.id) ?? 0;
+
+      return {
+        id: menu.id,
+        name: menu.name,
+        lineAccountName: menu.lineAccount.name,
+        width: menu.width,
+        height: menu.height,
+        imageUrl: menu.imageUrl,
+        totalClicks: menuTotalClicks,
+        areas,
+      };
+    },
+  );
 
   return (
     <div className="space-y-6">
@@ -70,10 +206,74 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="pb-0">Total Clicks</CardHeader>
           <CardBody className="pt-1">
-            <p className="text-2xl font-semibold">{recentClicks}</p>
+            <p className="text-2xl font-semibold">{totalClicks}</p>
           </CardBody>
         </Card>
       </div>
+
+      {isOwner && pendingSummary.count > 0 ? (
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <div>
+              <p className="font-semibold">ผู้ใช้รออนุมัติ</p>
+              <p className="text-sm text-default-500">
+                มีผู้ใช้รออนุมัติทั้งหมด{" "}
+                <span className="font-semibold">{pendingSummary.count}</span> คน
+                (แสดงรายการล่าสุด 5 คน)
+              </p>
+            </div>
+          </CardHeader>
+          <CardBody>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-default-200 text-left text-xs text-default-500">
+                    <th className="py-2 pr-4">อีเมล</th>
+                    <th className="py-2 pr-4">ชื่อ</th>
+                    <th className="py-2 pr-4">วันที่สร้าง</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingSummary.users.map((u) => (
+                    <tr
+                      key={u.id}
+                      className="border-b border-default-100 last:border-0"
+                    >
+                      <td className="py-1.5 pr-4">{u.email}</td>
+                      <td className="py-1.5 pr-4">{u.name ?? "—"}</td>
+                      <td className="py-1.5 pr-4 text-default-500">
+                        {u.createdAt.toLocaleString("th-TH")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardBody>
+        </Card>
+      ) : null}
+
+      {byMenu.length > 0 && byArea.length > 0 ? (
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <p className="font-semibold">สถิติภาพรวมการกด Rich Menu</p>
+            </CardHeader>
+            <CardBody>
+              <AnalyticsCharts
+                byArea={byArea}
+                byMenu={byMenu}
+                menuNames={menuNames}
+              />
+            </CardBody>
+          </Card>
+
+          <RichMenuAnalyticsSection
+            menus={richMenuAnalyticsMenus}
+            totalClicks={totalClicks}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

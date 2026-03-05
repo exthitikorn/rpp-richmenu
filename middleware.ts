@@ -11,7 +11,6 @@ const protectedPaths = [
   "/users",
   "/import",
   "/deploy-logs",
-  "/analytics",
   "/settings",
 ];
 
