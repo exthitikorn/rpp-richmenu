@@ -143,8 +143,14 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (!session.user) return session;
 
+      const userId = token.id as string | undefined;
+
+      if (!userId) {
+        return session;
+      }
+
       const dbUser = await prisma.user.findUnique({
-        where: { id: token.id as string },
+        where: { id: userId },
       });
 
       if (dbUser) {
@@ -156,7 +162,7 @@ export const authOptions: NextAuthOptions = {
           dbUser.image ?? dbUser.linePictureUrl ?? session.user.image ?? null;
         session.user.isApproved = dbUser.isApproved;
       } else {
-        session.user.id = token.id as string;
+        session.user.id = userId;
       }
 
       return session;

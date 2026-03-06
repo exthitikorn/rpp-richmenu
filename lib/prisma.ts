@@ -24,6 +24,5 @@ export const prisma =
     adapter,
   });
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
+// Cache ในทุก environment เพื่อ reuse connection บน Vercel serverless (warm instance)
+globalForPrisma.prisma = prisma;
