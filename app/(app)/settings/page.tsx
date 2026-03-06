@@ -13,12 +13,12 @@ export default async function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <PageHeader
         description="ตั้งค่าระบบและการแสดงผลของไซต์"
         title="Settings"
       />
-      <Card>
+      <Card className="w-full min-w-0 overflow-hidden">
         <CardHeader>บัญชี</CardHeader>
         <CardBody>
           <p className="text-default-600">{user.email}</p>

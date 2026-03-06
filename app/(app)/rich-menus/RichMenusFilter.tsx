@@ -33,7 +33,7 @@ export function RichMenusFilter({ currentLineAccountId, lineAccounts }: Props) {
 
   return (
     <Select
-      className="max-w-xs"
+      className="w-full sm:max-w-xs"
       items={[
         { id: "all", name: "ทั้งหมด" },
         ...lineAccounts.map((la) => ({ id: la.id, name: la.name })),

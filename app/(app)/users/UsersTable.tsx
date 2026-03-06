@@ -9,6 +9,7 @@ import type {
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
+import { Card, CardBody } from "@heroui/card";
 import {
   Modal,
   ModalBody,
@@ -27,6 +28,8 @@ import {
 } from "@heroui/table";
 import { Switch } from "@heroui/switch";
 import { Select, SelectItem } from "@heroui/select";
+
+import { useAppToast } from "@/components/AppToastProvider";
 
 type UserWithRelations = User & {
   memberships: (Membership & {
@@ -75,6 +78,7 @@ function DeleteUserButton({ id, email }: { id: string; email: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useAppToast();
 
   async function handleDelete() {
     setError("");
@@ -87,7 +91,10 @@ function DeleteUserButton({ id, email }: { id: string; email: string }) {
       const data = (await res.json()) as ApiResponse;
 
       if (!res.ok || !data.success) {
-        setError(data.error ?? "ลบไม่สำเร็จ");
+        const message = data.error ?? "ลบไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
         setLoading(false);
 
         return;
@@ -95,9 +102,11 @@ function DeleteUserButton({ id, email }: { id: string; email: string }) {
 
       setLoading(false);
       onOpenChange();
+      toast.success("ลบผู้ใช้เรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
       setLoading(false);
     }
   }
@@ -171,6 +180,7 @@ function EditUserOrganizationsButton({
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const toast = useAppToast();
 
   async function handleSave() {
     setError("");
@@ -191,7 +201,10 @@ function EditUserOrganizationsButton({
       const data = (await res.json()) as ApiResponse;
 
       if (!res.ok || !data.success) {
-        setError(data.error ?? "บันทึกองค์กรไม่สำเร็จ");
+        const message = data.error ?? "บันทึกองค์กรไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
         setLoading(false);
 
         return;
@@ -199,9 +212,11 @@ function EditUserOrganizationsButton({
 
       setLoading(false);
       onOpenChange();
+      toast.success("บันทึกองค์กรของผู้ใช้เรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
       setLoading(false);
     }
   }
@@ -318,6 +333,59 @@ function EditUserOrganizationsButton({
   );
 }
 
+function UserCardItem({
+  user,
+  currentUserId,
+  updatingId,
+  onToggleApproved,
+  organizations,
+}: {
+  user: UserWithRelations;
+  currentUserId: string;
+  updatingId: string | null;
+  onToggleApproved: (user: UserWithRelations) => void;
+  organizations: OrganizationOption[];
+}) {
+  return (
+    <Card className="w-full shadow-sm">
+      <CardBody className="gap-0 p-0">
+        <div className="p-4 pb-3">
+          <p className="text-sm font-semibold leading-tight">{user.email}</p>
+          <p className="mt-0.5 text-xs text-default-500">{user.name ?? "—"}</p>
+          <p className="mt-1 text-xs text-default-500 line-clamp-2">
+            {user.memberships.length === 0
+              ? "—"
+              : user.memberships.map(formatMembershipDisplay).join(", ")}
+          </p>
+          <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="text-xs text-default-500">อนุมัติ</span>
+            <Switch
+              aria-label={
+                user.isApproved
+                  ? "ยกเลิกการอนุมัติผู้ใช้งาน"
+                  : "อนุมัติผู้ใช้งาน"
+              }
+              isDisabled={user.id === currentUserId || updatingId === user.id}
+              isSelected={user.isApproved}
+              size="sm"
+              onValueChange={() => onToggleApproved(user)}
+            />
+          </div>
+        </div>
+        <div className="border-t border-default-200 px-4 py-3 justify-center flex">
+          <div className="flex flex-wrap items-center gap-2 [&_button]:whitespace-nowrap">
+            <EditUserOrganizationsButton
+              organizations={organizations}
+              user={user}
+            />
+            <DeleteUserButton email={user.email} id={user.id} />
+          </div>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
 export function UsersTable({
   users,
   currentUserId,
@@ -330,6 +398,7 @@ export function UsersTable({
   const router = useRouter();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const toast = useAppToast();
 
   async function toggleApproved(user: UserWithRelations) {
     setError("");
@@ -344,16 +413,21 @@ export function UsersTable({
       const data = (await res.json()) as ApiResponse;
 
       if (!res.ok || !data.success) {
-        setError(data.error ?? "อัปเดตสถานะไม่สำเร็จ");
+        const message = data.error ?? "อัปเดตสถานะไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
         setUpdatingId(null);
 
         return;
       }
 
       setUpdatingId(null);
+      toast.success("อัปเดตสถานะผู้ใช้เรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
       setUpdatingId(null);
     }
   }
@@ -365,64 +439,89 @@ export function UsersTable({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 overflow-x-auto">
       {error && (
         <p className="text-danger text-sm" role="alert">
           {error}
         </p>
       )}
-      <Table
-        fullWidth
-        isStriped
-        removeWrapper
+
+      {/* Mobile: Card list */}
+      <div
         aria-label="รายการผู้ใช้"
-        classNames={{
-          td: "align-middle",
-        }}
+        className="flex flex-col gap-3 md:hidden"
+        role="list"
       >
-        <TableHeader>
-          <TableColumn className="text-center">อีเมล</TableColumn>
-          <TableColumn className="text-center">ชื่อ</TableColumn>
-          <TableColumn className="text-center">องค์กร / สิทธิ์</TableColumn>
-          <TableColumn className="text-center">อนุมัติ</TableColumn>
-          <TableColumn className="text-center">จัดการ</TableColumn>
-        </TableHeader>
-        <TableBody>
-          {users.map((user) => (
-            <TableRow key={user.id}>
-              <TableCell className="text-center">{user.email}</TableCell>
-              <TableCell className="text-center">{user.name ?? "—"}</TableCell>
-              <TableCell className="text-center text-default-500 text-sm">
-                {user.memberships.length === 0
-                  ? "—"
-                  : user.memberships.map(formatMembershipDisplay).join(", ")}
-              </TableCell>
-              <TableCell className="text-center">
-                <Switch
-                  aria-label={
-                    user.isApproved
-                      ? "ยกเลิกการอนุมัติผู้ใช้งาน"
-                      : "อนุมัติผู้ใช้งาน"
-                  }
-                  isDisabled={
-                    user.id === currentUserId || updatingId === user.id
-                  }
-                  isSelected={user.isApproved}
-                  size="sm"
-                  onValueChange={() => toggleApproved(user)}
-                />
-              </TableCell>
-              <TableCell className="text-center space-x-2">
-                <EditUserOrganizationsButton
-                  organizations={organizations}
-                  user={user}
-                />
-                <DeleteUserButton email={user.email} id={user.id} />
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+        {users.map((user) => (
+          <UserCardItem
+            key={user.id}
+            currentUserId={currentUserId}
+            organizations={organizations}
+            updatingId={updatingId}
+            user={user}
+            onToggleApproved={toggleApproved}
+          />
+        ))}
+      </div>
+
+      {/* Desktop: Table */}
+      <div className="hidden md:block">
+        <Table
+          fullWidth
+          isStriped
+          removeWrapper
+          aria-label="รายการผู้ใช้"
+          classNames={{
+            base: "min-w-[520px]",
+            td: "align-middle",
+          }}
+        >
+          <TableHeader>
+            <TableColumn className="text-center">อีเมล</TableColumn>
+            <TableColumn className="text-center">ชื่อ</TableColumn>
+            <TableColumn className="text-center">องค์กร / สิทธิ์</TableColumn>
+            <TableColumn className="text-center">อนุมัติ</TableColumn>
+            <TableColumn className="text-center">จัดการ</TableColumn>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="text-center">{user.email}</TableCell>
+                <TableCell className="text-center">
+                  {user.name ?? "—"}
+                </TableCell>
+                <TableCell className="text-center text-default-500 text-sm">
+                  {user.memberships.length === 0
+                    ? "—"
+                    : user.memberships.map(formatMembershipDisplay).join(", ")}
+                </TableCell>
+                <TableCell className="text-center">
+                  <Switch
+                    aria-label={
+                      user.isApproved
+                        ? "ยกเลิกการอนุมัติผู้ใช้งาน"
+                        : "อนุมัติผู้ใช้งาน"
+                    }
+                    isDisabled={
+                      user.id === currentUserId || updatingId === user.id
+                    }
+                    isSelected={user.isApproved}
+                    size="sm"
+                    onValueChange={() => toggleApproved(user)}
+                  />
+                </TableCell>
+                <TableCell className="text-center space-x-2">
+                  <EditUserOrganizationsButton
+                    organizations={organizations}
+                    user={user}
+                  />
+                  <DeleteUserButton email={user.email} id={user.id} />
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

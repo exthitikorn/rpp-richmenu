@@ -13,9 +13,12 @@ import {
   useDisclosure,
 } from "@heroui/modal";
 
+import { useAppToast } from "@/components/AppToastProvider";
+
 export function CreateOrganizationForm() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
+  const toast = useAppToast();
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [loading, setLoading] = useState(false);
@@ -43,7 +46,10 @@ export function CreateOrganizationForm() {
       const data = (await res.json()) as { success?: boolean; error?: string };
 
       if (!res.ok || !data.success) {
-        setError(data.error ?? "สร้างไม่สำเร็จ");
+        const message = data.error ?? "สร้างไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
         setLoading(false);
 
         return;
@@ -52,9 +58,11 @@ export function CreateOrganizationForm() {
       setName("");
       setSlug("");
       setLoading(false);
+      toast.success("สร้างองค์กรเรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
       setLoading(false);
     }
   }
@@ -64,7 +72,12 @@ export function CreateOrganizationForm() {
       <Button color="primary" onPress={onOpen}>
         สร้างองค์กร
       </Button>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal
+        backdrop="blur"
+        isOpen={isOpen}
+        placement="center"
+        onOpenChange={onOpenChange}
+      >
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader>สร้างองค์กร</ModalHeader>

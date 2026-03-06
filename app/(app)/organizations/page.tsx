@@ -19,8 +19,12 @@ export default async function OrganizationsPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <PageHeader actions={<CreateOrganizationForm />} title="Organizations" />
+    <div className="w-full min-w-0 max-w-full space-y-6">
+      <PageHeader
+        actions={<CreateOrganizationForm />}
+        description="จัดการองค์กรและสิทธิ์การเข้าถึง"
+        title="องค์กร"
+      />
       <OrganizationList organizations={organizations} />
     </div>
   );

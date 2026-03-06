@@ -11,6 +11,8 @@ import { Tabs, Tab } from "@heroui/tabs";
 import { Select, SelectItem } from "@heroui/select";
 import { Image } from "@heroui/image";
 
+import { useAppToast } from "@/components/AppToastProvider";
+
 interface SettingsFormProps {
   initialSettings: SiteSettings;
 }
@@ -57,6 +59,7 @@ const THEME_PRESETS: Record<
 
 export function SettingsForm({ initialSettings }: SettingsFormProps) {
   const router = useRouter();
+  const toast = useAppToast();
   const [siteName, setSiteName] = useState(initialSettings.siteName);
   const [siteDescription, setSiteDescription] = useState(
     initialSettings.siteDescription,
@@ -183,12 +186,14 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
 
       setSuccessMessage("บันทึกการตั้งค่าทั่วไปเรียบร้อยแล้ว");
       setImageError(null);
+      toast.success("บันทึกการตั้งค่าทั่วไปเรียบร้อยแล้ว");
       router.refresh();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "บันทึกการตั้งค่าไม่สำเร็จ";
 
       setImageError(message);
+      toast.error(message);
     } finally {
       setSavingSection(null);
     }
@@ -226,6 +231,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
         error instanceof Error ? error.message : "บันทึกการตั้งค่าไม่สำเร็จ";
 
       setImageError(message);
+      toast.error(message);
     } finally {
       setSavingSection(null);
     }
@@ -255,11 +261,13 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
       }
 
       setSuccessMessage("บันทึกการตั้งค่า Footer เรียบร้อยแล้ว");
+      toast.success("บันทึกการตั้งค่า Footer เรียบร้อยแล้ว");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "บันทึกการตั้งค่าไม่สำเร็จ";
 
       setImageError(message);
+      toast.error(message);
     } finally {
       setSavingSection(null);
     }
@@ -270,6 +278,7 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
     setCopyrightText(initialSettings.copyrightText);
     setSocialLinks(initialSettings.socialLinks);
     setSuccessMessage("รีเซ็ตค่า Footer กลับเป็นค่าปัจจุบันแล้ว");
+    toast.success("รีเซ็ตค่า Footer กลับเป็นค่าปัจจุบันแล้ว");
   }
 
   function handleSocialLinkChange(
@@ -317,21 +326,11 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
             }}
           >
             <Card as="section">
-              <CardHeader className="flex flex-col items-start gap-1 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">General Settings</h2>
-                  <p className="text-sm text-default-500">
-                    ตั้งค่าชื่อเว็บไซต์ คำอธิบาย Logo และ Favicon
-                  </p>
-                </div>
-                <Button
-                  color="primary"
-                  isLoading={savingSection === "general"}
-                  size="sm"
-                  type="submit"
-                >
-                  บันทึก
-                </Button>
+              <CardHeader>
+                <h2 className="text-lg font-semibold">General Settings</h2>
+                <p className="text-sm text-default-500">
+                  ตั้งค่าชื่อเว็บไซต์ คำอธิบาย Logo และ Favicon
+                </p>
               </CardHeader>
               <CardBody className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
@@ -455,6 +454,16 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                     )}
                   </div>
                 </div>
+
+                <div className="flex justify-end border-t border-default-200 pt-4">
+                  <Button
+                    color="primary"
+                    isLoading={savingSection === "general"}
+                    type="submit"
+                  >
+                    บันทึก
+                  </Button>
+                </div>
               </CardBody>
             </Card>
           </form>
@@ -468,21 +477,11 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
             }}
           >
             <Card as="section">
-              <CardHeader className="flex flex-col items-start gap-1 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">Appearance Settings</h2>
-                  <p className="text-sm text-default-500">
-                    เลือกโทนสีหลักของระบบจากชุดธีมที่แนะนำ
-                  </p>
-                </div>
-                <Button
-                  color="primary"
-                  isLoading={savingSection === "appearance"}
-                  size="sm"
-                  type="submit"
-                >
-                  บันทึก
-                </Button>
+              <CardHeader>
+                <h2 className="text-lg font-semibold">Appearance Settings</h2>
+                <p className="text-sm text-default-500">
+                  เลือกโทนสีหลักของระบบจากชุดธีมที่แนะนำ
+                </p>
               </CardHeader>
               <CardBody className="space-y-4">
                 <div className="space-y-2">
@@ -546,6 +545,16 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                     </div>
                   </div>
                 </div>
+
+                <div className="flex justify-end border-t border-default-200 pt-4">
+                  <Button
+                    color="primary"
+                    isLoading={savingSection === "appearance"}
+                    type="submit"
+                  >
+                    บันทึก
+                  </Button>
+                </div>
               </CardBody>
             </Card>
           </form>
@@ -559,30 +568,11 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
             }}
           >
             <Card as="section">
-              <CardHeader className="flex flex-col items-start gap-1 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold">Footer Settings</h2>
-                  <p className="text-sm text-default-500">
-                    ตั้งค่าข้อความส่วนท้าย และลิงก์ Social Media
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="bordered"
-                    onPress={handleResetFooterToDefault}
-                  >
-                    รีเซ็ต
-                  </Button>
-                  <Button
-                    color="primary"
-                    isLoading={savingSection === "footer"}
-                    size="sm"
-                    type="submit"
-                  >
-                    บันทึก
-                  </Button>
-                </div>
+              <CardHeader>
+                <h2 className="text-lg font-semibold">Footer Settings</h2>
+                <p className="text-sm text-default-500">
+                  ตั้งค่าข้อความส่วนท้าย และลิงก์ Social Media
+                </p>
               </CardHeader>
               <CardBody className="space-y-4">
                 <div className="space-y-2">
@@ -652,6 +642,23 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-end gap-2 border-t border-default-200 pt-4">
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    onPress={handleResetFooterToDefault}
+                  >
+                    รีเซ็ต
+                  </Button>
+                  <Button
+                    color="primary"
+                    isLoading={savingSection === "footer"}
+                    type="submit"
+                  >
+                    บันทึก
+                  </Button>
                 </div>
               </CardBody>
             </Card>

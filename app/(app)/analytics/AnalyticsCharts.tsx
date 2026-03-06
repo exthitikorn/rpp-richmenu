@@ -1,5 +1,7 @@
 "use client";
 
+import type { LabelProps } from "recharts";
+
 import {
   BarChart,
   Bar,
@@ -8,10 +10,69 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LabelList,
+  Text,
 } from "recharts";
 
 type ByMenu = { richMenuId: string; count: number };
 type ByArea = { richMenuId: string; areaIndex: number; _count: number };
+
+type SingleLineBarLabelProps = LabelProps & {
+  value?: string | number;
+  width?: number | string;
+  height?: number | string;
+  x?: number;
+  y?: number;
+};
+
+const SingleLineBarLabel = (props: SingleLineBarLabelProps) => {
+  const { value } = props;
+
+  const viewBox =
+    props.viewBox && typeof props.viewBox === "object"
+      ? (props.viewBox as unknown as {
+          x?: number;
+          y?: number;
+          width?: number;
+          height?: number;
+        })
+      : undefined;
+
+  const x = typeof props.x === "number" ? props.x : (viewBox?.x ?? 0);
+  const y = typeof props.y === "number" ? props.y : (viewBox?.y ?? 0);
+  const width =
+    typeof props.width === "number"
+      ? props.width
+      : typeof viewBox?.width === "number"
+        ? viewBox.width
+        : undefined;
+  const height =
+    typeof props.height === "number"
+      ? props.height
+      : typeof viewBox?.height === "number"
+        ? viewBox.height
+        : 0;
+
+  const pad = Math.max(props.offset ?? 0, 0);
+  const text = value != null ? String(value) : "";
+  const yCenter = y + height / 2;
+
+  return (
+    <Text
+      fill="white"
+      fontSize={14}
+      maxLines={1}
+      scaleToFit={false}
+      textAnchor="start"
+      verticalAnchor="middle"
+      width={typeof width === "number" ? Math.max(width - pad * 2, 0) : width}
+      x={x + pad}
+      y={yCenter}
+    >
+      {text}
+    </Text>
+  );
+};
 
 export function AnalyticsCharts({
   byArea,
@@ -27,10 +88,18 @@ export function AnalyticsCharts({
     คลิก: m.count,
   }));
 
-  const areaData = byArea.slice(0, 15).map((a) => ({
-    name: `เมนู ${menuNames[a.richMenuId] ?? a.richMenuId.slice(0, 6)} ปุ่ม #${a.areaIndex + 1}`,
-    คลิก: a._count,
-  }));
+  const areaData = byArea.slice(0, 15).map((a, index) => {
+    const menuName = menuNames[a.richMenuId] ?? a.richMenuId.slice(0, 6);
+    const label = `เมนู ${menuName} ปุ่ม #${a.areaIndex + 1}`;
+
+    return {
+      // ป้ายสั้นๆ บนแกน Y เพื่อไม่ให้ยาวเกินไป
+      indexLabel: `#${index + 1}`,
+      // ชื่อปุ่มแบบเต็มสำหรับแสดงบนแท่งกราฟ
+      label,
+      คลิก: a._count,
+    };
+  });
 
   const chartTheme = {
     gridStroke: "hsl(var(--heroui-default-200))",
@@ -50,7 +119,7 @@ export function AnalyticsCharts({
             minWidth={0}
             width="100%"
           >
-            <BarChart data={menuData}>
+            <BarChart responsive data={menuData}>
               <CartesianGrid
                 stroke={chartTheme.gridStroke}
                 strokeDasharray="3 3"
@@ -58,7 +127,7 @@ export function AnalyticsCharts({
               <XAxis
                 dataKey="name"
                 stroke={chartTheme.axisTick}
-                tick={{ fontSize: 12, fill: chartTheme.axisTick }}
+                tick={{ fontSize: 14, fill: chartTheme.axisTick }}
               />
               <YAxis
                 stroke={chartTheme.axisTick}
@@ -75,7 +144,7 @@ export function AnalyticsCharts({
               <Bar
                 dataKey="คลิก"
                 fill={chartTheme.barPrimary}
-                radius={[4, 4, 0, 0]}
+                radius={[10, 10, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -90,7 +159,7 @@ export function AnalyticsCharts({
             minWidth={0}
             width="100%"
           >
-            <BarChart data={areaData} layout="vertical" margin={{ left: 80 }}>
+            <BarChart data={areaData} layout="vertical" margin={{ left: 30 }}>
               <CartesianGrid
                 stroke={chartTheme.gridStroke}
                 strokeDasharray="3 3"
@@ -101,11 +170,11 @@ export function AnalyticsCharts({
                 type="number"
               />
               <YAxis
-                dataKey="name"
+                dataKey="indexLabel"
                 stroke={chartTheme.axisTick}
-                tick={{ fontSize: 11, fill: chartTheme.axisTick }}
+                tick={{ fontSize: 14, fill: chartTheme.axisTick }}
                 type="category"
-                width={80}
+                width={10}
               />
               <Tooltip
                 contentStyle={{
@@ -118,8 +187,15 @@ export function AnalyticsCharts({
               <Bar
                 dataKey="คลิก"
                 fill={chartTheme.barSecondary}
-                radius={[0, 4, 4, 0]}
-              />
+                radius={[0, 10, 10, 0]}
+              >
+                <LabelList
+                  content={<SingleLineBarLabel />}
+                  dataKey="label"
+                  offset={10}
+                  position="insideLeft"
+                />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>

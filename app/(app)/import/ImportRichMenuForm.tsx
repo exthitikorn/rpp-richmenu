@@ -7,6 +7,8 @@ import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
+import { useAppToast } from "@/components/AppToastProvider";
+
 type LineAccountWithOrg = {
   id: string;
   name: string;
@@ -21,6 +23,7 @@ export function ImportRichMenuForm({
   defaultLineAccountId: string | null;
 }) {
   const router = useRouter();
+  const toast = useAppToast();
   const [lineAccountId, setLineAccountId] = useState(
     defaultLineAccountId ?? "",
   );
@@ -34,7 +37,10 @@ export function ImportRichMenuForm({
     const trimmedJson = jsonText.trim();
 
     if (!lineAccountId || !trimmedJson || !imageFile) {
-      setError("กรุณาเลือก LINE Account, วาง JSON และอัปโหลดรูปภาพ");
+      const message = "กรุณาเลือก LINE Account, วาง JSON และอัปโหลดรูปภาพ";
+
+      setError(message);
+      toast.error(message);
 
       return;
     }
@@ -62,26 +68,32 @@ export function ImportRichMenuForm({
       };
 
       if (!res.ok || !data.success) {
-        setError(data.error ?? "Import ไม่สำเร็จ");
+        const message = data.error ?? "Import ไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
         setLoading(false);
 
         return;
       }
       if (data.richMenuId) {
+        toast.success("นำเข้า Rich Menu เรียบร้อยแล้ว");
         router.push(`/rich-menus/${data.richMenuId}/edit`);
 
         return;
       }
       setLoading(false);
+      toast.success("นำเข้า Rich Menu เรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
       setLoading(false);
     }
   }
 
   return (
-    <Card className="w-full">
+    <Card className="w-full min-w-0 overflow-hidden">
       <CardHeader className="flex flex-col items-start gap-1 pb-2">
         <h2 className="text-lg font-semibold">นำเข้า Rich Menu</h2>
         <p className="text-sm text-default-500">

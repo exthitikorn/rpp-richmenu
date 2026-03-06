@@ -16,6 +16,8 @@ import {
 } from "@heroui/modal";
 import { Select, SelectItem } from "@heroui/select";
 
+import { useAppToast } from "@/components/AppToastProvider";
+
 export function CreateLineAccountForm({
   organizations,
 }: {
@@ -23,6 +25,7 @@ export function CreateLineAccountForm({
 }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
+  const toast = useAppToast();
   const [organizationId, setOrganizationId] = useState("");
   const [name, setName] = useState("");
   const [channelId, setChannelId] = useState("");
@@ -35,6 +38,7 @@ export function CreateLineAccountForm({
     e.preventDefault();
     if (!organizationId) {
       setError("กรุณาเลือกองค์กร");
+      toast.error("กรุณาเลือกองค์กร");
 
       return;
     }
@@ -55,7 +59,10 @@ export function CreateLineAccountForm({
       const data = (await res.json()) as { success?: boolean; error?: string };
 
       if (!res.ok || !data.success) {
-        setError(data.error ?? "สร้างไม่สำเร็จ");
+        const message = data.error ?? "สร้างไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
         setLoading(false);
 
         return;
@@ -67,9 +74,11 @@ export function CreateLineAccountForm({
       setAccessToken("");
       setOrganizationId("");
       setLoading(false);
+      toast.success("สร้าง LINE Account เรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
       setLoading(false);
     }
   }
@@ -83,7 +92,13 @@ export function CreateLineAccountForm({
       >
         เพิ่ม LINE Account
       </Button>
-      <Modal isOpen={isOpen} size="2xl" onOpenChange={onOpenChange}>
+      <Modal
+        backdrop="blur"
+        isOpen={isOpen}
+        placement="center"
+        size="2xl"
+        onOpenChange={onOpenChange}
+      >
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader>เพิ่ม LINE Official Account</ModalHeader>

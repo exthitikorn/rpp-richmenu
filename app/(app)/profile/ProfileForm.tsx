@@ -5,6 +5,15 @@ import { useRouter } from "next/navigation";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/modal";
+
+import { useAppToast } from "@/components/AppToastProvider";
 
 interface ProfileFormProps {
   initialName: string | null;
@@ -20,6 +29,7 @@ export function ProfileForm({
   lineDisplayName,
 }: ProfileFormProps) {
   const router = useRouter();
+  const toast = useAppToast();
   const [name, setName] = useState(initialName ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -31,6 +41,7 @@ export function ProfileForm({
 
   const [linking, setLinking] = useState(false);
   const [unlinking, setUnlinking] = useState(false);
+  const [isConfirmDisconnectOpen, setIsConfirmDisconnectOpen] = useState(false);
 
   function handleConnectLine() {
     setError(null);
@@ -44,12 +55,6 @@ export function ProfileForm({
   async function handleDisconnectLine() {
     setError(null);
     setSuccessMessage(null);
-
-    const confirmed = window.confirm(
-      "คุณต้องการยกเลิกการเชื่อมต่อบัญชี LINE หรือไม่?",
-    );
-
-    if (!confirmed) return;
 
     try {
       setUnlinking(true);
@@ -68,14 +73,17 @@ export function ProfileForm({
       }
 
       setSuccessMessage("ยกเลิกการเชื่อมต่อ LINE เรียบร้อยแล้ว");
+      toast.success("ยกเลิกการเชื่อมต่อ LINE เรียบร้อยแล้ว");
       router.refresh();
     } catch (e) {
       const message =
         e instanceof Error ? e.message : "ยกเลิกการเชื่อมต่อ LINE ไม่สำเร็จ";
 
       setError(message);
+      toast.error(message);
     } finally {
       setUnlinking(false);
+      setIsConfirmDisconnectOpen(false);
     }
   }
 
@@ -159,7 +167,7 @@ export function ProfileForm({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full min-w-0 space-y-4">
       {error && (
         <p className="text-sm text-danger" role="alert">
           {error}
@@ -171,25 +179,10 @@ export function ProfileForm({
         </p>
       )}
 
-      <Card as="section">
-        <CardHeader className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">ข้อมูลโปรไฟล์</h2>
-            <p className="text-sm text-default-500">
-              แก้ไขชื่อที่ใช้แสดงในระบบ
-            </p>
-          </div>
-          <Button
-            color="primary"
-            isLoading={saving === "profile"}
-            size="sm"
-            type="button"
-            onPress={() => {
-              void handleSaveProfile();
-            }}
-          >
-            บันทึก
-          </Button>
+      <Card as="section" className="w-full min-w-0 overflow-hidden">
+        <CardHeader>
+          <h2 className="text-lg font-semibold">ข้อมูลโปรไฟล์</h2>
+          <p className="text-sm text-default-500">แก้ไขชื่อที่ใช้แสดงในระบบ</p>
         </CardHeader>
         <CardBody className="space-y-4">
           <Input isDisabled label="อีเมล" value={email} />
@@ -199,28 +192,27 @@ export function ProfileForm({
             value={name}
             onValueChange={setName}
           />
+          <div className="flex justify-end border-t border-default-200 pt-4">
+            <Button
+              color="primary"
+              isLoading={saving === "profile"}
+              type="button"
+              onPress={() => {
+                void handleSaveProfile();
+              }}
+            >
+              บันทึก
+            </Button>
+          </div>
         </CardBody>
       </Card>
 
-      <Card as="section">
-        <CardHeader className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">เปลี่ยนรหัสผ่าน</h2>
-            <p className="text-sm text-default-500">
-              ตั้งรหัสผ่านใหม่สำหรับการเข้าสู่ระบบ
-            </p>
-          </div>
-          <Button
-            color="primary"
-            isLoading={saving === "password"}
-            size="sm"
-            type="button"
-            onPress={() => {
-              void handleChangePassword();
-            }}
-          >
-            เปลี่ยนรหัสผ่าน
-          </Button>
+      <Card as="section" className="w-full min-w-0 overflow-hidden">
+        <CardHeader>
+          <h2 className="text-lg font-semibold">เปลี่ยนรหัสผ่าน</h2>
+          <p className="text-sm text-default-500">
+            ตั้งรหัสผ่านใหม่สำหรับการเข้าสู่ระบบ
+          </p>
         </CardHeader>
         <CardBody className="space-y-4">
           <Input
@@ -244,44 +236,30 @@ export function ProfileForm({
             value={confirmPassword}
             onValueChange={setConfirmPassword}
           />
+          <div className="flex justify-end border-t border-default-200 pt-4">
+            <Button
+              color="primary"
+              isLoading={saving === "password"}
+              type="button"
+              onPress={() => {
+                void handleChangePassword();
+              }}
+            >
+              เปลี่ยนรหัสผ่าน
+            </Button>
+          </div>
         </CardBody>
       </Card>
 
-      <Card as="section">
-        <CardHeader className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">เชื่อมต่อบัญชี LINE</h2>
-            <p className="text-sm text-default-500">
-              เชื่อมบัญชี LINE ของคุณกับบัญชีในระบบ
-              เพื่อให้ระบุตัวผู้ใช้จากกิจกรรมใน LINE ได้
-            </p>
-          </div>
-          {lineConnected ? (
-            <Button
-              color="danger"
-              isLoading={unlinking}
-              size="sm"
-              type="button"
-              variant="flat"
-              onPress={() => {
-                void handleDisconnectLine();
-              }}
-            >
-              ยกเลิกการเชื่อมต่อ
-            </Button>
-          ) : (
-            <Button
-              color="success"
-              isLoading={linking}
-              size="sm"
-              type="button"
-              onPress={handleConnectLine}
-            >
-              เชื่อมต่อ LINE
-            </Button>
-          )}
+      <Card as="section" className="w-full min-w-0 overflow-hidden">
+        <CardHeader>
+          <h2 className="text-lg font-semibold">เชื่อมต่อบัญชี LINE</h2>
+          <p className="text-sm text-default-500">
+            เชื่อมบัญชี LINE ของคุณกับบัญชีในระบบ
+            เพื่อให้ระบุตัวผู้ใช้จากกิจกรรมใน LINE ได้
+          </p>
         </CardHeader>
-        <CardBody className="space-y-2">
+        <CardBody className="space-y-4">
           {lineConnected ? (
             <p className="text-sm text-default-600">
               เชื่อมต่อกับ LINE แล้ว
@@ -292,8 +270,77 @@ export function ProfileForm({
               ยังไม่ได้เชื่อมต่อบัญชี LINE
             </p>
           )}
+          <div className="flex justify-end border-t border-default-200 pt-4">
+            {lineConnected ? (
+              <Button
+                color="danger"
+                isLoading={unlinking}
+                type="button"
+                variant="flat"
+                onPress={() => {
+                  setIsConfirmDisconnectOpen(true);
+                }}
+              >
+                ยกเลิกการเชื่อมต่อ
+              </Button>
+            ) : (
+              <Button
+                color="success"
+                isLoading={linking}
+                type="button"
+                onPress={handleConnectLine}
+              >
+                เชื่อมต่อ LINE
+              </Button>
+            )}
+          </div>
         </CardBody>
       </Card>
+
+      <Modal
+        backdrop="blur"
+        isDismissable={!unlinking}
+        isKeyboardDismissDisabled={unlinking}
+        isOpen={isConfirmDisconnectOpen}
+        onOpenChange={setIsConfirmDisconnectOpen}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1">
+                ยืนยันการยกเลิกการเชื่อมต่อ LINE
+              </ModalHeader>
+              <ModalBody>
+                <p>
+                  คุณต้องการยกเลิกการเชื่อมต่อบัญชี LINE
+                  ของคุณออกจากระบบนี้หรือไม่?
+                </p>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="flat"
+                  onPress={() => {
+                    if (!unlinking) {
+                      onClose();
+                    }
+                  }}
+                >
+                  ยกเลิก
+                </Button>
+                <Button
+                  color="danger"
+                  isLoading={unlinking}
+                  onPress={() => {
+                    void handleDisconnectLine();
+                  }}
+                >
+                  ยืนยันการยกเลิก
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

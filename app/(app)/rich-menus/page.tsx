@@ -41,16 +41,17 @@ export default async function RichMenusPage({
   ]);
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <PageHeader
         actions={
           <Button as={NextLink} color="primary" href="/import">
             Import / สร้างใหม่
           </Button>
         }
-        title="Rich Menus"
+        description="จัดการ Rich Menu และพื้นที่กด (Areas)"
+        title="Rich Menu"
       />
-      <div className="space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         <RichMenusFilter
           currentLineAccountId={lineAccountId ?? null}
           lineAccounts={lineAccounts}

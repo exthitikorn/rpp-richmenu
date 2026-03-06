@@ -2,10 +2,8 @@
 
 import {
   Navbar as HeroUINavbar,
-  NavbarContent,
-  NavbarMenu,
-  NavbarMenuToggle,
   NavbarBrand,
+  NavbarContent,
 } from "@heroui/navbar";
 import {
   Dropdown,
@@ -18,7 +16,6 @@ import { Link } from "@heroui/link";
 import { Image } from "@heroui/image";
 import { Avatar } from "@heroui/avatar";
 import { useSession, signOut } from "next-auth/react";
-import { usePathname } from "next/navigation";
 import NextLink from "next/link";
 
 import { siteConfig } from "@/config/site";
@@ -29,18 +26,9 @@ interface NavbarProps {
   logoUrl?: string | null;
 }
 
-const isPathActive = (pathname: string, href: string): boolean => {
-  if (href === "/") {
-    return pathname === "/";
-  }
-
-  return pathname === href || pathname.startsWith(`${href}/`);
-};
-
 export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
   const displayName = siteName ?? siteConfig.name;
   const { data: session, status } = useSession();
-  const pathname = usePathname();
 
   const profileLabel =
     session?.user?.name ?? session?.user?.email ?? "บัญชีของฉัน";
@@ -132,52 +120,62 @@ export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
       </NavbarContent>
 
       <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        <NavbarMenuToggle />
-      </NavbarContent>
-
-      <NavbarMenu>
-        <div className="mx-4 mt-2 flex flex-col gap-2">
-          {siteConfig.navMenuItems.map((item) => {
-            const isActive = isPathActive(pathname, item.href);
-
-            return (
-              <Link
-                key={item.href}
-                aria-current={isActive ? "page" : undefined}
-                as={NextLink}
-                className="data-[active=true]:text-primary data-[active=true]:font-medium"
-                color="foreground"
-                data-active={isActive ? "true" : undefined}
-                href={item.href}
-                size="lg"
+        {status === "loading" ? null : session?.user?.isApproved ? (
+          <Dropdown placement="bottom-end">
+            <DropdownTrigger>
+              <Button
+                isIconOnly
+                aria-label="เมนูโปรไฟล์"
+                className="min-h-[44px] min-w-[44px]"
+                color="default"
+                variant="light"
               >
-                {item.label}
-              </Link>
-            );
-          })}
-          {status === "loading" ? null : session?.user ? (
-            <Button
-              className="mt-2 justify-start"
-              color="default"
-              size="sm"
-              variant="flat"
-              onPress={() => signOut({ callbackUrl: "/" })}
-            >
-              ออกจากระบบ
-            </Button>
-          ) : (
-            <Link
-              as={NextLink}
-              className="mt-2 font-medium"
-              color="primary"
-              href="/login"
-              size="lg"
-            >
-              เข้าสู่ระบบ
-            </Link>
-          )}
-        </div>
-      </NavbarMenu>
+                <Avatar
+                  className="h-8 w-8"
+                  name={profileLabel}
+                  size="sm"
+                  src={session?.user?.image ?? undefined}
+                />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="เมนูโปรไฟล์" variant="flat">
+              <DropdownItem
+                key="profile"
+                as={NextLink}
+                className="text-default-700"
+                href="/profile"
+              >
+                โปรไฟล์
+              </DropdownItem>
+              <DropdownItem
+                key="settings"
+                as={NextLink}
+                className="text-default-700"
+                href="/settings"
+              >
+                การตั้งค่า
+              </DropdownItem>
+              <DropdownItem
+                key="logout"
+                className="text-danger"
+                color="danger"
+                onPress={() => signOut({ callbackUrl: "/" })}
+              >
+                ออกจากระบบ
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        ) : (
+          <Link
+            as={NextLink}
+            className="font-medium"
+            color="primary"
+            href="/login"
+          >
+            เข้าสู่ระบบ
+          </Link>
+        )}
+      </NavbarContent>
     </HeroUINavbar>
   );
 };

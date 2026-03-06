@@ -34,10 +34,11 @@ export default async function LineAccountsPage({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <PageHeader
         actions={<CreateLineAccountForm organizations={organizations} />}
-        title="LINE Accounts"
+        description="จัดการบัญชี LINE Official Account และ Rich Menu"
+        title="บัญชี LINE"
       />
       <LineAccountList
         currentOrganizationId={organizationId ?? null}

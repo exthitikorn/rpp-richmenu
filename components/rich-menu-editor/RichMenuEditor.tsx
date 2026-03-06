@@ -12,6 +12,7 @@ import { RichMenuPreview } from "./RichMenuPreview";
 import { AreaActionForm } from "./AreaActionForm";
 
 import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
+import { useAppToast } from "@/components/AppToastProvider";
 
 type RichMenuWithAreas = RichMenu & { areas: RichMenuArea[] };
 
@@ -21,6 +22,7 @@ export function RichMenuEditor({
   richMenu: RichMenuWithAreas;
 }) {
   const router = useRouter();
+  const toast = useAppToast();
   const [richMenu, setRichMenu] = useState(initial);
   const [selectedAreaIndex, setSelectedAreaIndex] = useState<number | null>(
     null,
@@ -68,7 +70,9 @@ export function RichMenuEditor({
       };
 
       if (!res.ok || !data.success) {
-        alert(data.error ?? "อัปโหลดรูปไม่สำเร็จ");
+        const message = data.error ?? "อัปโหลดรูปไม่สำเร็จ";
+
+        toast.error(message);
 
         return;
       }
@@ -86,7 +90,7 @@ export function RichMenuEditor({
   }
 
   async function saveAreas() {
-    await fetch(`/api/rich-menus/${richMenu.id}/areas`, {
+    const res = await fetch(`/api/rich-menus/${richMenu.id}/areas`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -101,7 +105,30 @@ export function RichMenuEditor({
         })),
       }),
     });
-    router.refresh();
+
+    let data: { success?: boolean; error?: string } = {};
+    const contentType = res.headers.get("content-type") ?? "";
+
+    if (contentType.includes("application/json")) {
+      try {
+        data = (await res.json()) as { success?: boolean; error?: string };
+      } catch {
+        // ignore JSON parse error and fall back to generic message
+      }
+    }
+
+    if (data.success) {
+      toast.success("บันทึกการแก้ไขสำเร็จ");
+      router.refresh();
+    } else {
+      const errorMessage =
+        data.error ??
+        (!res.ok
+          ? `บันทึกไม่สำเร็จ (status ${res.status})`
+          : "บันทึกไม่สำเร็จ");
+
+      toast.error(errorMessage);
+    }
   }
 
   async function handleDeploy() {
@@ -132,7 +159,9 @@ export function RichMenuEditor({
       if (data.success) {
         router.refresh();
         if (data.hint) {
-          alert(`Deploy สำเร็จ\n\n${data.hint}`);
+          toast.success("Deploy สำเร็จ", {
+            description: data.hint,
+          });
         }
       } else {
         const errorMessage =
@@ -141,7 +170,7 @@ export function RichMenuEditor({
             ? `Deploy ไม่สำเร็จ (status ${res.status})`
             : "Deploy ไม่สำเร็จ");
 
-        alert(errorMessage);
+        toast.error(errorMessage);
       }
     } finally {
       setDeploying(false);
@@ -159,9 +188,13 @@ export function RichMenuEditor({
 
       if (data.success) {
         router.refresh();
-        alert("ตั้งเป็น Default แล้ว — เมนูนี้จะแสดงเป็นหน้าแรกให้ผู้ใช้ใหม่");
+        toast.success(
+          "ตั้งเป็น Default แล้ว — เมนูนี้จะแสดงเป็นหน้าแรกให้ผู้ใช้ใหม่",
+        );
       } else {
-        alert(data.error ?? "ตั้ง Default ไม่สำเร็จ");
+        const message = data.error ?? "ตั้ง Default ไม่สำเร็จ";
+
+        toast.error(message);
       }
     } finally {
       setSettingDefault(false);
@@ -267,21 +300,23 @@ export function RichMenuEditor({
 
           <div className="w-full space-y-3 lg:w-1/2 lg:max-w-xl">
             {selectedArea ? (
-              <AreaActionForm
-                area={selectedArea}
-                onClose={() => setSelectedAreaIndex(null)}
-                onSave={(data) => {
-                  if (selectedAreaIndex !== null) {
-                    updateArea(selectedAreaIndex, {
-                      actionType: data.actionType,
-                      action: data.action as RichMenuArea["action"],
-                    });
-                  }
-                  setSelectedAreaIndex(null);
-                }}
-              />
+              <div className="items-center justify-center mt-30">
+                <AreaActionForm
+                  area={selectedArea}
+                  onClose={() => setSelectedAreaIndex(null)}
+                  onSave={(data) => {
+                    if (selectedAreaIndex !== null) {
+                      updateArea(selectedAreaIndex, {
+                        actionType: data.actionType,
+                        action: data.action as RichMenuArea["action"],
+                      });
+                    }
+                    setSelectedAreaIndex(null);
+                  }}
+                />
+              </div>
             ) : (
-              <p className="text-default-500 text-sm">
+              <p className="text-default-500 text-lg font-bold flex items-center justify-center mt-50">
                 คลิกที่พื้นที่บนรูปเพื่อแก้ไข action
               </p>
             )}

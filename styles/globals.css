@@ -10,3 +10,21 @@
     --font-sans: "font", sans-serif;
     --font-mono: "monospace", monospace;
 }
+
+/* รองรับมือถือ: safe area สำหรับอุปกรณ์มี notch */
+@layer base {
+  body {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+}
+
+/* ปุ่มและลิงก์ขนาดสัมผัสที่เหมาะสมบนมือถือ (ขั้นต่ำ ~44px) */
+@media (pointer: coarse) {
+  button:not([class*="size"]),
+  [role="button"]:not([class*="size"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

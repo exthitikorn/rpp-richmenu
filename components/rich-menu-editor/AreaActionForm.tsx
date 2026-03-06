@@ -8,6 +8,8 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
+import { useAppToast } from "@/components/AppToastProvider";
+
 type ActionPayload = Record<string, unknown>;
 
 export function AreaActionForm({
@@ -19,6 +21,7 @@ export function AreaActionForm({
   onSave: (data: { actionType: string; action: ActionPayload }) => void;
   onClose: () => void;
 }) {
+  const toast = useAppToast();
   const [actionType, setActionType] = useState(area.actionType);
   const [action, setAction] = useState<ActionPayload>(
     (area.action as ActionPayload) ?? {},
@@ -34,6 +37,7 @@ export function AreaActionForm({
     const payload = buildActionPayload(actionType, action);
 
     onSave({ actionType, action: payload });
+    toast.success("บันทึก Action สำเร็จ");
   }
 
   function buildActionPayload(type: string, raw: ActionPayload): ActionPayload {

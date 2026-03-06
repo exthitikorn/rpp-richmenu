@@ -178,50 +178,81 @@ export default async function DashboardPage() {
     },
   );
 
+  const overviewMetrics = [
+    {
+      key: "organizations",
+      label: "องค์กร",
+      description: "จำนวนองค์กรที่คุณเป็นสมาชิก",
+      value: orgCount,
+    },
+    {
+      key: "lineAccounts",
+      label: "บัญชี LINE",
+      description: "จำนวนบัญชี LINE ทั้งหมดที่เชื่อมต่อ",
+      value: lineAccountCount,
+    },
+    {
+      key: "richMenus",
+      label: "Rich Menu",
+      description: "จำนวน Rich Menu ที่สร้างไว้",
+      value: richMenuCount,
+    },
+    {
+      key: "clicks",
+      label: "การกดทั้งหมด",
+      description: "จำนวนการกด Rich Menu รวมทั้งหมด",
+      value: totalClicks,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <PageHeader
-        description={`สวัสดี, ${user.name ?? user.email}`}
-        title="Dashboard"
+        description={`สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ของคุณได้ที่นี่`}
+        title="แดชบอร์ดภาพรวม"
       />
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-0">Organizations</CardHeader>
-          <CardBody className="pt-1">
-            <p className="text-2xl font-semibold">{orgCount}</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader className="pb-0">LINE Accounts</CardHeader>
-          <CardBody className="pt-1">
-            <p className="text-2xl font-semibold">{lineAccountCount}</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader className="pb-0">Rich Menus</CardHeader>
-          <CardBody className="pt-1">
-            <p className="text-2xl font-semibold">{richMenuCount}</p>
-          </CardBody>
-        </Card>
-        <Card>
-          <CardHeader className="pb-0">Total Clicks</CardHeader>
-          <CardBody className="pt-1">
-            <p className="text-2xl font-semibold">{totalClicks}</p>
-          </CardBody>
-        </Card>
-      </div>
+      <section className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {overviewMetrics.map((metric) => (
+            <Card
+              key={metric.key}
+              className="relative overflow-hidden border border-default-100/80 bg-gradient-to-br from-default-50/80 via-background to-background shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+            >
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,211,252,0.2),_transparent_55%)] dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.28),_transparent_55%)]" />
+              <CardHeader className="relative z-10 flex flex-col gap-1 pb-1">
+                <p className="text-xs font-medium uppercase tracking-wide text-default-500">
+                  {metric.label}
+                </p>
+                <p className="text-[0.75rem] text-default-400">
+                  {metric.description}
+                </p>
+              </CardHeader>
+              <CardBody className="relative z-10 pt-1 flex items-center justify-center">
+                <p className="text-3xl font-semibold tracking-tight">
+                  {metric.value.toLocaleString("th-TH")}
+                </p>
+              </CardBody>
+            </Card>
+          ))}
+        </div>
+      </section>
 
       {isOwner && pendingSummary.count > 0 ? (
         <Card>
-          <CardHeader className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold">ผู้ใช้รออนุมัติ</p>
+          <CardHeader className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">ผู้ใช้รออนุมัติ</p>
               <p className="text-sm text-default-500">
                 มีผู้ใช้รออนุมัติทั้งหมด{" "}
-                <span className="font-semibold">{pendingSummary.count}</span> คน
-                (แสดงรายการล่าสุด 5 คน)
+                <span className="font-semibold">
+                  {pendingSummary.count.toLocaleString("th-TH")}
+                </span>{" "}
+                คน (แสดงรายการล่าสุด 5 คน)
               </p>
             </div>
+            <span className="mt-1 inline-flex items-center rounded-full bg-default-100 px-3 py-1 text-xs font-medium text-default-600">
+              {pendingSummary.count.toLocaleString("th-TH")} คนรออนุมัติ
+            </span>
           </CardHeader>
           <CardBody>
             <div className="overflow-x-auto">
@@ -237,7 +268,7 @@ export default async function DashboardPage() {
                   {pendingSummary.users.map((u) => (
                     <tr
                       key={u.id}
-                      className="border-b border-default-100 last:border-0"
+                      className="border-b border-default-100 last:border-0 odd:bg-default-50/40"
                     >
                       <td className="py-1.5 pr-4">{u.email}</td>
                       <td className="py-1.5 pr-4">{u.name ?? "—"}</td>
@@ -254,8 +285,16 @@ export default async function DashboardPage() {
       ) : null}
 
       {byMenu.length > 0 && byArea.length > 0 ? (
-        <div className="space-y-4">
-          <Card>
+        <section className="space-y-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">
+              Rich Menu Analytics
+            </h2>
+            <p className="text-sm text-default-500">
+              วิเคราะห์สถิติการกดแต่ละ Rich Menu และพื้นที่ภายใน Rich Menu
+            </p>
+          </div>
+          <Card className="border border-default-100/80 bg-background/60 shadow-sm backdrop-blur-sm">
             <CardHeader>
               <p className="font-semibold">สถิติภาพรวมการกด Rich Menu</p>
             </CardHeader>
@@ -272,7 +311,7 @@ export default async function DashboardPage() {
             menus={richMenuAnalyticsMenus}
             totalClicks={totalClicks}
           />
-        </div>
+        </section>
       ) : null}
     </div>
   );

@@ -51,19 +51,24 @@ export function RegisterLineForm() {
   }
 
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div
-        className="rounded-2xl bg-white shadow-lg border border-default-200"
-        style={{ width: "520px", maxWidth: "100%" }}
-      >
-        <div className="flex flex-col gap-1 px-8 pt-8 pb-0">
-          <h1 className="text-2xl font-semibold">กรอกข้อมูลผู้ใช้</h1>
-          <p className="text-default-500 text-sm">
+    <div className="flex min-h-[80vh] w-full items-center justify-center px-4 py-6">
+      <div className="w-full max-w-lg rounded-2xl border border-default-200 bg-white shadow-lg sm:max-w-xl md:max-w-xl">
+        <div className="flex flex-col gap-1 px-4 pb-0 pt-6 sm:px-8 sm:pt-8 md:px-12 lg:px-16">
+          <h1 className="text-xl font-semibold sm:text-2xl">
+            กรอกข้อมูลผู้ใช้
+          </h1>
+          <p className="text-sm text-default-500">
             เข้าสู่ระบบด้วย LINE แล้ว
             โปรดกรอกข้อมูลเพิ่มเติมให้เหมือนการสมัครสมาชิก
           </p>
         </div>
-        <div className="px-8 pb-8 pt-6">
+        <div
+          className="px-4 pt-6 sm:px-8 md:px-12 lg:px-16"
+          style={{
+            paddingBottom:
+              "max(1.5rem, calc(1rem + env(safe-area-inset-bottom, 0px)))",
+          }}
+        >
           <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
             {error && (
               <p className="text-danger text-sm" role="alert">
@@ -102,7 +107,7 @@ export function RegisterLineForm() {
               onValueChange={setPassword}
             />
             <Button
-              className="w-full"
+              className="min-h-[44px] w-full"
               color="primary"
               isLoading={loading}
               type="submit"
@@ -110,7 +115,7 @@ export function RegisterLineForm() {
               บันทึกข้อมูล
             </Button>
           </form>
-          <p className="text-center text-default-500 text-sm mt-4">
+          <p className="mt-4 text-center text-sm text-default-500">
             ต้องการกลับไปหน้าเข้าสู่ระบบ?{" "}
             <Link as={NextLink} className="text-primary" href="/login">
               กลับไปหน้าเข้าสู่ระบบ

@@ -23,7 +23,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
   themeColor: { color: "white" },
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -66,7 +70,13 @@ export default async function RootLayout({
             >
               {children}
             </main>
-            <footer className="flex w-full items-center justify-center py-3 border-t border-default-200">
+            <footer
+              className="flex w-full items-center justify-center py-3 border-t border-default-200"
+              style={{
+                paddingBottom:
+                  "calc(0.75rem + env(safe-area-inset-bottom, 0px))",
+              }}
+            >
               <span className="text-default-500 text-sm">{footerText}</span>
             </footer>
           </div>

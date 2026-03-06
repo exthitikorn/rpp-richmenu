@@ -1,5 +1,4 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { Button } from "@heroui/button";
 
 import { UsersTable } from "./UsersTable";
 
@@ -16,12 +15,12 @@ export default async function UsersPage() {
 
   if (!isOwner) {
     return (
-      <div className="space-y-6">
+      <div className="w-full min-w-0 max-w-full space-y-4">
         <PageHeader
           description="จัดการผู้ใช้ระบบและสถานะการอนุมัติ"
-          title="Users"
+          title="ผู้ใช้"
         />
-        <Card>
+        <Card className="w-full min-w-0 overflow-hidden">
           <CardBody>
             <p className="text-danger">
               คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (ต้องเป็น OWNER)
@@ -48,24 +47,24 @@ export default async function UsersPage() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-4">
       <PageHeader
         description="จัดการผู้ใช้และกำหนดให้ผู้ใช้ที่ได้รับอนุมัติเท่านั้นที่ใช้งานได้"
-        title="Users"
+        title="ผู้ใช้"
       />
-      <Card>
-        <CardHeader className="flex items-center justify-between">
-          <div>
-            <p className="font-semibold">รายการผู้ใช้</p>
-            <p className="text-default-500 text-sm">
+      <Card className="w-full min-w-0 overflow-hidden">
+        <CardHeader className="px-4 py-3 text-sm font-medium">
+          <div className="min-w-0">
+            <p className="text-sm font-semibold">รายการผู้ใช้</p>
+            <p className="text-xs text-default-500">
               ผู้ใช้ที่ยังไม่ถูกอนุมัติจะไม่สามารถเข้าสู่ระบบและใช้งานระบบได้
             </p>
           </div>
-          <Button isDisabled color="primary" size="sm" variant="flat">
+          {/* <Button isDisabled color="primary" size="sm" variant="flat">
             เพิ่มผู้ใช้ (เร็วๆ นี้)
-          </Button>
+          </Button> */}
         </CardHeader>
-        <CardBody>
+        <CardBody className="min-w-0 overflow-x-auto px-4 py-3">
           <UsersTable
             currentUserId={currentUser.id}
             organizations={organizations}

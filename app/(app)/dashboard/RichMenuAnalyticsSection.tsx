@@ -57,7 +57,7 @@ function RichMenuHeatmap({ menu }: { menu: RichMenuAnalyticsMenu }) {
   return (
     <div className="space-y-3">
       <div
-        className="relative inline-block rounded-lg bg-default-100 overflow-hidden"
+        className="relative inline-block overflow-hidden rounded-xl border border-default-200 bg-default-100/80 shadow-sm"
         style={{ width: displayWidth, height: displayHeight }}
       >
         <Image
@@ -91,8 +91,8 @@ function RichMenuHeatmap({ menu }: { menu: RichMenuAnalyticsMenu }) {
                 backgroundColor,
               }}
             >
-              <span className="rounded bg-primary px-1.5 py-0.5 text-xs text-primary-foreground">
-                #{area.index + 1} ({area.clickCount})
+              <span className="rounded-full bg-primary/90 px-2 py-0.5 text-[0.7rem] font-medium text-primary-foreground shadow-sm">
+                #{area.index + 1} ({area.clickCount.toLocaleString("th-TH")})
               </span>
             </div>
           );
@@ -112,7 +112,7 @@ export function RichMenuAnalyticsSection({ menus, totalClicks }: Props) {
 
   if (menus.length === 0) {
     return (
-      <Card>
+      <Card className="border border-dashed border-default-200 bg-default-50/60">
         <CardBody>
           <p className="text-sm text-default-500">
             ยังไม่มีข้อมูลการคลิก Rich Menu
@@ -139,12 +139,12 @@ export function RichMenuAnalyticsSection({ menus, totalClicks }: Props) {
     .slice(0, 5);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-default-200">
-        <div>
-          <p className="font-semibold">Heat map การกด Rich Menu</p>
+    <Card className="border border-default-100/80 bg-background/60 shadow-sm backdrop-blur-sm">
+      <CardHeader className="flex flex-col gap-3 border-b border-default-100 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold">Heat map การกด Rich Menu</p>
           <p className="text-xs text-default-500">
-            เลือก Rich Menu เพื่อดูความถี่การกดในแต่ละปุ่ม
+            เลือก Rich Menu เพื่อดูความถี่การกดในแต่ละปุ่มจากภาพรวมการใช้งานจริง
           </p>
         </div>
         <div className="w-full max-w-xs">
@@ -197,8 +197,10 @@ export function RichMenuAnalyticsSection({ menus, totalClicks }: Props) {
               </p>
               <p className="text-xs text-default-500">
                 คลิกทั้งหมดในเมนูนี้{" "}
-                <span className="font-semibold">{totalForSelected}</span> ครั้ง
-                ({percentage}% ของคลิกทั้งหมดในระบบ)
+                <span className="font-semibold">
+                  {totalForSelected.toLocaleString("th-TH")}
+                </span>{" "}
+                ครั้ง ({percentage}% ของคลิกทั้งหมดในระบบ)
               </p>
             </div>
             <RichMenuHeatmap menu={selectedMenu} />
@@ -212,19 +214,35 @@ export function RichMenuAnalyticsSection({ menus, totalClicks }: Props) {
               </p>
             ) : (
               <ul className="space-y-2 text-xs">
-                {topAreas.map((area) => (
-                  <li
-                    key={area.id}
-                    className="flex items-center justify-between rounded border border-default-200 bg-default-50 px-2 py-1.5"
-                  >
-                    <span>
-                      ปุ่ม #{area.index + 1}
-                      <span className="ml-1 text-default-500">
-                        ({area.clickCount} ครั้ง)
-                      </span>
-                    </span>
-                  </li>
-                ))}
+                {topAreas.map((area) => {
+                  const areaRatio =
+                    totalForSelected > 0
+                      ? area.clickCount / totalForSelected
+                      : 0;
+                  const widthPercent = Math.max(areaRatio * 100, 10);
+
+                  return (
+                    <li
+                      key={area.id}
+                      className="overflow-hidden rounded-lg border border-default-200 bg-default-50/70"
+                    >
+                      <div className="flex items-center justify-between px-2 py-1.5">
+                        <span className="text-[0.75rem] font-medium">
+                          ปุ่ม #{area.index + 1}
+                        </span>
+                        <span className="text-[0.7rem] text-default-500">
+                          {area.clickCount.toLocaleString("th-TH")} ครั้ง
+                        </span>
+                      </div>
+                      <div className="relative h-1.5 bg-default-100">
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-r-full bg-primary/80"
+                          style={{ width: `${widthPercent}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>

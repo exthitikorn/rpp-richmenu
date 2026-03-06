@@ -21,7 +21,7 @@ export default async function ImportPage({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="w-full min-w-0 max-w-full space-y-6">
       <PageHeader title="Import Rich Menu" />
       <ImportRichMenuForm
         defaultLineAccountId={(await searchParams).lineAccountId ?? null}

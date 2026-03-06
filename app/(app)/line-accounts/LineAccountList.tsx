@@ -193,6 +193,43 @@ function DeleteLineAccountButton({
   );
 }
 
+function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
+  return (
+    <Card className="w-full shadow-sm">
+      <CardBody className="gap-0 p-0">
+        <div className="p-4 pb-3">
+          <Link
+            as={NextLink}
+            className="text-base font-semibold text-foreground hover:opacity-80"
+            href={`/line-accounts/${la.id}`}
+          >
+            {la.name}
+          </Link>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <dt className="text-default-500">องค์กร</dt>
+            <dd className="text-foreground">{la.organization.name}</dd>
+            <dt className="text-default-500">Channel ID</dt>
+            <dd
+              className="truncate font-mono text-default-700"
+              title={la.channelId}
+            >
+              {la.channelId}
+            </dd>
+            <dt className="text-default-500">Rich Menus</dt>
+            <dd className="text-foreground">{la._count.richMenus}</dd>
+          </dl>
+        </div>
+        <div className="border-t border-default-200 px-4 py-3 justify-center flex">
+          <div className="flex flex-wrap items-center gap-2 [&_button]:min-w-[4.5rem] [&_button]:whitespace-nowrap">
+            <EditLineAccountButton la={la} />
+            <DeleteLineAccountButton laId={la.id} laName={la.name} />
+          </div>
+        </div>
+      </CardBody>
+    </Card>
+  );
+}
+
 export function LineAccountList({
   lineAccounts,
   currentOrganizationId,
@@ -222,10 +259,10 @@ export function LineAccountList({
 
   if (lineAccounts.length === 0) {
     return (
-      <div className="space-y-4">
+      <div className="w-full min-w-0 space-y-4">
         {organizations.length > 1 && (
           <Select
-            className="max-w-xs"
+            className="w-full sm:max-w-xs"
             items={[
               { id: "all", name: "ทั้งหมด" },
               ...organizations.map((o) => ({ id: o.id, name: o.name })),
@@ -243,7 +280,7 @@ export function LineAccountList({
             {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
           </Select>
         )}
-        <Card>
+        <Card className="w-full min-w-0 overflow-hidden">
           <CardBody className="text-center text-default-500 py-12">
             ยังไม่มี LINE Account เพิ่มจากปุ่มด้านบน
           </CardBody>
@@ -253,10 +290,10 @@ export function LineAccountList({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="w-full min-w-0 space-y-4">
       {organizations.length > 1 && (
         <Select
-          className="max-w-xs"
+          className="w-full sm:max-w-xs"
           items={[
             { id: "all", name: "ทั้งหมด" },
             ...organizations.map((o) => ({ id: o.id, name: o.name })),
@@ -274,14 +311,28 @@ export function LineAccountList({
           {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
         </Select>
       )}
-      <Card>
-        <CardBody className="p-0">
+
+      {/* Mobile: Card list */}
+      <div
+        aria-label="รายการ LINE Accounts"
+        className="flex flex-col gap-3 md:hidden"
+        role="list"
+      >
+        {lineAccounts.map((la) => (
+          <LineAccountCardItem key={la.id} la={la} />
+        ))}
+      </div>
+
+      {/* Desktop: Table */}
+      <Card className="hidden min-w-0 overflow-hidden md:block">
+        <CardBody className="p-0 overflow-x-auto">
           <Table
             fullWidth
             isStriped
             removeWrapper
             aria-label="รายการ LINE Accounts"
             classNames={{
+              base: "min-w-[520px]",
               td: "align-middle",
             }}
           >
