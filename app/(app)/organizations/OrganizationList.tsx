@@ -215,7 +215,13 @@ function DeleteOrganizationButton({
   );
 }
 
-function OrganizationCardItem({ org }: { org: OrgWithRelations }) {
+function OrganizationCardItem({
+  canManage,
+  org,
+}: {
+  canManage: boolean;
+  org: OrgWithRelations;
+}) {
   return (
     <Card className="w-full shadow-sm">
       <CardBody className="gap-0 p-0">
@@ -236,20 +242,24 @@ function OrganizationCardItem({ org }: { org: OrgWithRelations }) {
             <dd className="text-foreground">{org.memberships.length}</dd>
           </dl>
         </div>
-        <div className="border-t border-default-200 px-4 py-3 justify-center flex">
-          <div className="flex flex-wrap items-center gap-2 [&_button]:min-w-[4.5rem] [&_button]:whitespace-nowrap">
-            <EditOrganizationButton org={org} />
-            <DeleteOrganizationButton orgId={org.id} orgName={org.name} />
+        {canManage ? (
+          <div className="border-t border-default-200 px-4 py-3 justify-center flex">
+            <div className="flex flex-wrap items-center gap-2 [&_button]:min-w-[4.5rem] [&_button]:whitespace-nowrap">
+              <EditOrganizationButton org={org} />
+              <DeleteOrganizationButton orgId={org.id} orgName={org.name} />
+            </div>
           </div>
-        </div>
+        ) : null}
       </CardBody>
     </Card>
   );
 }
 
 export function OrganizationList({
+  currentUserId,
   organizations,
 }: {
+  currentUserId: string;
   organizations: OrgWithRelations[];
 }) {
   if (organizations.length === 0) {
@@ -270,9 +280,21 @@ export function OrganizationList({
         className="flex flex-col gap-3 md:hidden"
         role="list"
       >
-        {organizations.map((org) => (
-          <OrganizationCardItem key={org.id} org={org} />
-        ))}
+        {organizations.map((org) => {
+          const canManage = org.memberships.some(
+            (membership) =>
+              membership.userId === currentUserId &&
+              membership.role === "ADMIN",
+          );
+
+          return (
+            <OrganizationCardItem
+              key={org.id}
+              canManage={canManage}
+              org={org}
+            />
+          );
+        })}
       </div>
 
       {/* Desktop: Table */}
@@ -296,33 +318,51 @@ export function OrganizationList({
               <TableColumn className="text-center">จัดการ</TableColumn>
             </TableHeader>
             <TableBody>
-              {organizations.map((org) => (
-                <TableRow key={org.id}>
-                  <TableCell>
-                    <Link
-                      as={NextLink}
-                      className="font-medium"
-                      href={`/organizations/${org.id}`}
-                    >
-                      {org.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-default-500">{org.slug}</TableCell>
-                  <TableCell className="text-center">
-                    {org._count.lineAccounts}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {org.memberships.length}
-                  </TableCell>
-                  <TableCell className="text-center space-x-2">
-                    <EditOrganizationButton org={org} />
-                    <DeleteOrganizationButton
-                      orgId={org.id}
-                      orgName={org.name}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+              {organizations.map((org) => {
+                const canManage = org.memberships.some(
+                  (membership) =>
+                    membership.userId === currentUserId &&
+                    membership.role === "ADMIN",
+                );
+
+                return (
+                  <TableRow key={org.id}>
+                    <TableCell>
+                      <Link
+                        as={NextLink}
+                        className="font-medium"
+                        href={`/organizations/${org.id}`}
+                      >
+                        {org.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-default-500">
+                      {org.slug}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {org._count.lineAccounts}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {org.memberships.length}
+                    </TableCell>
+                    <TableCell className="text-center space-x-2">
+                      {canManage ? (
+                        <>
+                          <EditOrganizationButton org={org} />
+                          <DeleteOrganizationButton
+                            orgId={org.id}
+                            orgName={org.name}
+                          />
+                        </>
+                      ) : (
+                        <span className="text-default-400 text-sm">
+                          ไม่มีสิทธิ์
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardBody>

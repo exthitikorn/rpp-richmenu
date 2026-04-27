@@ -18,6 +18,8 @@ type ProviderUser = {
   email?: string | null;
   name?: string | null;
   image?: string | null;
+  isApproved?: boolean;
+  isAdmin?: boolean;
 };
 
 async function upsertUserFromLineProfile(
@@ -133,9 +135,25 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async jwt({ token, user }) {
+      const userIdFromToken = token.id as string | undefined;
+      const userIdFromUser = (user as { id?: string } | undefined)?.id;
+      const userId = userIdFromUser ?? userIdFromToken;
+
       if (user) {
         token.id = (user as { id: string }).id;
         token.isApproved = (user as { isApproved?: boolean }).isApproved;
+      }
+
+      if (userId) {
+        const adminMembership = await prisma.membership.findFirst({
+          where: {
+            userId,
+            role: "ADMIN",
+          },
+          select: { userId: true },
+        });
+
+        token.isAdmin = Boolean(adminMembership);
       }
 
       return token;
@@ -161,6 +179,7 @@ export const authOptions: NextAuthOptions = {
         session.user.image =
           dbUser.image ?? dbUser.linePictureUrl ?? session.user.image ?? null;
         session.user.isApproved = dbUser.isApproved;
+        session.user.isAdmin = (token.isAdmin as boolean | undefined) === true;
       } else {
         session.user.id = userId;
       }
@@ -185,6 +204,15 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       isApproved?: boolean;
+      isAdmin?: boolean;
     };
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id?: string;
+    isApproved?: boolean;
+    isAdmin?: boolean;
   }
 }

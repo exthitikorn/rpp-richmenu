@@ -31,7 +31,7 @@ export async function PATCH(
           memberships: {
             some: {
               userId: user.id,
-              role: { in: ["OWNER", "ADMIN"] },
+              role: { in: ["ADMIN"] },
             },
           },
         },
@@ -96,7 +96,7 @@ export async function DELETE(
           memberships: {
             some: {
               userId: user.id,
-              role: { in: ["OWNER", "ADMIN"] },
+              role: { in: ["ADMIN"] },
             },
           },
         },

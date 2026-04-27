@@ -95,13 +95,6 @@ export async function DELETE(
       },
       include: {
         lineAccount: true,
-        _count: {
-          select: {
-            areas: true,
-            deployLogs: true,
-            clickEvents: true,
-          },
-        },
       },
     });
 
@@ -109,21 +102,6 @@ export async function DELETE(
       return NextResponse.json(
         { success: false, error: "ไม่พบ Rich Menu หรือไม่มีสิทธิ์" },
         { status: 404 },
-      );
-    }
-
-    if (
-      richMenu._count.areas > 0 ||
-      richMenu._count.deployLogs > 0 ||
-      richMenu._count.clickEvents > 0
-    ) {
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            "ไม่สามารถลบได้ เนื่องจากยังมี Areas, Deploy Logs หรือ Click Events ที่ผูกกับ Rich Menu นี้",
-        },
-        { status: 400 },
       );
     }
 
@@ -146,7 +124,12 @@ export async function DELETE(
       }
     }
 
-    await prisma.richMenu.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.richMenuArea.deleteMany({ where: { richMenuId: id } }),
+      prisma.deployLog.deleteMany({ where: { richMenuId: id } }),
+      prisma.clickEvent.deleteMany({ where: { richMenuId: id } }),
+      prisma.richMenu.delete({ where: { id } }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch {

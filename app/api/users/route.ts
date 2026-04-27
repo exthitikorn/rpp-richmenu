@@ -26,9 +26,9 @@ export async function GET() {
       );
     }
 
-    const isOwner = currentUser.memberships.some((m) => m.role === "OWNER");
+    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
 
-    if (!isOwner) {
+    if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },
@@ -68,9 +68,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const isOwner = currentUser.memberships.some((m) => m.role === "OWNER");
+    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
 
-    if (!isOwner) {
+    if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },

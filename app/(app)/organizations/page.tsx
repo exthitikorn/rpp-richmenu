@@ -9,8 +9,11 @@ export default async function OrganizationsPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
+  const isAdmin = user.memberships.some(
+    (membership) => membership.role === "ADMIN",
+  );
   const organizations = await prisma.organization.findMany({
-    where: { memberships: { some: { userId: user.id } } },
+    where: isAdmin ? undefined : { memberships: { some: { userId: user.id } } },
     include: {
       memberships: { include: { user: true } },
       _count: { select: { lineAccounts: true } },
@@ -25,7 +28,7 @@ export default async function OrganizationsPage() {
         description="จัดการหน่วยงานและสิทธิ์การเข้าถึง"
         title="หน่วยงาน"
       />
-      <OrganizationList organizations={organizations} />
+      <OrganizationList currentUserId={user.id} organizations={organizations} />
     </div>
   );
 }

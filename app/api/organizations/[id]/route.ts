@@ -19,7 +19,7 @@ export async function PATCH(
   const { id } = await params;
 
   try {
-    await requireRole(id, ["OWNER", "ADMIN"]);
+    await requireRole(id, ["ADMIN"]);
 
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
@@ -72,7 +72,7 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    await requireRole(id, ["OWNER"]);
+    await requireRole(id, ["ADMIN"]);
 
     const org = await prisma.organization.findUnique({
       where: { id },
@@ -92,7 +92,8 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: "ไม่สามารถลบได้ เนื่องจากยังมี LINE Accounts อยู่ในหน่วยงานนี้",
+          error:
+            "ไม่สามารถลบได้ เนื่องจากยังมี LINE Accounts อยู่ในหน่วยงานนี้",
         },
         { status: 400 },
       );

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const { organizationId, name, channelId, channelSecret, accessToken } =
       parsed.data;
 
-    await requireRole(organizationId, ["OWNER", "ADMIN"]);
+    await requireRole(organizationId, ["ADMIN"]);
 
     await prisma.lineAccount.create({
       data: {

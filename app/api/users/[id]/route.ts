@@ -17,7 +17,7 @@ const updateUserSchema = z.object({
     .array(
       z.object({
         organizationId: z.string(),
-        role: z.enum(["OWNER", "ADMIN", "MEMBER"]),
+        role: z.enum(["ADMIN", "USER"]),
       }),
     )
     .optional(),
@@ -39,22 +39,12 @@ export async function PATCH(
       );
     }
 
-    const isOwner = currentUser.memberships.some((m) => m.role === "OWNER");
+    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
 
-    if (!isOwner) {
+    if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },
-      );
-    }
-
-    if (currentUser.id === id) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "ไม่สามารถแก้ไขสิทธิ์ของบัญชีตัวเองได้",
-        },
-        { status: 400 },
       );
     }
 
@@ -83,6 +73,47 @@ export async function PATCH(
 
     const { name, isApproved, password, organizationIds, memberships } =
       parsed.data;
+    const isSelfUpdate = currentUser.id === id;
+    const hasMembershipsUpdate = typeof memberships !== "undefined";
+    const hasOrganizationIdsUpdate = typeof organizationIds !== "undefined";
+    const hasNonMembershipUpdate =
+      typeof name !== "undefined" ||
+      typeof isApproved !== "undefined" ||
+      typeof password !== "undefined";
+
+    if (isSelfUpdate && hasNonMembershipUpdate) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "ไม่สามารถแก้ไขข้อมูลสำคัญของบัญชีตัวเองจากหน้านี้ได้",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (isSelfUpdate && hasOrganizationIdsUpdate && !hasMembershipsUpdate) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "การแก้ไขบัญชีตัวเองต้องกำหนดสิทธิ์แบบละเอียด (memberships)",
+        },
+        { status: 400 },
+      );
+    }
+
+    if (
+      isSelfUpdate &&
+      hasMembershipsUpdate &&
+      (memberships ?? []).every((membership) => membership.role !== "ADMIN")
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "บัญชีแอดมินของคุณต้องมีสิทธิ์ ADMIN อย่างน้อย 1 หน่วยงาน",
+        },
+        { status: 400 },
+      );
+    }
 
     const data: Record<string, unknown> = {};
 
@@ -174,7 +205,7 @@ export async function PATCH(
               data: newOrgIds.map((orgId) => ({
                 userId: id,
                 organizationId: orgId,
-                role: "MEMBER",
+                role: "USER",
               })),
             });
           }
@@ -219,9 +250,9 @@ export async function DELETE(
       );
     }
 
-    const isOwner = currentUser.memberships.some((m) => m.role === "OWNER");
+    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
 
-    if (!isOwner) {
+    if (!isAdmin) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },

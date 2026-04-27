@@ -49,9 +49,8 @@ type MembershipFormState = Record<
 
 const MEMBERSHIP_ROLE_OPTIONS: { value: Membership["role"]; label: string }[] =
   [
-    { value: "OWNER", label: "Owner" },
     { value: "ADMIN", label: "Admin" },
-    { value: "MEMBER", label: "Member" },
+    { value: "USER", label: "User" },
   ];
 
 function formatMembershipDisplay(
@@ -171,7 +170,7 @@ function EditUserOrganizationsButton({
 
         initialState[org.id] = {
           isMember: Boolean(existingMembership),
-          role: existingMembership?.role ?? "MEMBER",
+          role: existingMembership?.role ?? "USER",
         };
       });
 

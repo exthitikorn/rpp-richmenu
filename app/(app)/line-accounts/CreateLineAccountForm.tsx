@@ -153,6 +153,41 @@ export function CreateLineAccountForm({
                 value={accessToken}
                 onValueChange={setAccessToken}
               />
+              <div className="rounded-medium border border-default-200 bg-default-50 p-3 text-sm text-default-700">
+                <p className="font-medium text-default-900">
+                  แหล่งที่มาข้อมูลสำหรับกรอกฟอร์ม
+                </p>
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  <li>
+                    เข้าหน้า{" "}
+                    <a
+                      className="text-primary underline"
+                      href="https://developers.line.biz/console/"
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      LINE Developers Console
+                    </a>{" "}
+                    แล้วเลือก Provider และ Channel ของ OA ที่ต้องการ
+                  </li>
+                  <li>
+                    `Channel ID` และ `Channel Secret` อยู่ที่หน้า{" "}
+                    <span className="font-medium">
+                      Basic settings &gt; Channel basic settings
+                    </span>
+                  </li>
+                  <li>
+                    `Channel Access Token` สร้าง/คัดลอกจากหน้า{" "}
+                    <span className="font-medium">
+                      Messaging API &gt; Channel access token
+                    </span>
+                  </li>
+                  <li>
+                    ชื่อ (แสดงในระบบ) เป็นชื่อที่ใช้แยกบัญชีในระบบนี้ เช่น
+                    สาขา/แคมเปญ
+                  </li>
+                </ul>
+              </div>
             </ModalBody>
             <ModalFooter>
               <Button

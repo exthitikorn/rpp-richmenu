@@ -1,4 +1,5 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { redirect } from "next/navigation";
 
 import { AnalyticsCharts } from "../analytics/AnalyticsCharts";
 
@@ -16,7 +17,11 @@ export default async function DashboardPage() {
 
   if (!user) return null;
 
-  const isOwner = user.memberships.some((m) => m.role === "OWNER");
+  const isAdmin = user.memberships.some((m) => m.role === "ADMIN");
+
+  if (!isAdmin) {
+    redirect("/organizations");
+  }
 
   const [
     orgCount,
@@ -75,7 +80,7 @@ export default async function DashboardPage() {
       },
       _count: true,
     }),
-    isOwner
+    isAdmin
       ? (async () => {
           const [users, count] = await Promise.all([
             prisma.user.findMany({
@@ -251,7 +256,7 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {isOwner && pendingSummary.count > 0 ? (
+      {isAdmin && pendingSummary.count > 0 ? (
         <Card className="border border-warning-300/30 bg-gradient-to-br from-warning-50/50 via-background to-background shadow-sm">
           <CardHeader className="flex items-start justify-between gap-3">
             <div className="space-y-1">

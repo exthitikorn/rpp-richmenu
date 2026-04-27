@@ -45,6 +45,14 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/register-line", request.url));
   }
 
+  const isAdmin = (token.isAdmin as boolean | undefined) === true;
+  const isDashboardPath =
+    pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+
+  if (isDashboardPath && !isAdmin) {
+    return NextResponse.redirect(new URL("/organizations", request.url));
+  }
+
   return NextResponse.next();
 }
 

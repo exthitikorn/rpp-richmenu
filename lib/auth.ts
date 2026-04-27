@@ -59,6 +59,15 @@ export async function requireRole(
   const user = await getCurrentUser();
 
   if (!user) throw new Error("Unauthorized");
+  const isAdmin = user.memberships.some(
+    (membership) => membership.role === "ADMIN",
+  );
+
+  if (isAdmin) {
+    const membership = await getMembership(organizationId);
+
+    return { user, membership };
+  }
   const membership = await getMembership(organizationId);
 
   if (!membership)

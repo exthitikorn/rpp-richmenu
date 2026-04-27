@@ -47,7 +47,7 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    await requireRole(lineAccount.organizationId, ["OWNER", "ADMIN"]);
+    await requireRole(lineAccount.organizationId, ["ADMIN"]);
 
     const jsonText = await jsonFile.text();
     const parsed = parseRichMenuJson(jsonText);

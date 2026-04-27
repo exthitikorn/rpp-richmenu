@@ -11,9 +11,9 @@ export default async function UsersPage() {
 
   if (!currentUser) return null;
 
-  const isOwner = currentUser.memberships.some((m) => m.role === "OWNER");
+  const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
 
-  if (!isOwner) {
+  if (!isAdmin) {
     return (
       <div className="w-full min-w-0 max-w-full space-y-4">
         <PageHeader
@@ -23,7 +23,7 @@ export default async function UsersPage() {
         <Card className="w-full min-w-0 overflow-hidden">
           <CardBody>
             <p className="text-danger">
-              คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (ต้องเป็น OWNER)
+              คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (ต้องเป็น ADMIN)
             </p>
           </CardBody>
         </Card>
@@ -41,7 +41,6 @@ export default async function UsersPage() {
   });
 
   const organizations = await prisma.organization.findMany({
-    where: { memberships: { some: { userId: currentUser.id } } },
     select: { id: true, name: true },
     orderBy: { createdAt: "asc" },
   });

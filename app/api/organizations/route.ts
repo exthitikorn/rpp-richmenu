@@ -24,8 +24,13 @@ export async function GET() {
       );
     }
 
+    const isAdmin = user.memberships.some(
+      (membership) => membership.role === Role.ADMIN,
+    );
     const organizations = await prisma.organization.findMany({
-      where: { memberships: { some: { userId: user.id } } },
+      where: isAdmin
+        ? undefined
+        : { memberships: { some: { userId: user.id } } },
       select: { id: true, name: true },
       orderBy: { createdAt: "asc" },
     });
@@ -73,7 +78,7 @@ export async function POST(request: Request) {
         name,
         slug,
         memberships: {
-          create: { userId: user.id, role: Role.OWNER },
+          create: { userId: user.id, role: Role.USER },
         },
       },
     });

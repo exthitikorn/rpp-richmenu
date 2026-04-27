@@ -7,6 +7,14 @@ import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import {
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  useDisclosure,
+} from "@heroui/modal";
 
 import { RichMenuPreview } from "./RichMenuPreview";
 import { AreaActionForm } from "./AreaActionForm";
@@ -30,6 +38,12 @@ export function RichMenuEditor({
   const [deploying, setDeploying] = useState(false);
   const [settingDefault, setSettingDefault] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [clearingAreas, setClearingAreas] = useState(false);
+  const {
+    isOpen: isClearAreasModalOpen,
+    onOpen: onOpenClearAreasModal,
+    onOpenChange: onClearAreasModalOpenChange,
+  } = useDisclosure();
 
   useEffect(() => {
     setRichMenu(initial);
@@ -201,6 +215,32 @@ export function RichMenuEditor({
     }
   }
 
+  async function handleClearAreas() {
+    setClearingAreas(true);
+    try {
+      const res = await fetch(`/api/rich-menus/${richMenu.id}/areas`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ areas: [] }),
+      });
+      const data = (await res.json()) as { success?: boolean; error?: string };
+
+      if (!res.ok || !data.success) {
+        toast.error(data.error ?? "ล้าง Areas ไม่สำเร็จ");
+
+        return;
+      }
+
+      setRichMenu((prev) => ({ ...prev, areas: [] }));
+      setSelectedAreaIndex(null);
+      onClearAreasModalOpenChange();
+      router.refresh();
+      toast.success("ล้าง Areas เรียบร้อยแล้ว");
+    } finally {
+      setClearingAreas(false);
+    }
+  }
+
   const canSetDefault =
     Boolean(richMenu.lineRichMenuId) && richMenu.status === "DEPLOYED";
 
@@ -274,6 +314,13 @@ export function RichMenuEditor({
                 บันทึกการแก้ไข
               </Button>
               <Button
+                color="warning"
+                isDisabled={richMenu.areas.length === 0}
+                onPress={onOpenClearAreasModal}
+              >
+                ล้าง Areas
+              </Button>
+              <Button
                 color="success"
                 isLoading={deploying}
                 onPress={handleDeploy}
@@ -323,6 +370,36 @@ export function RichMenuEditor({
           </div>
         </div>
       </CardBody>
+      <Modal
+        isOpen={isClearAreasModalOpen}
+        onOpenChange={onClearAreasModalOpenChange}
+      >
+        <ModalContent>
+          <ModalHeader>ยืนยันการล้าง Areas</ModalHeader>
+          <ModalBody>
+            <p>คุณต้องการล้าง Areas ทั้งหมดของ Rich Menu นี้ใช่หรือไม่?</p>
+            <p className="text-default-500 text-sm">
+              การล้าง Areas จะลบจุดกดทั้งหมดบนรูป และไม่สามารถย้อนกลับได้
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              type="button"
+              variant="light"
+              onPress={() => onClearAreasModalOpenChange()}
+            >
+              ยกเลิก
+            </Button>
+            <Button
+              color="warning"
+              isLoading={clearingAreas}
+              onPress={handleClearAreas}
+            >
+              ยืนยันล้าง Areas
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Card>
   );
 }

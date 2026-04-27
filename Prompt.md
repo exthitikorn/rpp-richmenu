@@ -33,9 +33,8 @@ Entities:
 
 Roles:
 
-- OWNER
 - ADMIN
-- MEMBER
+- USER
 
 ---
 

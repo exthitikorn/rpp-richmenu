@@ -4,6 +4,7 @@ import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
+import { useSession } from "next-auth/react";
 
 type AppNavItem = {
   label: string;
@@ -13,9 +14,9 @@ type AppNavItem = {
 const appNavItems: AppNavItem[] = [
   { label: "แดชบอร์ด", href: "/dashboard" },
   { label: "หน่วยงาน", href: "/organizations" },
-  { label: "บัญชี LINE", href: "/line-accounts" },
+  { label: "บัญชี LINE OA", href: "/line-accounts" },
   { label: "Rich Menus", href: "/rich-menus" },
-  { label: "นำเข้า", href: "/import" },
+  { label: "นำเข้า Rich Menu", href: "/import" },
   { label: "บันทึกการ Deploy", href: "/deploy-logs" },
   { label: "จัดการผู้ใช้", href: "/users" },
 ];
@@ -32,6 +33,12 @@ interface AppNavContentProps {
 
 export function AppNavContent({ onNavigate, className }: AppNavContentProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.isAdmin === true;
+  const adminOnlyHrefs = ["/dashboard", "/deploy-logs", "/users"];
+  const visibleNavItems = appNavItems.filter(
+    (item) => isAdmin || !adminOnlyHrefs.includes(item.href),
+  );
 
   return (
     <div className={clsx("flex flex-col gap-1 flex-1", className)}>
@@ -40,7 +47,7 @@ export function AppNavContent({ onNavigate, className }: AppNavContentProps) {
         className="flex flex-col gap-1 flex-1"
       >
         <ul className="flex flex-col gap-1">
-          {appNavItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const isActive = isPathActive(pathname, item.href);
 
             return (

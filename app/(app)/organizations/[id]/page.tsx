@@ -17,10 +17,13 @@ export default async function OrganizationDetailPage({
   const user = await getCurrentUser();
 
   if (!user) return null;
+  const isAdmin = user.memberships.some(
+    (membership) => membership.role === "ADMIN",
+  );
   const org = await prisma.organization.findFirst({
     where: {
       id,
-      memberships: { some: { userId: user.id } },
+      ...(isAdmin ? {} : { memberships: { some: { userId: user.id } } }),
     },
     include: {
       memberships: { include: { user: true } },

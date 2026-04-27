@@ -4,8 +4,8 @@ import { Button } from "@heroui/button";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { RichMenuEditor } from "@/components/rich-menu-editor/RichMenuEditor";
 import { PageHeader } from "@/components/page-header";
+import { ImportRichMenuForm } from "@/app/(app)/import/ImportRichMenuForm";
 
 export default async function RichMenuEditPage({
   params,
@@ -31,6 +31,14 @@ export default async function RichMenuEditPage({
 
   if (!richMenu) notFound();
 
+  const lineAccounts = await prisma.lineAccount.findMany({
+    where: {
+      organization: { memberships: { some: { userId: user.id } } },
+    },
+    include: { organization: true },
+    orderBy: { name: "asc" },
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -46,7 +54,33 @@ export default async function RichMenuEditPage({
         description={`"${richMenu.name}" · ${richMenu.lineAccount.name} · ${richMenu.lineAccount.organization.name} · ${richMenu.width}×${richMenu.height}px · ${richMenu.status}${richMenu.isDefault ? " · Default" : ""}`}
         title="แก้ไข Rich Menu"
       />
-      <RichMenuEditor richMenu={richMenu} />
+      <ImportRichMenuForm
+        defaultLineAccountId={richMenu.lineAccountId}
+        initialData={{
+          richMenuId: richMenu.id,
+          name: richMenu.name,
+          imageUrl: richMenu.imageUrl,
+          width: richMenu.width,
+          height: richMenu.height,
+          lineAccountId: richMenu.lineAccountId,
+          lineRichMenuId: richMenu.lineRichMenuId,
+          status: richMenu.status,
+          isDefault: richMenu.isDefault,
+          areas: richMenu.areas.map((area) => ({
+            x: area.x,
+            y: area.y,
+            width: area.width,
+            height: area.height,
+            actionType: area.actionType,
+            action:
+              area.action && typeof area.action === "object"
+                ? (area.action as Record<string, unknown>)
+                : {},
+          })),
+        }}
+        lineAccounts={lineAccounts}
+        mode="edit"
+      />
     </div>
   );
 }
