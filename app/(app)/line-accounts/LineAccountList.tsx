@@ -206,7 +206,7 @@ function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
             {la.name}
           </Link>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-default-500">องค์กร</dt>
+            <dt className="text-default-500">หน่วยงาน</dt>
             <dd className="text-foreground">{la.organization.name}</dd>
             <dt className="text-default-500">Channel ID</dt>
             <dd
@@ -267,7 +267,7 @@ export function LineAccountList({
               { id: "all", name: "ทั้งหมด" },
               ...organizations.map((o) => ({ id: o.id, name: o.name })),
             ]}
-            label="องค์กร"
+            label="หน่วยงาน"
             placeholder="ทั้งหมด"
             selectedKeys={selectedKey === "all" ? ["all"] : [selectedKey]}
             onSelectionChange={(keys) => {
@@ -298,7 +298,7 @@ export function LineAccountList({
             { id: "all", name: "ทั้งหมด" },
             ...organizations.map((o) => ({ id: o.id, name: o.name })),
           ]}
-          label="องค์กร"
+          label="หน่วยงาน"
           placeholder="ทั้งหมด"
           selectedKeys={selectedKey === "all" ? ["all"] : [selectedKey]}
           onSelectionChange={(keys) => {
@@ -338,7 +338,7 @@ export function LineAccountList({
           >
             <TableHeader>
               <TableColumn className="text-center">ชื่อ</TableColumn>
-              <TableColumn className="text-center">องค์กร</TableColumn>
+              <TableColumn className="text-center">หน่วยงาน</TableColumn>
               <TableColumn className="text-center">Channel ID</TableColumn>
               <TableColumn className="text-center">Rich Menus</TableColumn>
               <TableColumn className="text-center">จัดการ</TableColumn>

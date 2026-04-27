@@ -12,7 +12,7 @@ type AppNavItem = {
 
 const appNavItems: AppNavItem[] = [
   { label: "แดชบอร์ด", href: "/dashboard" },
-  { label: "องค์กร", href: "/organizations" },
+  { label: "หน่วยงาน", href: "/organizations" },
   { label: "บัญชี LINE", href: "/line-accounts" },
   { label: "Rich Menus", href: "/rich-menus" },
   { label: "นำเข้า", href: "/import" },

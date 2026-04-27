@@ -127,7 +127,7 @@ function RichMenuCardItem({ rm }: { rm: RichMenuWithRelations }) {
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-default-500">LINE Account</dt>
             <dd className="text-foreground">{rm.lineAccount.name}</dd>
-            <dt className="text-default-500">องค์กร</dt>
+            <dt className="text-default-500">หน่วยงาน</dt>
             <dd className="text-foreground">
               {rm.lineAccount.organization.name}
             </dd>
@@ -204,7 +204,7 @@ export function RichMenusTable({
             <TableHeader>
               <TableColumn className="text-center">ชื่อ</TableColumn>
               <TableColumn className="text-center">LINE Account</TableColumn>
-              <TableColumn className="text-center">องค์กร</TableColumn>
+              <TableColumn className="text-center">หน่วยงาน</TableColumn>
               <TableColumn className="text-center">ขนาด</TableColumn>
               <TableColumn className="text-center">Areas</TableColumn>
               <TableColumn className="text-center">สถานะ</TableColumn>

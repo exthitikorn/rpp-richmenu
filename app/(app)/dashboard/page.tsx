@@ -181,8 +181,8 @@ export default async function DashboardPage() {
   const overviewMetrics = [
     {
       key: "organizations",
-      label: "องค์กร",
-      description: "จำนวนองค์กรที่คุณเป็นสมาชิก",
+      label: "หน่วยงาน",
+      description: "จำนวนหน่วยงานที่คุณเป็นสมาชิก",
       value: orgCount,
     },
     {
@@ -207,18 +207,32 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        description={`สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ของคุณได้ที่นี่`}
-        title="แดชบอร์ดภาพรวม"
-      />
+      <section className="relative overflow-hidden rounded-2xl border border-primary-200/40 bg-gradient-to-br from-primary-100/60 via-background to-secondary-100/40 p-6 shadow-sm">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-primary-300/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-secondary-300/20 blur-3xl" />
+        <div className="relative z-10 space-y-4">
+          <PageHeader
+            description={`สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ของคุณได้ที่นี่`}
+            title="แดชบอร์ดภาพรวม"
+          />
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center rounded-full border border-default-200/80 bg-background/80 px-3 py-1 text-xs font-medium text-default-600 shadow-sm">
+              อัปเดตข้อมูลแบบเรียลไทม์
+            </span>
+            <span className="inline-flex items-center rounded-full border border-default-200/80 bg-background/80 px-3 py-1 text-xs font-medium text-default-600 shadow-sm">
+              รวม {overviewMetrics[3]?.value.toLocaleString("th-TH")} การกด
+            </span>
+          </div>
+        </div>
+      </section>
       <section className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {overviewMetrics.map((metric) => (
             <Card
               key={metric.key}
-              className="relative overflow-hidden border border-default-100/80 bg-gradient-to-br from-default-50/80 via-background to-background shadow-sm backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              className="group relative overflow-hidden border border-default-100/80 bg-gradient-to-br from-default-50/90 via-background to-background shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200/70 hover:shadow-lg"
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,211,252,0.2),_transparent_55%)] dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.28),_transparent_55%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,211,252,0.22),_transparent_55%)] opacity-75 transition-opacity duration-300 group-hover:opacity-100 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.3),_transparent_55%)]" />
               <CardHeader className="relative z-10 flex flex-col gap-1 pb-1">
                 <p className="text-xs font-medium uppercase tracking-wide text-default-500">
                   {metric.label}
@@ -227,8 +241,8 @@ export default async function DashboardPage() {
                   {metric.description}
                 </p>
               </CardHeader>
-              <CardBody className="relative z-10 pt-1 flex items-center justify-center">
-                <p className="text-3xl font-semibold tracking-tight">
+              <CardBody className="relative z-10 flex items-center justify-center pt-1">
+                <p className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
                   {metric.value.toLocaleString("th-TH")}
                 </p>
               </CardBody>
@@ -238,10 +252,12 @@ export default async function DashboardPage() {
       </section>
 
       {isOwner && pendingSummary.count > 0 ? (
-        <Card>
+        <Card className="border border-warning-300/30 bg-gradient-to-br from-warning-50/50 via-background to-background shadow-sm">
           <CardHeader className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="text-sm font-semibold">ผู้ใช้รออนุมัติ</p>
+              <p className="text-sm font-semibold text-warning-700 dark:text-warning-400">
+                ผู้ใช้รออนุมัติ
+              </p>
               <p className="text-sm text-default-500">
                 มีผู้ใช้รออนุมัติทั้งหมด{" "}
                 <span className="font-semibold">
@@ -250,7 +266,7 @@ export default async function DashboardPage() {
                 คน (แสดงรายการล่าสุด 5 คน)
               </p>
             </div>
-            <span className="mt-1 inline-flex items-center rounded-full bg-default-100 px-3 py-1 text-xs font-medium text-default-600">
+            <span className="mt-1 inline-flex items-center rounded-full border border-warning-300/40 bg-warning-100/60 px-3 py-1 text-xs font-medium text-warning-700 dark:text-warning-300">
               {pendingSummary.count.toLocaleString("th-TH")} คนรออนุมัติ
             </span>
           </CardHeader>
@@ -294,7 +310,7 @@ export default async function DashboardPage() {
               วิเคราะห์สถิติการกดแต่ละ Rich Menu และพื้นที่ภายใน Rich Menu
             </p>
           </div>
-          <Card className="border border-default-100/80 bg-background/60 shadow-sm backdrop-blur-sm">
+          <Card className="border border-default-100/80 bg-gradient-to-br from-background via-background to-primary-50/30 shadow-sm backdrop-blur-sm">
             <CardHeader>
               <p className="font-semibold">สถิติภาพรวมการกด Rich Menu</p>
             </CardHeader>

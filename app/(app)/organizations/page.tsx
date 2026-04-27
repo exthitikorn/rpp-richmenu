@@ -22,8 +22,8 @@ export default async function OrganizationsPage() {
     <div className="w-full min-w-0 max-w-full space-y-6">
       <PageHeader
         actions={<CreateOrganizationForm />}
-        description="จัดการองค์กรและสิทธิ์การเข้าถึง"
-        title="องค์กร"
+        description="จัดการหน่วยงานและสิทธิ์การเข้าถึง"
+        title="หน่วยงาน"
       />
       <OrganizationList organizations={organizations} />
     </div>

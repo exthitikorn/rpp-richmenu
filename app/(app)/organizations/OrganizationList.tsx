@@ -94,7 +94,7 @@ function EditOrganizationButton({ org }: { org: OrgWithRelations }) {
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>แก้ไของค์กร</ModalHeader>
+            <ModalHeader>แก้ไขหน่วยงาน</ModalHeader>
             <ModalBody>
               {error && (
                 <p className="text-danger text-sm" role="alert">
@@ -103,7 +103,7 @@ function EditOrganizationButton({ org }: { org: OrgWithRelations }) {
               )}
               <Input
                 isRequired
-                label="ชื่อองค์กร"
+                label="ชื่อหน่วยงาน"
                 value={name}
                 onValueChange={(v) => {
                   setName(v);
@@ -181,7 +181,7 @@ function DeleteOrganizationButton({
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
-          <ModalHeader>ลบองค์กร</ModalHeader>
+          <ModalHeader>ลบหน่วยงาน</ModalHeader>
           <ModalBody>
             {error && (
               <p className="text-danger text-sm" role="alert">
@@ -189,12 +189,12 @@ function DeleteOrganizationButton({
               </p>
             )}
             <p>
-              คุณต้องการลบองค์กร{" "}
+              คุณต้องการลบหน่วยงาน{" "}
               <span className="font-semibold">{orgName}</span> ใช่หรือไม่?
             </p>
             <p className="text-default-500 text-sm">
               การลบจะไม่สามารถย้อนกลับได้ และต้องไม่มี LINE Accounts
-              อยู่ในองค์กรนี้
+              อยู่ในหน่วยงานนี้
             </p>
           </ModalBody>
           <ModalFooter>
@@ -256,7 +256,7 @@ export function OrganizationList({
     return (
       <Card className="w-full min-w-0 overflow-hidden">
         <CardBody className="text-center text-default-500 py-12">
-          ยังไม่มีองค์กร สร้างองค์กรแรกหรือเพิ่มจากปุ่มด้านบน
+          ยังไม่มีหน่วยงาน สร้างหน่วยงานแรกหรือเพิ่มจากปุ่มด้านบน
         </CardBody>
       </Card>
     );
@@ -266,7 +266,7 @@ export function OrganizationList({
     <>
       {/* Mobile: Card list */}
       <div
-        aria-label="รายการองค์กร"
+        aria-label="รายการหน่วยงาน"
         className="flex flex-col gap-3 md:hidden"
         role="list"
       >
@@ -282,14 +282,14 @@ export function OrganizationList({
             fullWidth
             isStriped
             removeWrapper
-            aria-label="รายการองค์กร"
+            aria-label="รายการหน่วยงาน"
             classNames={{
               base: "min-w-[520px]",
               td: "align-middle",
             }}
           >
             <TableHeader>
-              <TableColumn className="text-center">ชื่อองค์กร</TableColumn>
+              <TableColumn className="text-center">ชื่อหน่วยงาน</TableColumn>
               <TableColumn className="text-center">Slug</TableColumn>
               <TableColumn className="text-center">LINE Accounts</TableColumn>
               <TableColumn className="text-center">สมาชิก</TableColumn>

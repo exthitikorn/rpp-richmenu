@@ -58,7 +58,7 @@ export function CreateOrganizationForm() {
       setName("");
       setSlug("");
       setLoading(false);
-      toast.success("สร้างองค์กรเรียบร้อยแล้ว");
+      toast.success("สร้างหน่วยงานเรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
@@ -70,7 +70,7 @@ export function CreateOrganizationForm() {
   return (
     <>
       <Button color="primary" onPress={onOpen}>
-        สร้างองค์กร
+        สร้างหน่วยงาน
       </Button>
       <Modal
         backdrop="blur"
@@ -80,7 +80,7 @@ export function CreateOrganizationForm() {
       >
         <ModalContent>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>สร้างองค์กร</ModalHeader>
+            <ModalHeader>สร้างหน่วยงาน</ModalHeader>
             <ModalBody>
               {error && (
                 <p className="text-danger text-sm" role="alert">
@@ -89,7 +89,7 @@ export function CreateOrganizationForm() {
               )}
               <Input
                 isRequired
-                label="ชื่อองค์กร"
+                label="ชื่อหน่วยงาน"
                 placeholder="เช่น ทีมการตลาด"
                 value={name}
                 onValueChange={(v) => {

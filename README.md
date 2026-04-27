@@ -70,7 +70,7 @@ npm run dev
 
 - **Login / Register** — เข้าสู่ระบบด้วยอีเมลและรหัสผ่าน
 - **Dashboard** — สรุปสถานะ Organizations, LINE Accounts, Rich Menus, และสถิติการคลิก
-- **Organizations** — สร้าง/จัดการองค์กรและสมาชิก (OWNER, ADMIN, MEMBER)
+- **Organizations** — สร้าง/จัดการหน่วยงานและสมาชิก (OWNER, ADMIN, MEMBER)
 - **LINE Accounts** — เพิ่ม LINE OA (Channel ID, Secret, Access Token)
 - **Rich Menus** — จัดการรายการ Rich Menu ต่อ LINE OA แต่ละบัญชี
 - **Import** — อัปโหลด `richmenu.json` + รูปจาก LINE Bot Designer

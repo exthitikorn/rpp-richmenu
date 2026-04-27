@@ -37,8 +37,8 @@ export function CreateLineAccountForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!organizationId) {
-      setError("กรุณาเลือกองค์กร");
-      toast.error("กรุณาเลือกองค์กร");
+      setError("กรุณาเลือกหน่วยงาน");
+      toast.error("กรุณาเลือกหน่วยงาน");
 
       return;
     }
@@ -110,8 +110,8 @@ export function CreateLineAccountForm({
               )}
               <Select
                 isRequired
-                label="องค์กร"
-                placeholder="เลือกองค์กร"
+                label="หน่วยงาน"
+                placeholder="เลือกหน่วยงาน"
                 selectedKeys={organizationId ? [organizationId] : []}
                 onSelectionChange={(keys) => {
                   const k = Array.from(keys)[0];

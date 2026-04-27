@@ -33,7 +33,7 @@ export async function GET() {
     return NextResponse.json({ success: true, data: organizations });
   } catch {
     return NextResponse.json(
-      { success: false, error: "ไม่สามารถดึงรายการองค์กรได้" },
+      { success: false, error: "ไม่สามารถดึงรายการหน่วยงานได้" },
       { status: 500 },
     );
   }

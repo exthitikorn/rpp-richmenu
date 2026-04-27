@@ -201,7 +201,7 @@ function EditUserOrganizationsButton({
       const data = (await res.json()) as ApiResponse;
 
       if (!res.ok || !data.success) {
-        const message = data.error ?? "บันทึกองค์กรไม่สำเร็จ";
+        const message = data.error ?? "บันทึกหน่วยงานไม่สำเร็จ";
 
         setError(message);
         toast.error(message);
@@ -212,7 +212,7 @@ function EditUserOrganizationsButton({
 
       setLoading(false);
       onOpenChange();
-      toast.success("บันทึกองค์กรของผู้ใช้เรียบร้อยแล้ว");
+      toast.success("บันทึกหน่วยงานของผู้ใช้เรียบร้อยแล้ว");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
@@ -229,11 +229,11 @@ function EditUserOrganizationsButton({
         variant="light"
         onPress={onOpen}
       >
-        จัดการองค์กร
+        จัดการหน่วยงาน
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
-          <ModalHeader>จัดการองค์กรของผู้ใช้</ModalHeader>
+          <ModalHeader>จัดการหน่วยงานของผู้ใช้</ModalHeader>
           <ModalBody>
             {error && (
               <p className="text-danger text-sm" role="alert">
@@ -241,7 +241,7 @@ function EditUserOrganizationsButton({
               </p>
             )}
             <p className="text-sm">
-              กำหนดองค์กรและสิทธิ์ของผู้ใช้{" "}
+              กำหนดหน่วยงานและสิทธิ์ของผู้ใช้{" "}
               <span className="font-semibold">{user.email}</span>
             </p>
             <div className="mt-3 space-y-2">
@@ -259,7 +259,7 @@ function EditUserOrganizationsButton({
                   >
                     <div className="flex-1">
                       <Switch
-                        aria-label={`กำหนดการเป็นสมาชิกในองค์กร ${org.name}`}
+                        aria-label={`กำหนดการเป็นสมาชิกในหน่วยงาน ${org.name}`}
                         isSelected={state.isMember}
                         size="sm"
                         onValueChange={(value) => {
@@ -277,7 +277,7 @@ function EditUserOrganizationsButton({
                     </div>
                     <div className="w-40">
                       <Select
-                        aria-label={`สิทธิ์ของผู้ใช้ในองค์กร ${org.name}`}
+                        aria-label={`สิทธิ์ของผู้ใช้ในหน่วยงาน ${org.name}`}
                         className="w-full"
                         isDisabled={!state.isMember}
                         items={MEMBERSHIP_ROLE_OPTIONS}
@@ -312,7 +312,7 @@ function EditUserOrganizationsButton({
               })}
             </div>
             <p className="text-default-500 text-xs">
-              ถ้าไม่ได้เปิดสวิตช์องค์กรใดเลย ผู้ใช้จะไม่ได้ผูกกับองค์กรใด
+              ถ้าไม่ได้เปิดสวิตช์หน่วยงานใดเลย ผู้ใช้จะไม่ได้ผูกกับหน่วยงานใด
             </p>
           </ModalBody>
           <ModalFooter>
@@ -479,7 +479,7 @@ export function UsersTable({
           <TableHeader>
             <TableColumn className="text-center">อีเมล</TableColumn>
             <TableColumn className="text-center">ชื่อ</TableColumn>
-            <TableColumn className="text-center">องค์กร / สิทธิ์</TableColumn>
+            <TableColumn className="text-center">หน่วยงาน / สิทธิ์</TableColumn>
             <TableColumn className="text-center">อนุมัติ</TableColumn>
             <TableColumn className="text-center">จัดการ</TableColumn>
           </TableHeader>

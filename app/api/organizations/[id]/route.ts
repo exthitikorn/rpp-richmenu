@@ -54,7 +54,7 @@ export async function PATCH(
     return NextResponse.json({ success: true });
   } catch (e) {
     const message =
-      e instanceof Error && e.message ? e.message : "แก้ไของค์กรไม่สำเร็จ";
+      e instanceof Error && e.message ? e.message : "แก้ไขหน่วยงานไม่สำเร็จ";
 
     const status =
       message.startsWith("Unauthorized") || message.startsWith("Forbidden")
@@ -83,7 +83,7 @@ export async function DELETE(
 
     if (!org) {
       return NextResponse.json(
-        { success: false, error: "ไม่พบบันทึกองค์กร" },
+        { success: false, error: "ไม่พบบันทึกหน่วยงาน" },
         { status: 404 },
       );
     }
@@ -92,7 +92,7 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: "ไม่สามารถลบได้ เนื่องจากยังมี LINE Accounts อยู่ในองค์กรนี้",
+          error: "ไม่สามารถลบได้ เนื่องจากยังมี LINE Accounts อยู่ในหน่วยงานนี้",
         },
         { status: 400 },
       );
@@ -103,7 +103,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (e) {
     const message =
-      e instanceof Error && e.message ? e.message : "ลบองค์กรไม่สำเร็จ";
+      e instanceof Error && e.message ? e.message : "ลบหน่วยงานไม่สำเร็จ";
 
     const status =
       message.startsWith("Unauthorized") || message.startsWith("Forbidden")
