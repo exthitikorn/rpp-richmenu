@@ -49,7 +49,8 @@ export function RichMenuPreview({
       {areas.map((area, index) => (
         <button
           key={area.id}
-          aria-label={`Area ${index + 1}`}
+          aria-label={`พื้นที่ที่ ${index + 1}`}
+          aria-pressed={selectedIndex === index}
           className="absolute border-2 border-primary/80 bg-primary/20 hover:bg-primary/30 transition-colors cursor-pointer"
           style={{
             left: area.x * scale,

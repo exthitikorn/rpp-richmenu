@@ -235,7 +235,7 @@ export default async function DashboardPage() {
           {overviewMetrics.map((metric) => (
             <Card
               key={metric.key}
-              className="group relative overflow-hidden border border-default-100/80 bg-gradient-to-br from-default-50/90 via-background to-background shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200/70 hover:shadow-lg"
+              className="group relative overflow-hidden border border-default-100/80 bg-gradient-to-br from-default-50/90 via-background to-background shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200/70 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none"
             >
               <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,211,252,0.22),_transparent_55%)] opacity-75 transition-opacity duration-300 group-hover:opacity-100 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.3),_transparent_55%)]" />
               <CardHeader className="relative z-10 flex flex-col gap-1 pb-1">
@@ -278,11 +278,20 @@ export default async function DashboardPage() {
           <CardBody>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
+                <caption className="sr-only">
+                  รายการผู้ใช้ที่รอการอนุมัติล่าสุด
+                </caption>
                 <thead>
                   <tr className="border-b border-default-200 text-left text-xs text-default-500">
-                    <th className="py-2 pr-4">อีเมล</th>
-                    <th className="py-2 pr-4">ชื่อ</th>
-                    <th className="py-2 pr-4">วันที่สร้าง</th>
+                    <th scope="col" className="py-2 pr-4">
+                      อีเมล
+                    </th>
+                    <th scope="col" className="py-2 pr-4">
+                      ชื่อ
+                    </th>
+                    <th scope="col" className="py-2 pr-4">
+                      วันที่สร้าง
+                    </th>
                   </tr>
                 </thead>
                 <tbody>

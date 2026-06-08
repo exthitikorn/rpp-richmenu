@@ -16,12 +16,13 @@ export default async function ProfilePage() {
   return (
     <div className="w-full min-w-0 max-w-full space-y-6">
       <PageHeader
-        description="จัดการข้อมูลโปรไฟล์และรหัสผ่านของบัญชีของคุณ"
-        title="Profile"
+        description="จัดการข้อมูลโปรไฟล์ของบัญชีของคุณ"
+        title="โปรไฟล์"
       />
       <ProfileForm
         email={user.email}
         initialName={user.name}
+        ldapUsername={user.ldapUsername}
         lineConnected={Boolean(userWithLine.lineUserId)}
         lineDisplayName={userWithLine.lineDisplayName ?? null}
       />

@@ -1,145 +1,115 @@
 import type { NextAuthOptions } from "next-auth";
 
 import CredentialsProvider from "next-auth/providers/credentials";
-import LineProvider from "next-auth/providers/line";
-import bcrypt from "bcryptjs";
-
+import type { LDAPErrorCode } from "@/types/ldap";
 import { prisma } from "@/lib/prisma";
+import { LDAPProvider } from "@/lib/auth/providers/ldap.provider";
+import {
+  isLineLoginConfigured,
+  LineProvider,
+} from "@/lib/auth/providers/line.provider";
 
-type LineProfile = {
-  sub?: string;
-  name?: string;
-  picture?: string;
-  email?: string;
-};
-
-type ProviderUser = {
-  id?: string;
-  email?: string | null;
-  name?: string | null;
-  image?: string | null;
-  isApproved?: boolean;
-  isAdmin?: boolean;
-};
-
-async function upsertUserFromLineProfile(
-  lineProfile: LineProfile | null | undefined,
-  providerUser: ProviderUser | null | undefined,
-) {
-  const lineUserId = lineProfile?.sub;
-
-  if (!lineUserId) {
-    return null;
-  }
-
-  const displayName = lineProfile?.name ?? providerUser?.name ?? null;
-  const picture = lineProfile?.picture ?? providerUser?.image ?? null;
-  const emailFromLine = lineProfile?.email ?? providerUser?.email ?? null;
-
-  // 1) หา user จาก lineUserId ก่อน
-  let dbUser =
-    (await prisma.user.findUnique({
-      where: { lineUserId },
-    })) ?? null;
-
-  // 2) ถ้ายังไม่เจอและมีอีเมล ให้ลอง match ตามอีเมล (ผูก LINE เข้ากับ user เดิม)
-  if (!dbUser && emailFromLine) {
-    const byEmail = await prisma.user.findUnique({
-      where: { email: emailFromLine },
-    });
-
-    if (byEmail) {
-      dbUser = await prisma.user.update({
-        where: { id: byEmail.id },
-        data: {
-          lineUserId,
-          lineDisplayName: displayName,
-          linePictureUrl: picture,
-        },
-      });
-    }
-  }
-
-  // 3) ถ้ายังไม่มีก็สร้าง user ใหม่ (ให้รอ admin อนุมัติก่อน)
-  if (!dbUser) {
-    dbUser = await prisma.user.create({
-      data: {
-        email: emailFromLine ?? `${lineUserId}@line.local`, // fallback ให้ email เป็น unique
-        name: displayName,
-        image: picture,
-        isApproved: false,
-        lineUserId,
-        lineDisplayName: displayName,
-        linePictureUrl: picture,
+const providers: NextAuthOptions["providers"] = [
+  CredentialsProvider({
+      id: "ldap",
+      name: "บัญชีโรงพยาบาล",
+      credentials: {
+        username: { label: "ชื่อผู้ใช้", type: "text" },
+        password: { label: "รหัสผ่าน", type: "password" },
       },
-    });
-  }
+      async authorize(credentials) {
+        if (!credentials?.username || !credentials?.password) {
+          throw new Error("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน");
+        }
 
-  return dbUser;
+        const ldapProvider = new LDAPProvider();
+
+        try {
+          const ldapUser = await ldapProvider.authenticate(
+            credentials.username,
+            credentials.password,
+          );
+
+          if (!ldapUser) {
+            throw new Error(
+              "การเข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูลอีกครั้ง",
+            );
+          }
+
+          const user = await prisma.user.upsert({
+            where: { ldapUsername: ldapUser.ldapUsername },
+            create: {
+              ldapUsername: ldapUser.ldapUsername,
+              name: ldapUser.displayName,
+              email: ldapUser.email,
+              isApproved: false,
+            },
+            update: {
+              name: ldapUser.displayName,
+              email: ldapUser.email,
+            },
+          });
+
+          return {
+            id: user.id,
+            name: user.name ?? ldapUser.displayName,
+            email: user.email ?? undefined,
+            isApproved: user.isApproved,
+          };
+        } catch (error) {
+          if (error instanceof Error) {
+            const message = ldapProvider.mapErrorCodeToMessage(
+              error.message as LDAPErrorCode,
+            );
+            throw new Error(message);
+          }
+          throw new Error("เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง");
+        }
+      },
+    }),
+];
+
+if (isLineLoginConfigured()) {
+  providers.push(LineProvider());
 }
 
 export const authOptions: NextAuthOptions = {
-  providers: [
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
-        });
-
-        if (!user?.passwordHash) return null;
-        if (!user.isApproved) return null;
-        const ok = await bcrypt.compare(
-          credentials.password,
-          user.passwordHash,
-        );
-
-        if (!ok) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name ?? undefined,
-          image: user.image ?? undefined,
-          isApproved: user.isApproved,
-        };
-      },
-    }),
-    LineProvider({
-      clientId: process.env.LINE_LOGIN_CHANNEL_ID ?? "",
-      clientSecret: process.env.LINE_LOGIN_CHANNEL_SECRET ?? "",
-    }),
-  ],
+  providers,
   callbacks: {
-    async signIn({ user, account, profile }) {
-      if (account?.provider === "line") {
-        const dbUser = await upsertUserFromLineProfile(
-          profile as LineProfile | null | undefined,
-          user as ProviderUser | null | undefined,
-        );
+    async signIn({ user, account }) {
+      if (account?.provider !== "line") {
+        return true;
+      }
 
-        if (!dbUser) {
-          return "/login?error=LineProfileMissing";
-        }
+      const dbUser = await prisma.user.findFirst({
+        where: { lineUserId: user.id },
+      });
 
-        (user as ProviderUser).id = dbUser.id;
-        (user as ProviderUser & { isApproved?: boolean }).isApproved =
-          dbUser.isApproved;
+      if (!dbUser) {
+        return "/login?error=LineNotLinked";
       }
 
       return true;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       const userIdFromToken = token.id as string | undefined;
-      const userIdFromUser = (user as { id?: string } | undefined)?.id;
+      let userIdFromUser = (user as { id?: string } | undefined)?.id;
+
+      if (account?.provider === "line" && userIdFromUser) {
+        const dbUser = await prisma.user.findFirst({
+          where: { lineUserId: userIdFromUser },
+        });
+
+        if (dbUser) {
+          userIdFromUser = dbUser.id;
+          token.id = dbUser.id;
+          token.isApproved = dbUser.isApproved;
+        }
+      }
+
       const userId = userIdFromUser ?? userIdFromToken;
 
-      if (user) {
+      if (user && account?.provider !== "line") {
         token.id = (user as { id: string }).id;
         token.isApproved = (user as { isApproved?: boolean }).isApproved;
       }
@@ -174,12 +144,11 @@ export const authOptions: NextAuthOptions = {
       if (dbUser) {
         session.user.id = dbUser.id;
         session.user.email = dbUser.email ?? session.user.email ?? null;
-        session.user.name =
-          dbUser.name ?? dbUser.lineDisplayName ?? session.user.name ?? null;
-        session.user.image =
-          dbUser.image ?? dbUser.linePictureUrl ?? session.user.image ?? null;
+        session.user.name = dbUser.name ?? session.user.name ?? null;
+        session.user.image = dbUser.image ?? dbUser.linePictureUrl ?? null;
         session.user.isApproved = dbUser.isApproved;
         session.user.isAdmin = (token.isAdmin as boolean | undefined) === true;
+        session.user.ldapUsername = dbUser.ldapUsername;
       } else {
         session.user.id = userId;
       }
@@ -191,7 +160,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/login",
   },
-  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
+  session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
   secret:
     process.env.NEXTAUTH_SECRET ?? "development-secret-change-in-production",
 };
@@ -203,6 +172,7 @@ declare module "next-auth" {
       email?: string | null;
       name?: string | null;
       image?: string | null;
+      ldapUsername?: string | null;
       isApproved?: boolean;
       isAdmin?: boolean;
     };

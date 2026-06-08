@@ -1,4 +1,4 @@
-# LINE OA Rich Menu Manager
+# ระบบจัดการ Rich Menu LINE OA
 
 เว็บแอปแบบ Multi-Tenant สำหรับจัดการ Rich Menu ของ LINE Official Accounts รองรับทั้งการ Import จาก LINE Bot Designer และการสร้าง Rich Menu แบบ Manual
 

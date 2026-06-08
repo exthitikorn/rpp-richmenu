@@ -72,7 +72,11 @@ type ApiResponse = {
   error?: string;
 };
 
-function DeleteUserButton({ id, email }: { id: string; email: string }) {
+function formatUserLabel(user: UserWithRelations) {
+  return user.ldapUsername ?? user.email ?? user.name ?? "—";
+}
+
+function DeleteUserButton({ id, label }: { id: string; label: string }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -125,7 +129,7 @@ function DeleteUserButton({ id, email }: { id: string; email: string }) {
               </p>
             )}
             <p>
-              คุณต้องการลบผู้ใช้ <span className="font-semibold">{email}</span>{" "}
+              คุณต้องการลบผู้ใช้ <span className="font-semibold">{label}</span>{" "}
               ใช่หรือไม่?
             </p>
             <p className="text-default-500 text-sm">
@@ -241,7 +245,7 @@ function EditUserOrganizationsButton({
             )}
             <p className="text-sm">
               กำหนดหน่วยงานและสิทธิ์ของผู้ใช้{" "}
-              <span className="font-semibold">{user.email}</span>
+              <span className="font-semibold">{formatUserLabel(user)}</span>
             </p>
             <div className="mt-3 space-y-2">
               {organizations.map((org) => {
@@ -281,7 +285,6 @@ function EditUserOrganizationsButton({
                         isDisabled={!state.isMember}
                         items={MEMBERSHIP_ROLE_OPTIONS}
                         label="สิทธิ์"
-                        labelPlacement="outside"
                         placeholder="เลือกสิทธิ์"
                         selectedKeys={new Set([state.role])}
                         size="sm"
@@ -346,11 +349,15 @@ function UserCardItem({
   organizations: OrganizationOption[];
 }) {
   return (
-    <Card className="w-full shadow-sm">
+    <Card className="w-full shadow-sm" role="listitem">
       <CardBody className="gap-0 p-0">
         <div className="p-4 pb-3">
-          <p className="text-sm font-semibold leading-tight">{user.email}</p>
-          <p className="mt-0.5 text-xs text-default-500">{user.name ?? "—"}</p>
+          <p className="text-sm font-semibold leading-tight">
+            {formatUserLabel(user)}
+          </p>
+          <p className="mt-0.5 text-xs text-default-500">
+            {user.name ?? user.ldapUsername ?? "—"}
+          </p>
           <p className="mt-1 text-xs text-default-500 line-clamp-2">
             {user.memberships.length === 0
               ? "—"
@@ -377,7 +384,7 @@ function UserCardItem({
               organizations={organizations}
               user={user}
             />
-            <DeleteUserButton email={user.email} id={user.id} />
+            <DeleteUserButton id={user.id} label={formatUserLabel(user)} />
           </div>
         </div>
       </CardBody>
@@ -476,7 +483,7 @@ export function UsersTable({
           }}
         >
           <TableHeader>
-            <TableColumn className="text-center">อีเมล</TableColumn>
+            <TableColumn className="text-center">ชื่อผู้ใช้</TableColumn>
             <TableColumn className="text-center">ชื่อ</TableColumn>
             <TableColumn className="text-center">หน่วยงาน / สิทธิ์</TableColumn>
             <TableColumn className="text-center">อนุมัติ</TableColumn>
@@ -485,7 +492,9 @@ export function UsersTable({
           <TableBody>
             {users.map((user) => (
               <TableRow key={user.id}>
-                <TableCell className="text-center">{user.email}</TableCell>
+                <TableCell className="text-center">
+                  {formatUserLabel(user)}
+                </TableCell>
                 <TableCell className="text-center">
                   {user.name ?? "—"}
                 </TableCell>
@@ -514,7 +523,7 @@ export function UsersTable({
                     organizations={organizations}
                     user={user}
                   />
-                  <DeleteUserButton email={user.email} id={user.id} />
+                  <DeleteUserButton id={user.id} label={formatUserLabel(user)} />
                 </TableCell>
               </TableRow>
             ))}

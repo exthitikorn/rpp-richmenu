@@ -1,7 +1,7 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: "LINE OA Rich Menu Manager",
+  name: "ระบบจัดการ Rich Menu LINE OA",
   description:
     "จัดการ Rich Menu สำหรับ LINE Official Accounts แบบ Multi-tenant",
   navItems: [
@@ -13,7 +13,6 @@ export const siteConfig = {
     { label: "หน้าแรก", href: "/" },
     { label: "เข้าสู่ระบบ", href: "/login" },
     { label: "Dashboard", href: "/dashboard" },
-    { label: "Settings", href: "/settings" },
   ],
   links: {
     github: "https://github.com/heroui-inc/heroui",

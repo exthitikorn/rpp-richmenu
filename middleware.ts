@@ -11,7 +11,7 @@ const protectedPaths = [
   "/users",
   "/import",
   "/deploy-logs",
-  "/settings",
+  "/profile",
 ];
 
 function isProtectedPath(pathname: string): boolean {
@@ -23,12 +23,26 @@ function isProtectedPath(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (!isProtectedPath(pathname)) return NextResponse.next();
-
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
+
+  if (pathname === "/pending-approval") {
+    if (!token) {
+      const loginUrl = new URL("/login", request.url);
+
+      return NextResponse.redirect(loginUrl);
+    }
+
+    if ((token.isApproved as boolean | undefined) === true) {
+      return NextResponse.redirect(new URL("/organizations", request.url));
+    }
+
+    return NextResponse.next();
+  }
+
+  if (!isProtectedPath(pathname)) return NextResponse.next();
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);
@@ -38,11 +52,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // ผู้ใช้ที่ล็อกอินด้วย LINE (หรืออื่น) ที่ยังไม่อนุมัติ → ไปกรอกข้อมูลที่ /register-line
   const isApproved = (token.isApproved as boolean | undefined) === true;
 
   if (!isApproved) {
-    return NextResponse.redirect(new URL("/register-line", request.url));
+    return NextResponse.redirect(new URL("/pending-approval", request.url));
   }
 
   const isAdmin = (token.isAdmin as boolean | undefined) === true;

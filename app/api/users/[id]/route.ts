@@ -7,11 +7,6 @@ import { prisma } from "@/lib/prisma";
 const updateUserSchema = z.object({
   name: z.string().optional(),
   isApproved: z.boolean().optional(),
-  password: z
-    .string()
-    .min(6, "รหัสผ่านอย่างน้อย 6 ตัว")
-    .optional()
-    .or(z.literal("")),
   organizationIds: z.array(z.string()).optional(),
   memberships: z
     .array(
@@ -71,15 +66,12 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
 
-    const { name, isApproved, password, organizationIds, memberships } =
-      parsed.data;
+    const { name, isApproved, organizationIds, memberships } = parsed.data;
     const isSelfUpdate = currentUser.id === id;
     const hasMembershipsUpdate = typeof memberships !== "undefined";
     const hasOrganizationIdsUpdate = typeof organizationIds !== "undefined";
     const hasNonMembershipUpdate =
-      typeof name !== "undefined" ||
-      typeof isApproved !== "undefined" ||
-      typeof password !== "undefined";
+      typeof name !== "undefined" || typeof isApproved !== "undefined";
 
     if (isSelfUpdate && hasNonMembershipUpdate) {
       return NextResponse.json(
@@ -120,16 +112,6 @@ export async function PATCH(
     if (typeof name !== "undefined") data.name = name;
     if (typeof isApproved !== "undefined") data.isApproved = isApproved;
 
-    if (typeof password !== "undefined") {
-      if (password.length === 0) {
-        data.passwordHash = null;
-      } else {
-        data.passwordHash = await (
-          await import("bcryptjs")
-        ).default.hash(password, 10);
-      }
-    }
-
     if (typeof memberships !== "undefined") {
       await prisma.$transaction(async (tx) => {
         if (memberships.length === 0) {
@@ -149,7 +131,6 @@ export async function PATCH(
           });
 
           for (const membership of memberships) {
-            // ใช้ unique constraint [userId, organizationId] ในการ upsert
             await tx.membership.upsert({
               where: {
                 userId_organizationId: {

@@ -9,7 +9,6 @@ import { Providers } from "./providers";
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
 import { Navbar } from "@/components/navbar";
-import { getSiteSettings } from "@/lib/site-settings";
 
 export const metadata: Metadata = {
   title: {
@@ -35,23 +34,22 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const siteSettings = await getSiteSettings();
-  const footerText =
-    siteSettings.footerText ||
-    `${siteSettings.siteName || siteConfig.name} · Powered by HeroUI`;
+  const footerText = `ฝ่ายวิชาการและแผนงาน โรงพยาบาลราชพิพัฒน์`;
 
   return (
-    <html suppressHydrationWarning className="light" lang="en">
-      <head>
-        <link href={siteSettings.faviconUrl ?? "/favicon.ico"} rel="icon" />
-      </head>
+    <html suppressHydrationWarning className="light" lang="th">
       <body
         className={clsx(
           "min-h-screen text-foreground bg-background font-sans antialiased",
           fontSans.variable,
         )}
-        style={{ backgroundColor: siteSettings.backgroundColor }}
       >
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:m-4 focus:inline-flex focus:items-center focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:shadow-lg"
+        >
+          ข้ามไปยังเนื้อหาหลัก
+        </a>
         <Providers
           themeProps={{
             attribute: "class",
@@ -60,12 +58,10 @@ export default async function RootLayout({
           }}
         >
           <div className="relative flex h-screen flex-col">
-            <Navbar
-              logoUrl={siteSettings.logoUrl}
-              siteName={siteSettings.siteName}
-            />
+            <Navbar />
             <main
-              className="mx-auto flex w-full flex-grow items-center justify-center"
+              id="main-content"
+              className="mx-auto flex w-full flex-grow"
               style={{ maxWidth: "100%" }}
             >
               {children}

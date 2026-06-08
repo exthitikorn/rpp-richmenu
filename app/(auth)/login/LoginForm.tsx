@@ -5,46 +5,60 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import NextLink from "next/link";
-import { Link } from "@heroui/link";
 
-export function LoginForm() {
+import { siteConfig } from "@/config/site";
+
+const FALLBACK_ERROR =
+  "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่สามารถเชื่อมต่อ LDAP ได้";
+
+interface LoginFormProps {
+  lineLoginEnabled?: boolean;
+}
+
+export function LoginForm({ lineLoginEnabled = false }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/organizations";
   const urlError = searchParams.get("error");
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [lineLoading, setLineLoading] = useState(false);
 
   useEffect(() => {
     if (!urlError) return;
 
-    if (urlError === "AwaitingApproval") {
+    if (urlError === "LineNotLinked") {
       setError(
-        "บัญชีของคุณถูกสร้างแล้ว กรุณารอผู้ดูแลระบบอนุมัติก่อนจึงจะเข้าสู่ระบบได้",
+        "บัญชี LINE นี้ยังไม่ได้เชื่อมต่อกับระบบ กรุณาเข้าสู่ระบบด้วยบัญชีโรงพยาบาลแล้วเชื่อมต่อ LINE ที่หน้าโปรไฟล์",
       );
-    } else if (urlError === "LineProfileMissing") {
-      setError("ไม่สามารถดึงข้อมูลผู้ใช้จาก LINE ได้ กรุณาลองใหม่อีกครั้ง");
     } else if (urlError === "AccessDenied") {
-      setError("ไม่สามารถเข้าสู่ระบบด้วย LINE ได้");
+      setError("ไม่สามารถเข้าสู่ระบบได้");
+    } else if (urlError === "OAuthCallback") {
+      setError("เข้าสู่ระบบด้วย LINE ไม่สำเร็จ กรุณาลองใหม่");
     }
   }, [urlError]);
+
+  function handleLineLogin() {
+    setError("");
+    setLineLoading(true);
+    void signIn("line", { callbackUrl });
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
-      const res = await signIn("credentials", {
-        email,
+      const res = await signIn("ldap", {
+        username: username.trim(),
         password,
         redirect: false,
       });
 
       if (res?.error) {
-        setError("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+        setError(typeof res.error === "string" ? res.error : FALLBACK_ERROR);
         setLoading(false);
 
         return;
@@ -62,7 +76,10 @@ export function LoginForm() {
       <div className="w-full max-w-lg rounded-2xl border border-default-200 bg-white shadow-lg sm:max-w-xl md:max-w-xl">
         <div className="flex flex-col gap-1 px-4 pb-0 pt-6 sm:px-8 sm:pt-8 md:px-12 lg:px-16">
           <h1 className="text-xl font-semibold sm:text-2xl">เข้าสู่ระบบ</h1>
-          <p className="text-sm text-default-500">LINE OA Rich Menu Manager</p>
+          <p className="text-sm text-default-500">{siteConfig.name}</p>
+          <p className="text-sm text-default-400">
+            กรุณาใช้บัญชีของโรงพยาบาลในการเข้าสู่ระบบ
+          </p>
         </div>
         <div
           className="px-4 pt-6 sm:px-8 md:px-12 lg:px-16"
@@ -79,12 +96,12 @@ export function LoginForm() {
             )}
             <Input
               isRequired
-              autoComplete="email"
-              label="อีเมล"
-              placeholder="you@example.com"
-              type="email"
-              value={email}
-              onValueChange={setEmail}
+              autoComplete="username"
+              label="ชื่อผู้ใช้"
+              placeholder="กรอกชื่อผู้ใช้ของคุณ"
+              type="text"
+              value={username}
+              onValueChange={setUsername}
             />
             <Input
               isRequired
@@ -98,30 +115,37 @@ export function LoginForm() {
             <Button
               className="min-h-[44px] w-full"
               color="primary"
+              isDisabled={lineLoading}
               isLoading={loading}
               type="submit"
             >
               เข้าสู่ระบบ
             </Button>
           </form>
-          <div className="mt-4">
-            <Button
-              className="min-h-[44px] w-full"
-              color="success"
-              variant="flat"
-              onPress={() => {
-                void signIn("line", { callbackUrl });
-              }}
-            >
-              เข้าสู่ระบบด้วย LINE
-            </Button>
-          </div>
-          <p className="mt-4 text-center text-sm text-default-500">
-            ยังไม่มีบัญชี?{" "}
-            <Link as={NextLink} className="text-primary" href="/register">
-              สมัครสมาชิก
-            </Link>
-          </p>
+          {lineLoginEnabled && (
+            <>
+              <div className="relative py-2">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-default-200" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-white px-2 text-default-400">หรือ</span>
+                </div>
+              </div>
+              <Button
+                className="min-h-[44px] w-full bg-[#06C755] text-white"
+                isDisabled={loading}
+                isLoading={lineLoading}
+                type="button"
+                onPress={handleLineLogin}
+              >
+                เข้าสู่ระบบด้วย LINE
+              </Button>
+              <p className="text-center text-xs text-default-400">
+                สำหรับบัญชีที่เชื่อมต่อ LINE กับระบบแล้ว
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>

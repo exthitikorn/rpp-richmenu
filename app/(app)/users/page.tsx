@@ -48,7 +48,7 @@ export default async function UsersPage() {
   return (
     <div className="w-full min-w-0 max-w-full space-y-4">
       <PageHeader
-        description="จัดการผู้ใช้และกำหนดให้ผู้ใช้ที่ได้รับอนุมัติเท่านั้นที่ใช้งานได้"
+        description="จัดการผู้ใช้ที่เข้าสู่ระบบผ่าน LDAP และกำหนดสิทธิ์การใช้งาน"
         title="ผู้ใช้"
       />
       <Card className="w-full min-w-0 overflow-hidden">
@@ -56,7 +56,8 @@ export default async function UsersPage() {
           <div className="min-w-0">
             <p className="text-sm font-semibold">รายการผู้ใช้</p>
             <p className="text-xs text-default-500">
-              ผู้ใช้ที่ยังไม่ถูกอนุมัติจะไม่สามารถเข้าสู่ระบบและใช้งานระบบได้
+              ผู้ใช้จะถูกสร้างอัตโนมัติเมื่อเข้าสู่ระบบครั้งแรก
+              และต้องได้รับการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน
             </p>
           </div>
           {/* <Button isDisabled color="primary" size="sm" variant="flat">

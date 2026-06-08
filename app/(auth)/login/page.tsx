@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { LoginForm } from "./LoginForm";
 
 import { getCurrentUser } from "@/lib/auth";
+import { isLineLoginConfigured } from "@/lib/auth/providers/line.provider";
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
@@ -20,7 +21,7 @@ export default async function LoginPage() {
         </div>
       }
     >
-      <LoginForm />
+      <LoginForm lineLoginEnabled={isLineLoginConfigured()} />
     </Suspense>
   );
 }

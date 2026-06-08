@@ -17,13 +17,15 @@ import { useAppToast } from "@/components/AppToastProvider";
 
 interface ProfileFormProps {
   initialName: string | null;
-  email: string;
+  ldapUsername: string | null;
+  email: string | null;
   lineConnected: boolean;
   lineDisplayName?: string | null;
 }
 
 export function ProfileForm({
   initialName,
+  ldapUsername,
   email,
   lineConnected,
   lineDisplayName,
@@ -31,11 +33,8 @@ export function ProfileForm({
   const router = useRouter();
   const toast = useAppToast();
   const [name, setName] = useState(initialName ?? "");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [saving, setSaving] = useState<"profile" | "password" | null>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -48,7 +47,6 @@ export function ProfileForm({
     setSuccessMessage(null);
     setLinking(true);
 
-    // redirect ออกไปทำ LINE Login
     window.location.href = "/api/line/connect";
   }
 
@@ -92,7 +90,7 @@ export function ProfileForm({
     setSuccessMessage(null);
 
     try {
-      setSaving("profile");
+      setSaving(true);
       const response = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -115,54 +113,7 @@ export function ProfileForm({
 
       setError(message);
     } finally {
-      setSaving(null);
-    }
-  }
-
-  async function handleChangePassword() {
-    setError(null);
-    setSuccessMessage(null);
-
-    if (!currentPassword || !newPassword) {
-      setError("กรุณากรอกรหัสผ่านปัจจุบันและรหัสผ่านใหม่");
-
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError("รหัสผ่านใหม่และยืนยันรหัสผ่านไม่ตรงกัน");
-
-      return;
-    }
-
-    try {
-      setSaving("password");
-      const response = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      });
-
-      const data = (await response.json()) as {
-        success?: boolean;
-        error?: string;
-      };
-
-      if (!response.ok || !data.success) {
-        throw new Error(data.error ?? "เปลี่ยนรหัสผ่านไม่สำเร็จ");
-      }
-
-      setSuccessMessage("เปลี่ยนรหัสผ่านเรียบร้อยแล้ว");
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "เปลี่ยนรหัสผ่านไม่สำเร็จ";
-
-      setError(message);
-    } finally {
-      setSaving(null);
+      setSaving(false);
     }
   }
 
@@ -182,10 +133,17 @@ export function ProfileForm({
       <Card as="section" className="w-full min-w-0 overflow-hidden">
         <CardHeader>
           <h2 className="text-lg font-semibold">ข้อมูลโปรไฟล์</h2>
-          <p className="text-sm text-default-500">แก้ไขชื่อที่ใช้แสดงในระบบ</p>
+          <p className="text-sm text-default-500">
+            แก้ไขชื่อที่ใช้แสดงในระบบ (รหัสผ่านจัดการผ่านบัญชีโรงพยาบาล)
+          </p>
         </CardHeader>
         <CardBody className="space-y-4">
-          <Input isDisabled label="อีเมล" value={email} />
+          <Input
+            isDisabled
+            label="ชื่อผู้ใช้"
+            value={ldapUsername ?? "—"}
+          />
+          <Input isDisabled label="อีเมล" value={email ?? "—"} />
           <Input
             label="ชื่อ"
             placeholder="ชื่อที่ต้องการใช้แสดง"
@@ -195,57 +153,13 @@ export function ProfileForm({
           <div className="flex justify-end border-t border-default-200 pt-4">
             <Button
               color="primary"
-              isLoading={saving === "profile"}
+              isLoading={saving}
               type="button"
               onPress={() => {
                 void handleSaveProfile();
               }}
             >
               บันทึก
-            </Button>
-          </div>
-        </CardBody>
-      </Card>
-
-      <Card as="section" className="w-full min-w-0 overflow-hidden">
-        <CardHeader>
-          <h2 className="text-lg font-semibold">เปลี่ยนรหัสผ่าน</h2>
-          <p className="text-sm text-default-500">
-            ตั้งรหัสผ่านใหม่สำหรับการเข้าสู่ระบบ
-          </p>
-        </CardHeader>
-        <CardBody className="space-y-4">
-          <Input
-            label="รหัสผ่านปัจจุบัน"
-            placeholder="กรอกรหัสผ่านปัจจุบัน"
-            type="password"
-            value={currentPassword}
-            onValueChange={setCurrentPassword}
-          />
-          <Input
-            label="รหัสผ่านใหม่"
-            placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 6 ตัว)"
-            type="password"
-            value={newPassword}
-            onValueChange={setNewPassword}
-          />
-          <Input
-            label="ยืนยันรหัสผ่านใหม่"
-            placeholder="กรอกรหัสผ่านใหม่อีกครั้ง"
-            type="password"
-            value={confirmPassword}
-            onValueChange={setConfirmPassword}
-          />
-          <div className="flex justify-end border-t border-default-200 pt-4">
-            <Button
-              color="primary"
-              isLoading={saving === "password"}
-              type="button"
-              onPress={() => {
-                void handleChangePassword();
-              }}
-            >
-              เปลี่ยนรหัสผ่าน
             </Button>
           </div>
         </CardBody>

@@ -4,22 +4,9 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-const updateProfileSchema = z
-  .object({
-    name: z.string().max(191).optional(),
-    currentPassword: z.string().min(1).optional(),
-    newPassword: z.string().min(6, "รหัสผ่านอย่างน้อย 6 ตัว").optional(),
-  })
-  .refine(
-    (data) =>
-      !data.currentPassword && !data.newPassword
-        ? true
-        : Boolean(data.currentPassword && data.newPassword),
-    {
-      message: "กรุณากรอกรหัสผ่านปัจจุบันและรหัสผ่านใหม่ให้ครบ",
-      path: ["newPassword"],
-    },
-  );
+const updateProfileSchema = z.object({
+  name: z.string().max(191).optional(),
+});
 
 export async function PATCH(request: Request) {
   try {
@@ -46,39 +33,12 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const { name, currentPassword, newPassword } = parsed.data;
+    const { name } = parsed.data;
 
     const data: Record<string, unknown> = {};
 
     if (typeof name !== "undefined") {
       data.name = name.trim() === "" ? null : name.trim();
-    }
-
-    if (newPassword) {
-      if (!user.passwordHash) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "ไม่สามารถเปลี่ยนรหัสผ่านสำหรับบัญชีนี้ได้",
-          },
-          { status: 400 },
-        );
-      }
-
-      const bcrypt = (await import("bcryptjs")).default;
-      const isValid = await bcrypt.compare(
-        currentPassword ?? "",
-        user.passwordHash,
-      );
-
-      if (!isValid) {
-        return NextResponse.json(
-          { success: false, error: "รหัสผ่านปัจจุบันไม่ถูกต้อง" },
-          { status: 400 },
-        );
-      }
-
-      data.passwordHash = await bcrypt.hash(newPassword, 10);
     }
 
     if (Object.keys(data).length === 0) {

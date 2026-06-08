@@ -108,6 +108,8 @@ export function AnalyticsCharts({
     barSecondary: "hsl(var(--heroui-secondary))",
   };
 
+  const totalMenuClicks = byMenu.reduce((sum, m) => sum + m.count, 0);
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="min-w-0 rounded-lg border border-default-200 p-4">
@@ -149,7 +151,34 @@ export function AnalyticsCharts({
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </div>
+        </div>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-xs">
+            <caption className="sr-only">
+              ตารางจำนวนการกดต่อ Rich Menu สำหรับผู้อ่านหน้าจอ
+            </caption>
+            <thead>
+              <tr className="border-b border-default-200 text-left text-[0.7rem] text-default-500">
+                <th scope="col" className="py-1 pr-3">
+                  Rich Menu
+                </th>
+                <th scope="col" className="py-1 pr-3 text-right">
+                  จำนวนคลิก
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {menuData.map((row) => (
+                <tr key={row.name} className="border-b border-default-100 last:border-0">
+                  <td className="py-1 pr-3">{row.name}</td>
+                  <td className="py-1 pr-3 text-right">
+                    {row.คลิก.toLocaleString("th-TH")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       <div className="min-w-0 rounded-lg border border-default-200 p-4">
         <h3 className="mb-4 font-medium">Top ปุ่ม (คลิกสูงสุด)</h3>
         <div className="h-64 min-h-0 w-full">
@@ -198,6 +227,40 @@ export function AnalyticsCharts({
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+        <div className="mt-4 overflow-x-auto">
+          <table className="w-full text-xs">
+            <caption className="sr-only">
+              ตารางปุ่มที่ถูกกดสูงสุดสำหรับผู้อ่านหน้าจอ
+            </caption>
+            <thead>
+              <tr className="border-b border-default-200 text-left text-[0.7rem] text-default-500">
+                <th scope="col" className="py-1 pr-3">
+                  อันดับ
+                </th>
+                <th scope="col" className="py-1 pr-3">
+                  ปุ่ม
+                </th>
+                <th scope="col" className="py-1 pr-3 text-right">
+                  จำนวนคลิก
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {areaData.map((row, index) => (
+                <tr
+                  key={`${row.indexLabel}-${index}`}
+                  className="border-b border-default-100 last:border-0"
+                >
+                  <td className="py-1 pr-3">{index + 1}</td>
+                  <td className="py-1 pr-3">{row.label}</td>
+                  <td className="py-1 pr-3 text-right">
+                    {row.คลิก.toLocaleString("th-TH")}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -20,14 +20,14 @@ export default function Error({
     <div className="min-h-[60vh] flex items-center justify-center px-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <h2 className="text-lg font-semibold">Something went wrong</h2>
+          <h2 className="text-lg font-semibold">เกิดข้อผิดพลาด</h2>
         </CardHeader>
         <CardBody className="space-y-4">
           <p className="text-sm text-default-500">
             เกิดข้อผิดพลาดขณะโหลดหน้านี้ กรุณาลองใหม่อีกครั้ง
           </p>
           <Button color="primary" variant="solid" onPress={() => reset()}>
-            Try again
+            ลองอีกครั้ง
           </Button>
         </CardBody>
       </Card>

@@ -13,7 +13,6 @@ import {
 } from "@heroui/dropdown";
 import { Button } from "@heroui/button";
 import { Link } from "@heroui/link";
-import { Image } from "@heroui/image";
 import { Avatar } from "@heroui/avatar";
 import { useSession, signOut } from "next-auth/react";
 import NextLink from "next/link";
@@ -21,13 +20,8 @@ import NextLink from "next/link";
 import { siteConfig } from "@/config/site";
 import { Logo } from "@/components/icons";
 
-interface NavbarProps {
-  siteName?: string;
-  logoUrl?: string | null;
-}
-
-export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
-  const displayName = siteName ?? siteConfig.name;
+export const Navbar = () => {
+  const displayName = siteConfig.name;
   const { data: session, status } = useSession();
 
   const profileLabel =
@@ -40,17 +34,9 @@ export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
       position="sticky"
     >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-        <NavbarBrand as="li" className="gap-3 max-w-fit">
+        <NavbarBrand className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="/">
-            {logoUrl ? (
-              <Image
-                alt={displayName}
-                className="h-8 w-auto rounded-md border border-default-200 bg-white object-contain"
-                src={logoUrl}
-              />
-            ) : (
-              <Logo />
-            )}
+            <Logo />
             <p className="font-bold text-inherit truncate">{displayName}</p>
           </NextLink>
         </NavbarBrand>
@@ -68,6 +54,7 @@ export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
                 color="default"
                 size="sm"
                 variant="light"
+                aria-label={`เมนูโปรไฟล์: ${profileLabel}`}
               >
                 <span className="flex items-center gap-2 truncate text-sm text-default-700">
                   <Avatar
@@ -90,18 +77,10 @@ export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
                 โปรไฟล์
               </DropdownItem>
               <DropdownItem
-                key="settings"
-                as={NextLink}
-                className="text-default-700"
-                href="/settings"
-              >
-                การตั้งค่า
-              </DropdownItem>
-              <DropdownItem
                 key="logout"
                 className="text-danger"
                 color="danger"
-                onPress={() => signOut({ callbackUrl: "/" })}
+                onPress={() => signOut({ callbackUrl: "/login" })}
               >
                 ออกจากระบบ
               </DropdownItem>
@@ -148,18 +127,10 @@ export const Navbar = ({ siteName, logoUrl }: NavbarProps) => {
                 โปรไฟล์
               </DropdownItem>
               <DropdownItem
-                key="settings"
-                as={NextLink}
-                className="text-default-700"
-                href="/settings"
-              >
-                การตั้งค่า
-              </DropdownItem>
-              <DropdownItem
                 key="logout"
                 className="text-danger"
                 color="danger"
-                onPress={() => signOut({ callbackUrl: "/" })}
+                onPress={() => signOut({ callbackUrl: "/login" })}
               >
                 ออกจากระบบ
               </DropdownItem>

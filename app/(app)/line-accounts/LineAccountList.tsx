@@ -195,7 +195,7 @@ function DeleteLineAccountButton({
 
 function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
   return (
-    <Card className="w-full shadow-sm">
+    <Card className="w-full shadow-sm" role="listitem">
       <CardBody className="gap-0 p-0">
         <div className="p-4 pb-3">
           <Link

@@ -16,7 +16,6 @@ const appNavItems: AppNavItem[] = [
   { label: "หน่วยงาน", href: "/organizations" },
   { label: "บัญชี LINE OA", href: "/line-accounts" },
   { label: "Rich Menus", href: "/rich-menus" },
-  { label: "นำเข้า Rich Menu", href: "/import" },
   { label: "บันทึกการ Deploy", href: "/deploy-logs" },
   { label: "จัดการผู้ใช้", href: "/users" },
 ];

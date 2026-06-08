@@ -28,7 +28,8 @@ enum DeployStatus {
 
 model User {
   id             String        @id @default(cuid())
-  email          String        @unique
+  ldapUsername   String?       @unique
+  email          String?       @unique
   name           String?
   image          String?       @db.Text
   emailVerified  DateTime?
@@ -148,12 +149,4 @@ model ClickEvent {
   richMenu    RichMenu    @relation(fields: [richMenuId], references: [id])
 
   @@index([lineAccountId, richMenuId, createdAt])
-}
-
-model SiteSetting {
-  id        String   @id @default(cuid())
-  key       String   @unique
-  value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
