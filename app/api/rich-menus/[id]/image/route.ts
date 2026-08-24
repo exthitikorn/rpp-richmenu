@@ -1,7 +1,10 @@
+import { writeFile, mkdir, unlink } from "fs/promises";
+import path from "path";
+
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 import sizeOf from "image-size";
 
+import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validateImageSize } from "@/lib/richmenu/parser";
@@ -34,12 +37,7 @@ export async function POST(
     }
 
     const richMenu = await prisma.richMenu.findFirst({
-      where: {
-        id: richMenuId,
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: richMenuByIdWhere(user, richMenuId),
       include: {
         lineAccount: true,
       },
@@ -78,19 +76,35 @@ export async function POST(
       );
     }
 
-    const blob = await put(
-      `richmenus/${richMenu.lineAccountId}/${Date.now()}.${contentType === "image/png" ? "png" : "jpg"}`,
-      imageBuffer,
-      {
-        access: "public",
-        contentType,
-      },
+    const ext = contentType === "image/png" ? "png" : "jpg";
+    const filename = `${Date.now()}.${ext}`;
+    const uploadDir = path.join(
+      process.cwd(),
+      "storage",
+      "uploads",
+      "richmenus",
+      richMenu.lineAccountId,
     );
+
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(
+      path.join(uploadDir, filename),
+      new Uint8Array(imageBuffer),
+    );
+
+    // ลบรูปเก่าถ้าเป็น local file
+    if (richMenu.imageUrl?.startsWith("/uploads/")) {
+      const oldPath = path.join(process.cwd(), "storage", richMenu.imageUrl);
+
+      unlink(oldPath).catch(() => {});
+    }
+
+    const imageUrl = `/uploads/richmenus/${richMenu.lineAccountId}/${filename}`;
 
     const updated = await prisma.richMenu.update({
       where: { id: richMenu.id },
       data: {
-        imageUrl: blob.url,
+        imageUrl,
         status: RichMenuStatus.DRAFT,
       },
     });

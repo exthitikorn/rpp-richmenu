@@ -12,16 +12,18 @@ import {
   DropdownItem,
 } from "@heroui/dropdown";
 import { Button } from "@heroui/button";
-import { Link } from "@heroui/link";
 import { Avatar } from "@heroui/avatar";
 import { useSession, signOut } from "next-auth/react";
 import NextLink from "next/link";
 
-import { siteConfig } from "@/config/site";
 import { Logo } from "@/components/icons";
+import { siteConfig } from "@/config/site";
 
-export const Navbar = () => {
-  const displayName = siteConfig.name;
+interface NavbarProps {
+  onMenuOpen?: () => void;
+}
+
+export const Navbar = ({ onMenuOpen }: NavbarProps) => {
   const { data: session, status } = useSession();
 
   const profileLabel =
@@ -34,27 +36,59 @@ export const Navbar = () => {
       position="sticky"
     >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
-        <NavbarBrand className="gap-3 max-w-fit">
-          <NextLink className="flex justify-start items-center gap-1" href="/">
-            <Logo />
-            <p className="font-bold text-inherit truncate">{displayName}</p>
+        {onMenuOpen ? (
+          <Button
+            isIconOnly
+            aria-label="เปิดเมนูนำทาง"
+            className="min-h-[44px] min-w-[44px] md:hidden"
+            color="default"
+            variant="flat"
+            onPress={onMenuOpen}
+          >
+            <svg
+              aria-hidden
+              className="h-6 w-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M4 6h16M4 12h16M4 18h16"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+              />
+            </svg>
+          </Button>
+        ) : null}
+        <NavbarBrand className="max-w-fit">
+          <NextLink
+            className="flex items-center gap-2 rounded-lg px-1 py-1 transition-colors hover:bg-default-100"
+            href="/dashboard"
+          >
+            <Logo size={32} />
+            <div className="min-w-0">
+              <p className="truncate text-xs font-medium text-default-500">
+                {siteConfig.hospitalName}
+              </p>
+              <p className="truncate text-sm font-semibold leading-tight">
+                {siteConfig.name}
+              </p>
+            </div>
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
 
-      <NavbarContent
-        className="hidden sm:flex basis-1/5 sm:basis-full"
-        justify="end"
-      >
+      <NavbarContent className="basis-1/5 sm:basis-full" justify="end">
         {status === "loading" ? null : session?.user?.isApproved ? (
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Button
+                aria-label={`เมนูโปรไฟล์: ${profileLabel}`}
                 className="max-w-[220px] font-medium"
                 color="default"
                 size="sm"
                 variant="light"
-                aria-label={`เมนูโปรไฟล์: ${profileLabel}`}
               >
                 <span className="flex items-center gap-2 truncate text-sm text-default-700">
                   <Avatar
@@ -63,7 +97,9 @@ export const Navbar = () => {
                     size="sm"
                     src={session?.user?.image ?? undefined}
                   />
-                  <span className="truncate">{profileLabel}</span>
+                  <span className="hidden truncate sm:inline">
+                    {profileLabel}
+                  </span>
                 </span>
               </Button>
             </DropdownTrigger>
@@ -74,7 +110,7 @@ export const Navbar = () => {
                 className="text-default-700"
                 href="/profile"
               >
-                โปรไฟล์
+                {siteConfig.labels.profile}
               </DropdownItem>
               <DropdownItem
                 key="logout"
@@ -86,66 +122,7 @@ export const Navbar = () => {
               </DropdownItem>
             </DropdownMenu>
           </Dropdown>
-        ) : (
-          <Link
-            as={NextLink}
-            className="font-medium"
-            color="primary"
-            href="/login"
-          >
-            เข้าสู่ระบบ
-          </Link>
-        )}
-      </NavbarContent>
-
-      <NavbarContent className="sm:hidden basis-1 pl-4" justify="end">
-        {status === "loading" ? null : session?.user?.isApproved ? (
-          <Dropdown placement="bottom-end">
-            <DropdownTrigger>
-              <Button
-                isIconOnly
-                aria-label="เมนูโปรไฟล์"
-                className="min-h-[44px] min-w-[44px]"
-                color="default"
-                variant="light"
-              >
-                <Avatar
-                  className="h-8 w-8"
-                  name={profileLabel}
-                  size="sm"
-                  src={session?.user?.image ?? undefined}
-                />
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="เมนูโปรไฟล์" variant="flat">
-              <DropdownItem
-                key="profile"
-                as={NextLink}
-                className="text-default-700"
-                href="/profile"
-              >
-                โปรไฟล์
-              </DropdownItem>
-              <DropdownItem
-                key="logout"
-                className="text-danger"
-                color="danger"
-                onPress={() => signOut({ callbackUrl: "/login" })}
-              >
-                ออกจากระบบ
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        ) : (
-          <Link
-            as={NextLink}
-            className="font-medium"
-            color="primary"
-            href="/login"
-          >
-            เข้าสู่ระบบ
-          </Link>
-        )}
+        ) : null}
       </NavbarContent>
     </HeroUINavbar>
   );

@@ -1,9 +1,12 @@
 import { LineAccountList } from "./LineAccountList";
 import { CreateLineAccountForm } from "./CreateLineAccountForm";
 
+import { lineAccountWhere, organizationWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { siteConfig } from "@/config/site";
 
 export default async function LineAccountsPage({
   searchParams,
@@ -16,9 +19,7 @@ export default async function LineAccountsPage({
   if (!user) return null;
   const lineAccounts = await prisma.lineAccount.findMany({
     where: {
-      organization: {
-        memberships: { some: { userId: user.id } },
-      },
+      ...lineAccountWhere(user),
       ...(organizationId ? { organizationId } : {}),
     },
     include: {
@@ -29,22 +30,22 @@ export default async function LineAccountsPage({
   });
 
   const organizations = await prisma.organization.findMany({
-    where: { memberships: { some: { userId: user.id } } },
+    where: organizationWhere(user),
     orderBy: { name: "asc" },
   });
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6">
+    <PageShell>
       <PageHeader
         actions={<CreateLineAccountForm organizations={organizations} />}
         description="จัดการบัญชี LINE Official Account และ Rich Menu"
-        title="บัญชี LINE"
+        title={siteConfig.labels.lineAccounts}
       />
       <LineAccountList
         currentOrganizationId={organizationId ?? null}
         lineAccounts={lineAccounts}
         organizations={organizations}
       />
-    </div>
+    </PageShell>
   );
 }

@@ -1,13 +1,17 @@
+import { unlink } from "fs/promises";
+import path from "path";
+
 import { NextResponse } from "next/server";
-import { del } from "@vercel/blob";
 import { z } from "zod";
 
+import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteRichMenu } from "@/lib/line/client";
 
 const bodySchema = z.object({
   name: z.string().min(1, "กรุณาระบุชื่อ"),
+  chatBarText: z.string().optional(),
 });
 
 export async function PATCH(
@@ -27,12 +31,7 @@ export async function PATCH(
     }
 
     const richMenu = await prisma.richMenu.findFirst({
-      where: {
-        id,
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: richMenuByIdWhere(user, id),
       select: { id: true },
     });
 
@@ -54,11 +53,14 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
 
-    const { name } = parsed.data;
+    const { name, chatBarText } = parsed.data;
 
     await prisma.richMenu.update({
       where: { id },
-      data: { name },
+      data: {
+        name,
+        ...(chatBarText !== undefined && { chatBarText }),
+      },
     });
 
     return NextResponse.json({ success: true });
@@ -87,12 +89,7 @@ export async function DELETE(
     }
 
     const richMenu = await prisma.richMenu.findFirst({
-      where: {
-        id,
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: richMenuByIdWhere(user, id),
       include: {
         lineAccount: true,
       },
@@ -116,12 +113,10 @@ export async function DELETE(
       }
     }
 
-    if (richMenu.imageUrl) {
-      try {
-        await del(richMenu.imageUrl);
-      } catch {
-        // ถ้าลบรูปใน Blob ไม่สำเร็จ ให้ลบในระบบต่อไป แต่ไม่ fail ทั้งคำขอ
-      }
+    if (richMenu.imageUrl?.startsWith("/uploads/")) {
+      unlink(path.join(process.cwd(), "public", richMenu.imageUrl)).catch(
+        () => {},
+      );
     }
 
     await prisma.$transaction([

@@ -3,28 +3,29 @@
 import { signOut } from "next-auth/react";
 import { Button } from "@heroui/button";
 
+import { AuthCard } from "@/components/layouts/AuthCard";
+
 export function AwaitingApprovalMessage() {
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4">
-      <div
-        className="rounded-2xl bg-white shadow-lg border border-default-200"
-        style={{ width: "520px", maxWidth: "100%" }}
-      >
-        <div className="flex flex-col gap-4 px-8 py-8">
-          <h1 className="text-2xl font-semibold">รอการอนุมัติ</h1>
-          <p className="text-default-500 text-sm" role="status">
+    <AuthCard
+      header={
+        <>
+          <h2 className="text-2xl font-semibold">รอการอนุมัติ</h2>
+          <p className="text-center text-sm text-default-500" role="status">
             บัญชีของคุณถูกสร้างในระบบแล้ว
             กรุณารอผู้ดูแลระบบอนุมัติบัญชีก่อนจึงจะเข้าใช้งานได้
           </p>
-          <Button
-            color="primary"
-            variant="flat"
-            onPress={() => signOut({ callbackUrl: "/login" })}
-          >
-            กลับไปหน้าเข้าสู่ระบบ
-          </Button>
-        </div>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <Button
+        className="min-h-[44px] w-full"
+        color="primary"
+        variant="flat"
+        onPress={() => signOut({ callbackUrl: "/login" })}
+      >
+        กลับไปหน้าเข้าสู่ระบบ
+      </Button>
+    </AuthCard>
   );
 }

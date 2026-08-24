@@ -1,4 +1,5 @@
 import type { LDAPUserData, LDAPErrorCode } from "@/types/ldap";
+
 import { createLDAPService } from "@/lib/ldap";
 
 export class LDAPProvider {
@@ -45,6 +46,7 @@ export class LDAPProvider {
         "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ AD ได้ กรุณาติดต่อผู้ดูแลระบบ",
       INTERNAL_ERROR: "เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง",
     };
+
     return messages[code] ?? messages.INTERNAL_ERROR;
   }
 }

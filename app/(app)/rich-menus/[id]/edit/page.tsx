@@ -2,6 +2,7 @@ import NextLink from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@heroui/button";
 
+import { lineAccountWhere, richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
@@ -17,12 +18,7 @@ export default async function RichMenuEditPage({
 
   if (!user) return null;
   const richMenu = await prisma.richMenu.findFirst({
-    where: {
-      id,
-      lineAccount: {
-        organization: { memberships: { some: { userId: user.id } } },
-      },
-    },
+    where: richMenuByIdWhere(user, id),
     include: {
       areas: { orderBy: { order: "asc" } },
       lineAccount: { include: { organization: true } },
@@ -32,9 +28,7 @@ export default async function RichMenuEditPage({
   if (!richMenu) notFound();
 
   const lineAccounts = await prisma.lineAccount.findMany({
-    where: {
-      organization: { memberships: { some: { userId: user.id } } },
-    },
+    where: lineAccountWhere(user),
     include: { organization: true },
     orderBy: { name: "asc" },
   });
@@ -59,6 +53,7 @@ export default async function RichMenuEditPage({
         initialData={{
           richMenuId: richMenu.id,
           name: richMenu.name,
+          chatBarText: richMenu.chatBarText,
           imageUrl: richMenu.imageUrl,
           width: richMenu.width,
           height: richMenu.height,

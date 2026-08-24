@@ -138,11 +138,7 @@ export function ProfileForm({
           </p>
         </CardHeader>
         <CardBody className="space-y-4">
-          <Input
-            isDisabled
-            label="ชื่อผู้ใช้"
-            value={ldapUsername ?? "—"}
-          />
+          <Input isDisabled label="ชื่อผู้ใช้" value={ldapUsername ?? "—"} />
           <Input isDisabled label="อีเมล" value={email ?? "—"} />
           <Input
             label="ชื่อ"

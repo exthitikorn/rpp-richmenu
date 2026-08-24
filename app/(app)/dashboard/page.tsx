@@ -1,5 +1,4 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { redirect } from "next/navigation";
 
 import { AnalyticsCharts } from "../analytics/AnalyticsCharts";
 
@@ -8,20 +7,29 @@ import {
   RichMenuAnalyticsSection,
 } from "./RichMenuAnalyticsSection";
 
+import {
+  clickEventWhere,
+  isSystemAdmin,
+  lineAccountWhere,
+  organizationWhere,
+  richMenuWhere,
+} from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { siteConfig } from "@/config/site";
 
 export default async function DashboardPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
 
-  const isAdmin = user.memberships.some((m) => m.role === "ADMIN");
-
-  if (!isAdmin) {
-    redirect("/organizations");
-  }
+  const systemAdmin = isSystemAdmin(user);
+  const orgWhere = organizationWhere(user);
+  const lineWhere = lineAccountWhere(user);
+  const menuWhere = richMenuWhere(user);
+  const clicksWhere = clickEventWhere(user);
 
   const [
     orgCount,
@@ -32,55 +40,21 @@ export default async function DashboardPage() {
     byMenuRaw,
     pendingSummary,
   ] = await Promise.all([
-    prisma.organization.count({
-      where: {
-        memberships: { some: { userId: user.id } },
-      },
-    }),
-    prisma.lineAccount.count({
-      where: {
-        organization: {
-          memberships: { some: { userId: user.id } },
-        },
-      },
-    }),
-    prisma.richMenu.count({
-      where: {
-        lineAccount: {
-          organization: {
-            memberships: { some: { userId: user.id } },
-          },
-        },
-      },
-    }),
-    prisma.clickEvent.count({
-      where: {
-        lineAccount: {
-          organization: {
-            memberships: { some: { userId: user.id } },
-          },
-        },
-      },
-    }),
+    prisma.organization.count({ where: orgWhere }),
+    prisma.lineAccount.count({ where: lineWhere }),
+    prisma.richMenu.count({ where: menuWhere }),
+    prisma.clickEvent.count({ where: clicksWhere }),
     prisma.clickEvent.groupBy({
       by: ["richMenuId", "areaIndex"],
-      where: {
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: clicksWhere,
       _count: true,
     }),
     prisma.clickEvent.groupBy({
       by: ["richMenuId"],
-      where: {
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: clicksWhere,
       _count: true,
     }),
-    isAdmin
+    systemAdmin
       ? (async () => {
           const [users, count] = await Promise.all([
             prisma.user.findMany({
@@ -186,58 +160,67 @@ export default async function DashboardPage() {
   const overviewMetrics = [
     {
       key: "organizations",
-      label: "หน่วยงาน",
-      description: "จำนวนหน่วยงานที่คุณเป็นสมาชิก",
+      label: siteConfig.labels.organizations,
+      description: systemAdmin
+        ? "จำนวนหน่วยงานทั้งหมดในระบบ"
+        : "จำนวนหน่วยงานที่คุณเป็นสมาชิก",
       value: orgCount,
     },
     {
       key: "lineAccounts",
       label: "บัญชี LINE",
-      description: "จำนวนบัญชี LINE ทั้งหมดที่เชื่อมต่อ",
+      description: systemAdmin
+        ? "จำนวนบัญชี LINE ทั้งหมดในระบบ"
+        : "จำนวนบัญชี LINE ในหน่วยงานของคุณ",
       value: lineAccountCount,
     },
     {
       key: "richMenus",
       label: "Rich Menu",
-      description: "จำนวน Rich Menu ที่สร้างไว้",
+      description: systemAdmin
+        ? "จำนวน Rich Menu ทั้งหมดในระบบ"
+        : "จำนวน Rich Menu ในหน่วยงานของคุณ",
       value: richMenuCount,
     },
     {
       key: "clicks",
       label: "การกดทั้งหมด",
-      description: "จำนวนการกด Rich Menu รวมทั้งหมด",
+      description: systemAdmin
+        ? "จำนวนการกด Rich Menu รวมทั้งระบบ"
+        : "จำนวนการกด Rich Menu ในหน่วยงานของคุณ",
       value: totalClicks,
     },
   ];
 
   return (
-    <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-2xl border border-primary-200/40 bg-gradient-to-br from-primary-100/60 via-background to-secondary-100/40 p-6 shadow-sm">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-primary-300/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-48 w-48 rounded-full bg-secondary-300/20 blur-3xl" />
-        <div className="relative z-10 space-y-4">
-          <PageHeader
-            description={`สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ของคุณได้ที่นี่`}
-            title="แดชบอร์ดภาพรวม"
-          />
-          <div className="flex flex-wrap gap-2">
+    <PageShell className="space-y-8">
+      <PageHeader
+        badges={
+          <>
             <span className="inline-flex items-center rounded-full border border-default-200/80 bg-background/80 px-3 py-1 text-xs font-medium text-default-600 shadow-sm">
               อัปเดตข้อมูลแบบเรียลไทม์
             </span>
             <span className="inline-flex items-center rounded-full border border-default-200/80 bg-background/80 px-3 py-1 text-xs font-medium text-default-600 shadow-sm">
               รวม {overviewMetrics[3]?.value.toLocaleString("th-TH")} การกด
             </span>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+        description={
+          systemAdmin
+            ? `สวัสดี, ${user.name ?? user.email} — ดูภาพรวมสถิติทั้งระบบได้ที่นี่`
+            : `สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ในหน่วยงานของคุณได้ที่นี่`
+        }
+        title="แดชบอร์ดภาพรวม"
+        variant="hero"
+      />
       <section className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {overviewMetrics.map((metric) => (
             <Card
               key={metric.key}
-              className="group relative overflow-hidden border border-default-100/80 bg-gradient-to-br from-default-50/90 via-background to-background shadow-sm backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200/70 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none"
+              className="group relative overflow-hidden border border-default-200 bg-gradient-to-br from-default-50/90 via-background to-background shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200/70 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none"
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(125,211,252,0.22),_transparent_55%)] opacity-75 transition-opacity duration-300 group-hover:opacity-100 dark:bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.3),_transparent_55%)]" />
+              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_color-mix(in_srgb,var(--heroui-primary)_22%,transparent),_transparent_55%)] opacity-75 transition-opacity duration-300 group-hover:opacity-100" />
               <CardHeader className="relative z-10 flex flex-col gap-1 pb-1">
                 <p className="text-xs font-medium uppercase tracking-wide text-default-500">
                   {metric.label}
@@ -247,7 +230,7 @@ export default async function DashboardPage() {
                 </p>
               </CardHeader>
               <CardBody className="relative z-10 flex items-center justify-center pt-1">
-                <p className="bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
+                <p className="text-3xl font-bold tracking-tight text-primary">
                   {metric.value.toLocaleString("th-TH")}
                 </p>
               </CardBody>
@@ -256,11 +239,11 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {isAdmin && pendingSummary.count > 0 ? (
+      {systemAdmin && pendingSummary.count > 0 ? (
         <Card className="border border-warning-300/30 bg-gradient-to-br from-warning-50/50 via-background to-background shadow-sm">
           <CardHeader className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-warning-700 dark:text-warning-400">
+              <p className="text-sm font-semibold text-warning-700">
                 ผู้ใช้รออนุมัติ
               </p>
               <p className="text-sm text-default-500">
@@ -271,7 +254,7 @@ export default async function DashboardPage() {
                 คน (แสดงรายการล่าสุด 5 คน)
               </p>
             </div>
-            <span className="mt-1 inline-flex items-center rounded-full border border-warning-300/40 bg-warning-100/60 px-3 py-1 text-xs font-medium text-warning-700 dark:text-warning-300">
+            <span className="mt-1 inline-flex items-center rounded-full border border-warning-300/40 bg-warning-100/60 px-3 py-1 text-xs font-medium text-warning-700">
               {pendingSummary.count.toLocaleString("th-TH")} คนรออนุมัติ
             </span>
           </CardHeader>
@@ -283,13 +266,13 @@ export default async function DashboardPage() {
                 </caption>
                 <thead>
                   <tr className="border-b border-default-200 text-left text-xs text-default-500">
-                    <th scope="col" className="py-2 pr-4">
+                    <th className="py-2 pr-4" scope="col">
                       อีเมล
                     </th>
-                    <th scope="col" className="py-2 pr-4">
+                    <th className="py-2 pr-4" scope="col">
                       ชื่อ
                     </th>
-                    <th scope="col" className="py-2 pr-4">
+                    <th className="py-2 pr-4" scope="col">
                       วันที่สร้าง
                     </th>
                   </tr>
@@ -318,13 +301,15 @@ export default async function DashboardPage() {
         <section className="space-y-4">
           <div className="flex flex-col gap-1">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">
-              Rich Menu Analytics
+              {siteConfig.labels.analyticsTitle}
             </h2>
             <p className="text-sm text-default-500">
-              วิเคราะห์สถิติการกดแต่ละ Rich Menu และพื้นที่ภายใน Rich Menu
+              {systemAdmin
+                ? "วิเคราะห์สถิติการกด Rich Menu ทั้งระบบ"
+                : "วิเคราะห์สถิติการกด Rich Menu ในหน่วยงานของคุณ"}
             </p>
           </div>
-          <Card className="border border-default-100/80 bg-gradient-to-br from-background via-background to-primary-50/30 shadow-sm backdrop-blur-sm">
+          <Card className="border border-default-200 bg-gradient-to-br from-background via-background to-primary-50/30 shadow-sm">
             <CardHeader>
               <p className="font-semibold">สถิติภาพรวมการกด Rich Menu</p>
             </CardHeader>
@@ -343,6 +328,6 @@ export default async function DashboardPage() {
           />
         </section>
       ) : null}
-    </div>
+    </PageShell>
   );
 }

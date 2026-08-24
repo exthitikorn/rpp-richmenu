@@ -21,7 +21,7 @@ export default async function PendingApprovalPage() {
   }
 
   if (dbUser.isApproved) {
-    redirect("/organizations");
+    redirect("/dashboard");
   }
 
   return <AwaitingApprovalMessage />;

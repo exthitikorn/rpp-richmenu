@@ -1,17 +1,13 @@
 "use client";
 
-import type { ThemeProviderProps } from "next-themes";
-
 import { SessionProvider } from "next-auth/react";
 import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
 
 import { AppToastProvider } from "@/components/AppToastProvider";
 
 export interface ProvidersProps {
   children: React.ReactNode;
-  themeProps?: ThemeProviderProps;
 }
 
 declare module "@react-types/shared" {
@@ -22,15 +18,13 @@ declare module "@react-types/shared" {
   }
 }
 
-export function Providers({ children, themeProps }: ProvidersProps) {
+export function Providers({ children }: ProvidersProps) {
   const router = useRouter();
 
   return (
     <SessionProvider>
       <HeroUIProvider navigate={router.push}>
-        <NextThemesProvider {...themeProps}>
-          <AppToastProvider>{children}</AppToastProvider>
-        </NextThemesProvider>
+        <AppToastProvider>{children}</AppToastProvider>
       </HeroUIProvider>
     </SessionProvider>
   );

@@ -1,19 +1,20 @@
 import { OrganizationList } from "./OrganizationList";
 import { CreateOrganizationForm } from "./CreateOrganizationForm";
 
-import { prisma } from "@/lib/prisma";
+import { isSystemAdmin, organizationWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { siteConfig } from "@/config/site";
 
 export default async function OrganizationsPage() {
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const isAdmin = user.memberships.some(
-    (membership) => membership.role === "ADMIN",
-  );
+  const systemAdmin = isSystemAdmin(user);
   const organizations = await prisma.organization.findMany({
-    where: isAdmin ? undefined : { memberships: { some: { userId: user.id } } },
+    where: organizationWhere(user),
     include: {
       memberships: { include: { user: true } },
       _count: { select: { lineAccounts: true } },
@@ -22,13 +23,13 @@ export default async function OrganizationsPage() {
   });
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6">
+    <PageShell>
       <PageHeader
-        actions={<CreateOrganizationForm />}
+        actions={systemAdmin ? <CreateOrganizationForm /> : null}
         description="จัดการหน่วยงานและสิทธิ์การเข้าถึง"
-        title="หน่วยงาน"
+        title={siteConfig.labels.organizations}
       />
       <OrganizationList currentUserId={user.id} organizations={organizations} />
-    </div>
+    </PageShell>
   );
 }

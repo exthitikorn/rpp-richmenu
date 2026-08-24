@@ -1,9 +1,11 @@
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
 import sizeOf from "image-size";
 
-import { getCurrentUser } from "@/lib/auth";
-import { requireRole } from "@/lib/auth";
+import { lineAccountByIdWhere } from "@/lib/access";
+import { getCurrentUser, requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseRichMenuJson, validateImageSize } from "@/lib/richmenu/parser";
 import { RichMenuStatus } from "@/app/generated/prisma/client";
@@ -35,10 +37,7 @@ export async function POST(request: Request) {
     }
 
     const lineAccount = await prisma.lineAccount.findFirst({
-      where: {
-        id: lineAccountId,
-        organization: { memberships: { some: { userId: user.id } } },
-      },
+      where: lineAccountByIdWhere(user, lineAccountId),
     });
 
     if (!lineAccount) {
@@ -51,7 +50,12 @@ export async function POST(request: Request) {
 
     const jsonText = await jsonFile.text();
     const parsed = parseRichMenuJson(jsonText);
-    const { size, name: menuName, areas } = parsed;
+    const {
+      size,
+      name: menuName,
+      chatBarText: menuChatBarText,
+      areas,
+    } = parsed;
 
     const imageBuffer = await imageFile.arrayBuffer();
     const dimensions = sizeOf(new Uint8Array(imageBuffer));
@@ -78,22 +82,32 @@ export async function POST(request: Request) {
       );
     }
 
-    const blob = await put(
-      `richmenus/${lineAccountId}/${Date.now()}.${contentType === "image/png" ? "png" : "jpg"}`,
-      imageBuffer,
-      {
-        access: "public",
-        contentType,
-      },
+    const ext = contentType === "image/png" ? "png" : "jpg";
+    const filename = `${Date.now()}.${ext}`;
+    const uploadDir = path.join(
+      process.cwd(),
+      "storage",
+      "uploads",
+      "richmenus",
+      lineAccountId,
     );
+
+    await mkdir(uploadDir, { recursive: true });
+    await writeFile(
+      path.join(uploadDir, filename),
+      new Uint8Array(imageBuffer),
+    );
+
+    const imageUrl = `/uploads/richmenus/${lineAccountId}/${filename}`;
 
     const richMenu = await prisma.richMenu.create({
       data: {
         lineAccountId,
         name: menuName ?? "Imported",
+        chatBarText: menuChatBarText ?? "",
         width: size.width,
         height: size.height,
-        imageUrl: blob.url,
+        imageUrl,
         status: RichMenuStatus.DRAFT,
         areas: {
           create: areas.map((a, i) => ({

@@ -4,8 +4,9 @@ import { Link } from "@heroui/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
-import { prisma } from "@/lib/prisma";
+import { organizationWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 
 export default async function OrganizationDetailPage({
@@ -17,13 +18,10 @@ export default async function OrganizationDetailPage({
   const user = await getCurrentUser();
 
   if (!user) return null;
-  const isAdmin = user.memberships.some(
-    (membership) => membership.role === "ADMIN",
-  );
   const org = await prisma.organization.findFirst({
     where: {
       id,
-      ...(isAdmin ? {} : { memberships: { some: { userId: user.id } } }),
+      ...organizationWhere(user),
     },
     include: {
       memberships: { include: { user: true } },

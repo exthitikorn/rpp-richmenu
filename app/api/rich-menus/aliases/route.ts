@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { lineAccountByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
@@ -26,10 +27,7 @@ export async function GET(request: Request) {
     }
 
     const lineAccount = await prisma.lineAccount.findFirst({
-      where: {
-        id: lineAccountId,
-        organization: { memberships: { some: { userId: user.id } } },
-      },
+      where: lineAccountByIdWhere(user, lineAccountId),
       select: { organizationId: true },
     });
 

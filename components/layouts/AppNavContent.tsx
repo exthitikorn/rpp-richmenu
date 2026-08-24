@@ -6,41 +6,63 @@ import { Link } from "@heroui/link";
 import clsx from "clsx";
 import { useSession } from "next-auth/react";
 
+import { Logo } from "@/components/icons";
+import { siteConfig } from "@/config/site";
+
 type AppNavItem = {
   label: string;
   href: string;
+  systemAdminOnly?: boolean;
 };
 
 const appNavItems: AppNavItem[] = [
-  { label: "แดชบอร์ด", href: "/dashboard" },
-  { label: "หน่วยงาน", href: "/organizations" },
-  { label: "บัญชี LINE OA", href: "/line-accounts" },
-  { label: "Rich Menus", href: "/rich-menus" },
-  { label: "บันทึกการ Deploy", href: "/deploy-logs" },
-  { label: "จัดการผู้ใช้", href: "/users" },
+  { label: siteConfig.labels.dashboard, href: "/dashboard" },
+  { label: siteConfig.labels.organizations, href: "/organizations" },
+  { label: siteConfig.labels.lineAccounts, href: "/line-accounts" },
+  { label: siteConfig.labels.richMenus, href: "/rich-menus" },
+  {
+    label: siteConfig.labels.deployLogs,
+    href: "/deploy-logs",
+    systemAdminOnly: true,
+  },
+  { label: siteConfig.labels.users, href: "/users", systemAdminOnly: true },
+  { label: siteConfig.labels.profile, href: "/profile" },
 ];
 
 const isPathActive = (pathname: string, href: string): boolean =>
   pathname === href || pathname.startsWith(`${href}/`);
 
 interface AppNavContentProps {
-  /** เรียกเมื่อผู้ใช้เลือกเมนู (เช่น ปิด Drawer บนมือถือ) */
   onNavigate?: () => void;
-  /** คลาสของ container */
   className?: string;
+  showBrand?: boolean;
 }
 
-export function AppNavContent({ onNavigate, className }: AppNavContentProps) {
+export function AppNavContent({
+  onNavigate,
+  className,
+  showBrand = false,
+}: AppNavContentProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const isAdmin = session?.user?.isAdmin === true;
-  const adminOnlyHrefs = ["/dashboard", "/deploy-logs", "/users"];
+  const systemAdmin = session?.user?.isSystemAdmin === true;
   const visibleNavItems = appNavItems.filter(
-    (item) => isAdmin || !adminOnlyHrefs.includes(item.href),
+    (item) => !item.systemAdminOnly || systemAdmin,
   );
 
   return (
     <div className={clsx("flex flex-col gap-1 flex-1", className)}>
+      {showBrand ? (
+        <div className="mb-4 flex items-center gap-2 border-b border-default-200 pb-4">
+          <Logo size={32} />
+          <div className="min-w-0">
+            <p className="truncate text-xs font-medium text-default-500">
+              {siteConfig.hospitalName}
+            </p>
+            <p className="truncate text-sm font-semibold">{siteConfig.name}</p>
+          </div>
+        </div>
+      ) : null}
       <nav
         aria-label="แถบนำทางสำหรับการจัดการ Rich Menu"
         className="flex flex-col gap-1 flex-1"
@@ -57,7 +79,7 @@ export function AppNavContent({ onNavigate, className }: AppNavContentProps) {
                   className={clsx(
                     "w-full justify-start min-h-[44px] items-center",
                     isActive
-                      ? "text-primary font-medium bg-sky-500/10 rounded-lg px-2 py-1"
+                      ? "text-primary font-medium bg-primary/10 rounded-lg px-2 py-1"
                       : "text-default-600",
                   )}
                   href={item.href}

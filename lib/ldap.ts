@@ -4,7 +4,9 @@ import type {
   LDAPAuthResult,
   LDAPSearchResult,
 } from "@/types/ldap";
+
 import { Client } from "ldapts";
+
 import { validateLDAPEnvironment } from "./env";
 
 /** Escape ค่าใน filter ตาม RFC 2254 */
@@ -21,6 +23,7 @@ function escapeFilter(val: string): string {
 function getFirstOU(dn: string): string | null {
   const parts = dn.split(",").map((s) => s.trim());
   const firstOU = parts.find((p) => p.toUpperCase().startsWith("OU="));
+
   return firstOU ? firstOU.slice(3) : null;
 }
 
@@ -36,6 +39,7 @@ function entryToSearchResult(entry: {
 
     const convert = (val: Buffer | string): string => {
       if (Buffer.isBuffer(val)) return val.toString("utf8");
+
       return typeof val === "string" ? val : String(val);
     };
 
@@ -102,6 +106,7 @@ export class LDAPService {
       "network",
       "socket",
     ];
+
     return networkKeywords.some((k) => lower.includes(k));
   }
 
@@ -114,6 +119,7 @@ export class LDAPService {
       if (this.isConnectionError(error)) {
         throw new Error("LDAP_CONNECTION_ERROR");
       }
+
       return null;
     }
 
@@ -136,11 +142,13 @@ export class LDAPService {
         dn: string;
         [k: string]: Buffer | Buffer[] | string[] | string;
       };
+
       return entryToSearchResult(entry);
     } catch (error) {
       if (this.isConnectionError(error)) {
         throw new Error("LDAP_SEARCH_ERROR");
       }
+
       return null;
     }
   }
@@ -158,6 +166,7 @@ export class LDAPService {
     try {
       await userClient.bind(userDN, password);
       await userClient.unbind();
+
       return true;
     } catch {
       return false;
@@ -168,15 +177,19 @@ export class LDAPService {
     attributes: Array<{ type: string; values: string[] }>,
   ): boolean {
     const uac = attributes.find((a) => a.type === "userAccountControl");
+
     if (!uac?.values[0]) return false;
     const value = parseInt(uac.values[0], 10);
+
     return (value & 2) === 2; // ADS_UF_ACCOUNTDISABLE
   }
 
   private isUserInAllowedOU(objectName: string): boolean {
     const ou = this.config.userOU;
+
     if (!ou) return true;
     const pattern = new RegExp(`OU=${escapeRegex(ou)}`, "i");
+
     return pattern.test(objectName);
   }
 
@@ -195,8 +208,7 @@ export class LDAPService {
 
     return {
       ldapUsername: getAttr("sAMAccountName") || username.trim(),
-      displayName:
-        getAttr("displayName") || getAttr("cn") || username.trim(),
+      displayName: getAttr("displayName") || getAttr("cn") || username.trim(),
       email: getAttr("userPrincipalName") || getAttr("mail") || null,
       department,
       title,
@@ -234,6 +246,7 @@ export class LDAPService {
       ];
 
       let bindSuccess = false;
+
       for (const dn of bindCandidates) {
         bindSuccess = await this.testUserBind(dn, password);
         if (bindSuccess) break;
@@ -244,6 +257,7 @@ export class LDAPService {
       }
 
       const userData = this.parseUserData(searchResult, username);
+
       return { success: true, user: userData };
     } catch (error) {
       if (
@@ -254,6 +268,7 @@ export class LDAPService {
       ) {
         return { success: false, errorCode: "CONNECTION_ERROR" };
       }
+
       return { success: false, errorCode: "INTERNAL_ERROR" };
     } finally {
       await this.closeClient();

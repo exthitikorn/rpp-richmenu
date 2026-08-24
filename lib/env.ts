@@ -47,6 +47,7 @@ export function validateLDAPEnvironment(): {
   }
 
   const url = process.env.LDAP_URL!;
+
   if (!url.startsWith("ldap://") && !url.startsWith("ldaps://")) {
     throw new Error("LDAP_URL ต้องเริ่มต้นด้วย ldap:// หรือ ldaps://");
   }

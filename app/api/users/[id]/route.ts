@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/lib/auth";
+import { requireSystemAdmin } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
 const updateUserSchema = z.object({
   name: z.string().optional(),
   isApproved: z.boolean().optional(),
+  isSystemAdmin: z.boolean().optional(),
   organizationIds: z.array(z.string()).optional(),
   memberships: z
     .array(
@@ -25,27 +26,11 @@ export async function PATCH(
   const { id } = await params;
 
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 },
-      );
-    }
+    const currentUser = await requireSystemAdmin();
 
     const existingUser = await prisma.user.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, isSystemAdmin: true },
     });
 
     if (!existingUser) {
@@ -66,12 +51,20 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
 
-    const { name, isApproved, organizationIds, memberships } = parsed.data;
+    const {
+      name,
+      isApproved,
+      isSystemAdmin: nextIsSystemAdmin,
+      organizationIds,
+      memberships,
+    } = parsed.data;
     const isSelfUpdate = currentUser.id === id;
     const hasMembershipsUpdate = typeof memberships !== "undefined";
     const hasOrganizationIdsUpdate = typeof organizationIds !== "undefined";
     const hasNonMembershipUpdate =
-      typeof name !== "undefined" || typeof isApproved !== "undefined";
+      typeof name !== "undefined" ||
+      typeof isApproved !== "undefined" ||
+      typeof nextIsSystemAdmin !== "undefined";
 
     if (isSelfUpdate && hasNonMembershipUpdate) {
       return NextResponse.json(
@@ -95,22 +88,48 @@ export async function PATCH(
 
     if (
       isSelfUpdate &&
-      hasMembershipsUpdate &&
-      (memberships ?? []).every((membership) => membership.role !== "ADMIN")
+      typeof nextIsSystemAdmin === "boolean" &&
+      !nextIsSystemAdmin
     ) {
       return NextResponse.json(
         {
           success: false,
-          error: "บัญชีแอดมินของคุณต้องมีสิทธิ์ ADMIN อย่างน้อย 1 หน่วยงาน",
+          error: "ไม่สามารถถอดสิทธิ์ผู้ดูแลระบบของบัญชีตัวเองได้",
         },
         { status: 400 },
       );
+    }
+
+    if (
+      typeof nextIsSystemAdmin === "boolean" &&
+      nextIsSystemAdmin === false &&
+      existingUser.isSystemAdmin
+    ) {
+      const remainingSystemAdmins = await prisma.user.count({
+        where: {
+          isSystemAdmin: true,
+          id: { not: id },
+        },
+      });
+
+      if (remainingSystemAdmins === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "ระบบต้องมีผู้ดูแลระบบอย่างน้อย 1 คน",
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const data: Record<string, unknown> = {};
 
     if (typeof name !== "undefined") data.name = name;
     if (typeof isApproved !== "undefined") data.isApproved = isApproved;
+    if (typeof nextIsSystemAdmin !== "undefined") {
+      data.isSystemAdmin = nextIsSystemAdmin;
+    }
 
     if (typeof memberships !== "undefined") {
       await prisma.$transaction(async (tx) => {
@@ -207,7 +226,23 @@ export async function PATCH(
     }
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "เกิดข้อผิดพลาด";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: "ไม่สามารถอัปเดตผู้ใช้ได้" },
       { status: 500 },
@@ -222,23 +257,7 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 },
-      );
-    }
+    const currentUser = await requireSystemAdmin();
 
     if (currentUser.id === id) {
       return NextResponse.json(
@@ -247,12 +266,52 @@ export async function DELETE(
       );
     }
 
+    const targetUser = await prisma.user.findUnique({
+      where: { id },
+      select: { isSystemAdmin: true },
+    });
+
+    if (targetUser?.isSystemAdmin) {
+      const remainingSystemAdmins = await prisma.user.count({
+        where: {
+          isSystemAdmin: true,
+          id: { not: id },
+        },
+      });
+
+      if (remainingSystemAdmins === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "ไม่สามารถลบผู้ดูแลระบบคนสุดท้ายได้",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     await prisma.user.delete({
       where: { id },
     });
 
     return NextResponse.json({ success: true });
-  } catch {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "เกิดข้อผิดพลาด";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: "ไม่สามารถลบผู้ใช้ได้" },
       { status: 500 },

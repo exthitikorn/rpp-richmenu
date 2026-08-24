@@ -1,7 +1,11 @@
 import type { LineRichMenuPayload } from "@/lib/line/types";
 
+import { readFile } from "fs/promises";
+import path from "path";
+
 import { NextResponse } from "next/server";
 
+import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import {
@@ -39,7 +43,9 @@ export async function POST(
 ) {
   const { id: richMenuId } = await params;
   const requestUrl = new URL(request.url);
-  const origin = requestUrl.origin;
+  const origin = process.env.NEXTAUTH_URL
+    ? new URL(process.env.NEXTAUTH_URL).origin
+    : requestUrl.origin;
 
   try {
     const user = await getCurrentUser();
@@ -52,12 +58,7 @@ export async function POST(
     }
 
     const richMenu = await prisma.richMenu.findFirst({
-      where: {
-        id: richMenuId,
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: richMenuByIdWhere(user, richMenuId),
       include: {
         areas: { orderBy: { order: "asc" } },
         lineAccount: true,
@@ -75,7 +76,8 @@ export async function POST(
       size: { width: richMenu.width, height: richMenu.height },
       selected: richMenu.isDefault,
       name: richMenu.name,
-      chatBarText: richMenu.name?.slice(0, 14) || "เมนู",
+      chatBarText:
+        richMenu.chatBarText || richMenu.name?.slice(0, 14) || "เมนู",
       areas: richMenu.areas.map((a, index) => {
         const rawAction = (a.action as Record<string, unknown>) ?? {};
 
@@ -110,25 +112,61 @@ export async function POST(
       payload,
     );
 
-    const imageRes = await fetch(richMenu.imageUrl);
+    let imageBuffer: ArrayBuffer;
+    let contentType: "image/jpeg" | "image/png";
 
-    if (!imageRes.ok) {
-      await prisma.deployLog.create({
-        data: {
-          richMenuId: richMenu.id,
-          status: DeployStatus.FAILED,
-          message: "ดาวน์โหลดรูปไม่สำเร็จ",
-        },
-      });
-
-      return NextResponse.json(
-        { success: false, error: "ดาวน์โหลดรูปไม่สำเร็จ" },
-        { status: 400 },
+    if (richMenu.imageUrl.startsWith("/uploads/")) {
+      // อ่านจาก disk โดยตรง — ลอง storage/ ก่อน (ที่เก็บใหม่) แล้ว fallback ไป public/ (legacy)
+      const storageFilePath = path.join(
+        process.cwd(),
+        "storage",
+        richMenu.imageUrl,
       );
+      const legacyFilePath = path.join(
+        process.cwd(),
+        "public",
+        richMenu.imageUrl,
+      );
+      let fileBuffer: Buffer;
+
+      try {
+        fileBuffer = await readFile(storageFilePath);
+      } catch {
+        fileBuffer = await readFile(legacyFilePath);
+      }
+
+      imageBuffer = fileBuffer.buffer.slice(
+        fileBuffer.byteOffset,
+        fileBuffer.byteOffset + fileBuffer.byteLength,
+      );
+      contentType = richMenu.imageUrl.endsWith(".png")
+        ? "image/png"
+        : "image/jpeg";
+    } else {
+      const imageUrl = richMenu.imageUrl.startsWith("/")
+        ? `${origin}${richMenu.imageUrl}`
+        : richMenu.imageUrl;
+      const imageRes = await fetch(imageUrl);
+
+      if (!imageRes.ok) {
+        await prisma.deployLog.create({
+          data: {
+            richMenuId: richMenu.id,
+            status: DeployStatus.FAILED,
+            message: "ดาวน์โหลดรูปไม่สำเร็จ",
+          },
+        });
+
+        return NextResponse.json(
+          { success: false, error: "ดาวน์โหลดรูปไม่สำเร็จ" },
+          { status: 400 },
+        );
+      }
+      imageBuffer = await imageRes.arrayBuffer();
+      contentType = (imageRes.headers.get("content-type") ?? "image/jpeg") as
+        | "image/jpeg"
+        | "image/png";
     }
-    const imageBuffer = await imageRes.arrayBuffer();
-    const contentType = (imageRes.headers.get("content-type") ??
-      "image/jpeg") as "image/jpeg" | "image/png";
 
     await uploadRichMenuImage(
       richMenu.lineAccount.accessToken,

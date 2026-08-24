@@ -1,9 +1,12 @@
-import type { Role } from "@/app/generated/prisma/client";
-
 import { getServerSession } from "next-auth";
 
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
+
+export {
+  requireOrgRole as requireRole,
+  requireSystemAdmin,
+} from "@/lib/access";
 
 export async function getSession() {
   return getServerSession(authOptions);
@@ -47,33 +50,4 @@ export async function getMembership(organizationId: string) {
     },
     include: { organization: true },
   });
-}
-
-export async function requireRole(
-  organizationId: string,
-  allowedRoles: Role[],
-): Promise<{
-  user: Awaited<ReturnType<typeof getCurrentUser>>;
-  membership: Awaited<ReturnType<typeof getMembership>>;
-}> {
-  const user = await getCurrentUser();
-
-  if (!user) throw new Error("Unauthorized");
-  const isAdmin = user.memberships.some(
-    (membership) => membership.role === "ADMIN",
-  );
-
-  if (isAdmin) {
-    const membership = await getMembership(organizationId);
-
-    return { user, membership };
-  }
-  const membership = await getMembership(organizationId);
-
-  if (!membership)
-    throw new Error("Forbidden: not a member of this organization");
-  if (!allowedRoles.includes(membership.role))
-    throw new Error("Forbidden: insufficient role");
-
-  return { user, membership };
 }

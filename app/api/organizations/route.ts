@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { organizationWhere, requireSystemAdmin } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@/app/generated/prisma/client";
@@ -24,13 +25,8 @@ export async function GET() {
       );
     }
 
-    const isAdmin = user.memberships.some(
-      (membership) => membership.role === Role.ADMIN,
-    );
     const organizations = await prisma.organization.findMany({
-      where: isAdmin
-        ? undefined
-        : { memberships: { some: { userId: user.id } } },
+      where: organizationWhere(user),
       select: { id: true, name: true },
       orderBy: { createdAt: "asc" },
     });
@@ -46,14 +42,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    const user = await requireSystemAdmin();
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
 
@@ -78,13 +67,29 @@ export async function POST(request: Request) {
         name,
         slug,
         memberships: {
-          create: { userId: user.id, role: Role.USER },
+          create: { userId: user.id, role: Role.ADMIN },
         },
       },
     });
 
     return NextResponse.json({ success: true, id: org.id });
   } catch (e) {
+    const message = e instanceof Error ? e.message : "เกิดข้อผิดพลาด";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: "เกิดข้อผิดพลาด" + e },
       { status: 500 },

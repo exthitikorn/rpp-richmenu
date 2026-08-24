@@ -3,6 +3,7 @@ import type { Prisma } from "@/app/generated/prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -37,12 +38,7 @@ export async function PUT(
     }
 
     const richMenu = await prisma.richMenu.findFirst({
-      where: {
-        id: richMenuId,
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: richMenuByIdWhere(user, richMenuId),
     });
 
     if (!richMenu) {

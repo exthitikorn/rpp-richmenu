@@ -35,6 +35,7 @@ model User {
   emailVerified  DateTime?
   passwordHash   String?
   isApproved     Boolean       @default(false)
+  isSystemAdmin  Boolean       @default(false)
 
   // LINE Login binding
   lineUserId      String?      @unique
@@ -95,6 +96,7 @@ model RichMenu {
   width          Int
   height         Int
   imageUrl       String         @db.Text
+  chatBarText    String         @default("")
   lineRichMenuId String?        @unique
   status         RichMenuStatus @default(DRAFT)
   isDefault      Boolean        @default(false)

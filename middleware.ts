@@ -14,8 +14,16 @@ const protectedPaths = [
   "/profile",
 ];
 
+const systemAdminOnlyPaths = ["/deploy-logs", "/users"];
+
 function isProtectedPath(pathname: string): boolean {
   return protectedPaths.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+}
+
+function isSystemAdminOnlyPath(pathname: string): boolean {
+  return systemAdminOnlyPaths.some(
     (p) => pathname === p || pathname.startsWith(p + "/"),
   );
 }
@@ -36,7 +44,7 @@ export async function middleware(request: NextRequest) {
     }
 
     if ((token.isApproved as boolean | undefined) === true) {
-      return NextResponse.redirect(new URL("/organizations", request.url));
+      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     return NextResponse.next();
@@ -58,12 +66,10 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/pending-approval", request.url));
   }
 
-  const isAdmin = (token.isAdmin as boolean | undefined) === true;
-  const isDashboardPath =
-    pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const isSystemAdmin = (token.isSystemAdmin as boolean | undefined) === true;
 
-  if (isDashboardPath && !isAdmin) {
-    return NextResponse.redirect(new URL("/organizations", request.url));
+  if (isSystemAdminOnlyPath(pathname) && !isSystemAdmin) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();

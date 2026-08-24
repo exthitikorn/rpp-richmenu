@@ -45,3 +45,17 @@ bun.lockb
 # env
 .env
 /app/generated/prisma
+
+# uploaded images
+/public/uploads/
+/storage/
+
+#claude
+CLAUDE.md
+.claude
+
+#vscode
+.vscode
+
+# docs
+/docs

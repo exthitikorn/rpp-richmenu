@@ -1,7 +1,8 @@
 import type { NextAuthOptions } from "next-auth";
+import type { LDAPErrorCode } from "@/types/ldap";
 
 import CredentialsProvider from "next-auth/providers/credentials";
-import type { LDAPErrorCode } from "@/types/ldap";
+
 import { prisma } from "@/lib/prisma";
 import { LDAPProvider } from "@/lib/auth/providers/ldap.provider";
 import {
@@ -11,62 +12,61 @@ import {
 
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({
-      id: "ldap",
-      name: "บัญชีโรงพยาบาล",
-      credentials: {
-        username: { label: "ชื่อผู้ใช้", type: "text" },
-        password: { label: "รหัสผ่าน", type: "password" },
-      },
-      async authorize(credentials) {
-        if (!credentials?.username || !credentials?.password) {
-          throw new Error("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน");
+    id: "ldap",
+    name: "บัญชีโรงพยาบาล",
+    credentials: {
+      username: { label: "ชื่อผู้ใช้", type: "text" },
+      password: { label: "รหัสผ่าน", type: "password" },
+    },
+    async authorize(credentials) {
+      if (!credentials?.username || !credentials?.password) {
+        throw new Error("กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน");
+      }
+
+      const ldapProvider = new LDAPProvider();
+
+      try {
+        const ldapUser = await ldapProvider.authenticate(
+          credentials.username,
+          credentials.password,
+        );
+
+        if (!ldapUser) {
+          throw new Error("การเข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูลอีกครั้ง");
         }
 
-        const ldapProvider = new LDAPProvider();
+        const user = await prisma.user.upsert({
+          where: { ldapUsername: ldapUser.ldapUsername },
+          create: {
+            ldapUsername: ldapUser.ldapUsername,
+            name: ldapUser.displayName,
+            email: ldapUser.email,
+            isApproved: false,
+          },
+          update: {
+            name: ldapUser.displayName,
+            email: ldapUser.email,
+          },
+        });
 
-        try {
-          const ldapUser = await ldapProvider.authenticate(
-            credentials.username,
-            credentials.password,
+        return {
+          id: user.id,
+          name: user.name ?? ldapUser.displayName,
+          email: user.email ?? undefined,
+          isApproved: user.isApproved,
+        };
+      } catch (error) {
+        if (error instanceof Error) {
+          const message = ldapProvider.mapErrorCodeToMessage(
+            error.message as LDAPErrorCode,
           );
 
-          if (!ldapUser) {
-            throw new Error(
-              "การเข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูลอีกครั้ง",
-            );
-          }
-
-          const user = await prisma.user.upsert({
-            where: { ldapUsername: ldapUser.ldapUsername },
-            create: {
-              ldapUsername: ldapUser.ldapUsername,
-              name: ldapUser.displayName,
-              email: ldapUser.email,
-              isApproved: false,
-            },
-            update: {
-              name: ldapUser.displayName,
-              email: ldapUser.email,
-            },
-          });
-
-          return {
-            id: user.id,
-            name: user.name ?? ldapUser.displayName,
-            email: user.email ?? undefined,
-            isApproved: user.isApproved,
-          };
-        } catch (error) {
-          if (error instanceof Error) {
-            const message = ldapProvider.mapErrorCodeToMessage(
-              error.message as LDAPErrorCode,
-            );
-            throw new Error(message);
-          }
-          throw new Error("เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง");
+          throw new Error(message);
         }
-      },
-    }),
+        throw new Error("เกิดข้อผิดพลาดในระบบ กรุณาลองใหม่อีกครั้ง");
+      }
+    },
+  }),
 ];
 
 if (isLineLoginConfigured()) {
@@ -115,15 +115,15 @@ export const authOptions: NextAuthOptions = {
       }
 
       if (userId) {
-        const adminMembership = await prisma.membership.findFirst({
-          where: {
-            userId,
-            role: "ADMIN",
-          },
-          select: { userId: true },
+        const dbUser = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { isSystemAdmin: true, isApproved: true },
         });
 
-        token.isAdmin = Boolean(adminMembership);
+        if (dbUser) {
+          token.isSystemAdmin = dbUser.isSystemAdmin;
+          token.isApproved = dbUser.isApproved;
+        }
       }
 
       return token;
@@ -147,7 +147,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name = dbUser.name ?? session.user.name ?? null;
         session.user.image = dbUser.image ?? dbUser.linePictureUrl ?? null;
         session.user.isApproved = dbUser.isApproved;
-        session.user.isAdmin = (token.isAdmin as boolean | undefined) === true;
+        session.user.isSystemAdmin = dbUser.isSystemAdmin;
         session.user.ldapUsername = dbUser.ldapUsername;
       } else {
         session.user.id = userId;
@@ -174,7 +174,7 @@ declare module "next-auth" {
       image?: string | null;
       ldapUsername?: string | null;
       isApproved?: boolean;
-      isAdmin?: boolean;
+      isSystemAdmin?: boolean;
     };
   }
 }
@@ -183,6 +183,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     isApproved?: boolean;
-    isAdmin?: boolean;
+    isSystemAdmin?: boolean;
   }
 }

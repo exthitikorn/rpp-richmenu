@@ -2,6 +2,8 @@ import { ProfileForm } from "./ProfileForm";
 
 import { getCurrentUser } from "@/lib/auth";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { siteConfig } from "@/config/site";
 
 export default async function ProfilePage() {
   const user = await getCurrentUser();
@@ -14,10 +16,10 @@ export default async function ProfilePage() {
   };
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6">
+    <PageShell>
       <PageHeader
         description="จัดการข้อมูลโปรไฟล์ของบัญชีของคุณ"
-        title="โปรไฟล์"
+        title={siteConfig.labels.profile}
       />
       <ProfileForm
         email={user.email}
@@ -26,6 +28,6 @@ export default async function ProfilePage() {
         lineConnected={Boolean(userWithLine.lineUserId)}
         lineDisplayName={userWithLine.lineDisplayName ?? null}
       />
-    </div>
+    </PageShell>
   );
 }

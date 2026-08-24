@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `RichMenu` ADD COLUMN `chatBarText` VARCHAR(191) NOT NULL DEFAULT '';

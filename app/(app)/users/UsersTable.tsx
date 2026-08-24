@@ -49,8 +49,8 @@ type MembershipFormState = Record<
 
 const MEMBERSHIP_ROLE_OPTIONS: { value: Membership["role"]; label: string }[] =
   [
-    { value: "ADMIN", label: "Admin" },
-    { value: "USER", label: "User" },
+    { value: "ADMIN", label: "ผู้ดูแลหน่วยงาน" },
+    { value: "USER", label: "ผู้ใช้งาน" },
   ];
 
 function formatMembershipDisplay(
@@ -335,17 +335,43 @@ function EditUserOrganizationsButton({
   );
 }
 
+function SystemAdminSwitch({
+  user,
+  currentUserId,
+  updatingId,
+  onToggleSystemAdmin,
+}: {
+  user: UserWithRelations;
+  currentUserId: string;
+  updatingId: string | null;
+  onToggleSystemAdmin: (user: UserWithRelations) => void;
+}) {
+  return (
+    <Switch
+      aria-label={
+        user.isSystemAdmin ? "ถอดสิทธิ์ผู้ดูแลระบบ" : "ตั้งเป็นผู้ดูแลระบบ"
+      }
+      isDisabled={user.id === currentUserId || updatingId === user.id}
+      isSelected={user.isSystemAdmin}
+      size="sm"
+      onValueChange={() => onToggleSystemAdmin(user)}
+    />
+  );
+}
+
 function UserCardItem({
   user,
   currentUserId,
   updatingId,
   onToggleApproved,
+  onToggleSystemAdmin,
   organizations,
 }: {
   user: UserWithRelations;
   currentUserId: string;
   updatingId: string | null;
   onToggleApproved: (user: UserWithRelations) => void;
+  onToggleSystemAdmin: (user: UserWithRelations) => void;
   organizations: OrganizationOption[];
 }) {
   return (
@@ -364,6 +390,15 @@ function UserCardItem({
               : user.memberships.map(formatMembershipDisplay).join(", ")}
           </p>
           <div className="mt-3 flex items-center justify-between gap-2">
+            <span className="text-xs text-default-500">ผู้ดูแลระบบ</span>
+            <SystemAdminSwitch
+              currentUserId={currentUserId}
+              updatingId={updatingId}
+              user={user}
+              onToggleSystemAdmin={onToggleSystemAdmin}
+            />
+          </div>
+          <div className="mt-2 flex items-center justify-between gap-2">
             <span className="text-xs text-default-500">อนุมัติ</span>
             <Switch
               aria-label={
@@ -405,6 +440,38 @@ export function UsersTable({
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const toast = useAppToast();
+
+  async function toggleSystemAdmin(user: UserWithRelations) {
+    setError("");
+    setUpdatingId(user.id);
+
+    try {
+      const res = await fetch(`/api/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isSystemAdmin: !user.isSystemAdmin }),
+      });
+      const data = (await res.json()) as ApiResponse;
+
+      if (!res.ok || !data.success) {
+        const message = data.error ?? "อัปเดตสิทธิ์ไม่สำเร็จ";
+
+        setError(message);
+        toast.error(message);
+        setUpdatingId(null);
+
+        return;
+      }
+
+      setUpdatingId(null);
+      toast.success("อัปเดตสิทธิ์ผู้ดูแลระบบเรียบร้อยแล้ว");
+      router.refresh();
+    } catch {
+      setError("เกิดข้อผิดพลาด");
+      toast.error("เกิดข้อผิดพลาด");
+      setUpdatingId(null);
+    }
+  }
 
   async function toggleApproved(user: UserWithRelations) {
     setError("");
@@ -466,6 +533,7 @@ export function UsersTable({
             updatingId={updatingId}
             user={user}
             onToggleApproved={toggleApproved}
+            onToggleSystemAdmin={toggleSystemAdmin}
           />
         ))}
       </div>
@@ -486,6 +554,7 @@ export function UsersTable({
             <TableColumn className="text-center">ชื่อผู้ใช้</TableColumn>
             <TableColumn className="text-center">ชื่อ</TableColumn>
             <TableColumn className="text-center">หน่วยงาน / สิทธิ์</TableColumn>
+            <TableColumn className="text-center">ผู้ดูแลระบบ</TableColumn>
             <TableColumn className="text-center">อนุมัติ</TableColumn>
             <TableColumn className="text-center">จัดการ</TableColumn>
           </TableHeader>
@@ -502,6 +571,14 @@ export function UsersTable({
                   {user.memberships.length === 0
                     ? "—"
                     : user.memberships.map(formatMembershipDisplay).join(", ")}
+                </TableCell>
+                <TableCell className="text-center">
+                  <SystemAdminSwitch
+                    currentUserId={currentUserId}
+                    updatingId={updatingId}
+                    user={user}
+                    onToggleSystemAdmin={toggleSystemAdmin}
+                  />
                 </TableCell>
                 <TableCell className="text-center">
                   <Switch
@@ -523,7 +600,10 @@ export function UsersTable({
                     organizations={organizations}
                     user={user}
                   />
-                  <DeleteUserButton id={user.id} label={formatUserLabel(user)} />
+                  <DeleteUserButton
+                    id={user.id}
+                    label={formatUserLabel(user)}
+                  />
                 </TableCell>
               </TableRow>
             ))}

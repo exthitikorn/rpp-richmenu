@@ -726,7 +726,10 @@ export function ImportRichMenuForm({
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: richMenuJson.name }),
+            body: JSON.stringify({
+              name: richMenuJson.name,
+              chatBarText: richMenuJson.chatBarText,
+            }),
           },
         );
         const patchData = (await patchRes.json()) as {

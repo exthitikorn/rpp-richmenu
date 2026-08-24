@@ -1,27 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "@/lib/auth";
+import { requireSystemAdmin } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
   try {
-    const currentUser = await getCurrentUser();
-
-    if (!currentUser) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
-
-    if (!isAdmin) {
-      return NextResponse.json(
-        { success: false, error: "Forbidden" },
-        { status: 403 },
-      );
-    }
+    await requireSystemAdmin();
 
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
@@ -37,7 +21,23 @@ export async function GET() {
     });
 
     return NextResponse.json({ success: true, data: users });
-  } catch {
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "เกิดข้อผิดพลาด";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
       { success: false, error: "ไม่สามารถดึงรายการผู้ใช้ได้" },
       { status: 500 },

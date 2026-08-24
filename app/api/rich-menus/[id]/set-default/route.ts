@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { clearDefaultRichMenu, setDefaultRichMenu } from "@/lib/line/client";
@@ -25,12 +26,7 @@ export async function POST(
     }
 
     const richMenu = await prisma.richMenu.findFirst({
-      where: {
-        id: richMenuId,
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
-      },
+      where: richMenuByIdWhere(user, richMenuId),
       include: { lineAccount: true },
     });
 

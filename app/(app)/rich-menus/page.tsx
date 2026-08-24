@@ -4,9 +4,12 @@ import { Button } from "@heroui/button";
 import { RichMenusFilter } from "./RichMenusFilter";
 import { RichMenusTable } from "./RichMenusTable";
 
-import { prisma } from "@/lib/prisma";
+import { lineAccountWhere, richMenuWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { siteConfig } from "@/config/site";
 
 export default async function RichMenusPage({
   searchParams,
@@ -21,9 +24,7 @@ export default async function RichMenusPage({
   const [richMenus, lineAccounts] = await Promise.all([
     prisma.richMenu.findMany({
       where: {
-        lineAccount: {
-          organization: { memberships: { some: { userId: user.id } } },
-        },
+        ...richMenuWhere(user),
         ...(lineAccountId ? { lineAccountId } : {}),
       },
       include: {
@@ -33,23 +34,21 @@ export default async function RichMenusPage({
       orderBy: { updatedAt: "desc" },
     }),
     prisma.lineAccount.findMany({
-      where: {
-        organization: { memberships: { some: { userId: user.id } } },
-      },
+      where: lineAccountWhere(user),
       orderBy: { name: "asc" },
     }),
   ]);
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6">
+    <PageShell>
       <PageHeader
         actions={
           <Button as={NextLink} color="primary" href="/import">
-            Import / สร้างใหม่
+            {siteConfig.labels.importRichMenu}
           </Button>
         }
         description="จัดการ Rich Menu และพื้นที่กด (Areas)"
-        title="Rich Menu"
+        title={siteConfig.labels.richMenus}
       />
       <div className="w-full min-w-0 space-y-4">
         <RichMenusFilter
@@ -58,6 +57,6 @@ export default async function RichMenusPage({
         />
         <RichMenusTable richMenus={richMenus} />
       </div>
-    </div>
+    </PageShell>
   );
 }

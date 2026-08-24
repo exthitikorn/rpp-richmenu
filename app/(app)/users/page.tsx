@@ -1,33 +1,35 @@
-import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Card, CardBody } from "@heroui/card";
 
 import { UsersTable } from "./UsersTable";
 
+import { isSystemAdmin } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { DataTableCard } from "@/components/data/DataTableCard";
+import { siteConfig } from "@/config/site";
 
 export default async function UsersPage() {
   const currentUser = await getCurrentUser();
 
   if (!currentUser) return null;
 
-  const isAdmin = currentUser.memberships.some((m) => m.role === "ADMIN");
-
-  if (!isAdmin) {
+  if (!isSystemAdmin(currentUser)) {
     return (
-      <div className="w-full min-w-0 max-w-full space-y-4">
+      <PageShell>
         <PageHeader
           description="จัดการผู้ใช้ระบบและสถานะการอนุมัติ"
-          title="ผู้ใช้"
+          title={siteConfig.labels.users}
         />
         <Card className="w-full min-w-0 overflow-hidden">
           <CardBody>
             <p className="text-danger">
-              คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (ต้องเป็น ADMIN)
+              คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (ต้องเป็นผู้ดูแลระบบ)
             </p>
           </CardBody>
         </Card>
-      </div>
+      </PageShell>
     );
   }
 
@@ -46,32 +48,21 @@ export default async function UsersPage() {
   });
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-4">
+    <PageShell>
       <PageHeader
         description="จัดการผู้ใช้ที่เข้าสู่ระบบผ่าน LDAP และกำหนดสิทธิ์การใช้งาน"
-        title="ผู้ใช้"
+        title={siteConfig.labels.users}
       />
-      <Card className="w-full min-w-0 overflow-hidden">
-        <CardHeader className="px-4 py-3 text-sm font-medium">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold">รายการผู้ใช้</p>
-            <p className="text-xs text-default-500">
-              ผู้ใช้จะถูกสร้างอัตโนมัติเมื่อเข้าสู่ระบบครั้งแรก
-              และต้องได้รับการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน
-            </p>
-          </div>
-          {/* <Button isDisabled color="primary" size="sm" variant="flat">
-            เพิ่มผู้ใช้ (เร็วๆ นี้)
-          </Button> */}
-        </CardHeader>
-        <CardBody className="min-w-0 overflow-x-auto px-4 py-3">
-          <UsersTable
-            currentUserId={currentUser.id}
-            organizations={organizations}
-            users={users}
-          />
-        </CardBody>
-      </Card>
-    </div>
+      <DataTableCard
+        description="ผู้ใช้จะถูกสร้างอัตโนมัติเมื่อเข้าสู่ระบบครั้งแรก และต้องได้รับการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน"
+        title="รายการผู้ใช้"
+      >
+        <UsersTable
+          currentUserId={currentUser.id}
+          organizations={organizations}
+          users={users}
+        />
+      </DataTableCard>
+    </PageShell>
   );
 }

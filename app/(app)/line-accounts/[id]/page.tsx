@@ -4,8 +4,9 @@ import { Link } from "@heroui/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
-import { prisma } from "@/lib/prisma";
+import { lineAccountByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 
 export default async function LineAccountDetailPage({
@@ -18,10 +19,7 @@ export default async function LineAccountDetailPage({
 
   if (!user) return null;
   const account = await prisma.lineAccount.findFirst({
-    where: {
-      id,
-      organization: { memberships: { some: { userId: user.id } } },
-    },
+    where: lineAccountByIdWhere(user, id),
     include: {
       organization: true,
       richMenus: { orderBy: { updatedAt: "desc" } },

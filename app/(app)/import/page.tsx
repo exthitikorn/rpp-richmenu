@@ -1,8 +1,11 @@
 import { ImportRichMenuForm } from "./ImportRichMenuForm";
 
+import { lineAccountWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
+import { siteConfig } from "@/config/site";
 
 export default async function ImportPage({
   searchParams,
@@ -13,20 +16,21 @@ export default async function ImportPage({
 
   if (!user) return null;
   const lineAccounts = await prisma.lineAccount.findMany({
-    where: {
-      organization: { memberships: { some: { userId: user.id } } },
-    },
+    where: lineAccountWhere(user),
     include: { organization: true },
     orderBy: { name: "asc" },
   });
 
   return (
-    <div className="w-full min-w-0 max-w-full space-y-6">
-      <PageHeader title="Import Rich Menu" />
+    <PageShell>
+      <PageHeader
+        description="นำเข้า Rich Menu จาก LINE หรือสร้างใหม่"
+        title={siteConfig.labels.importRichMenu}
+      />
       <ImportRichMenuForm
         defaultLineAccountId={(await searchParams).lineAccountId ?? null}
         lineAccounts={lineAccounts}
       />
-    </div>
+    </PageShell>
   );
 }

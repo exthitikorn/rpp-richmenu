@@ -4,18 +4,28 @@ export const siteConfig = {
   name: "ระบบจัดการ Rich Menu LINE OA",
   description:
     "จัดการ Rich Menu สำหรับ LINE Official Accounts แบบ Multi-tenant",
-  navItems: [
-    { label: "หน้าแรก", href: "/" },
-    { label: "เข้าสู่ระบบ", href: "/login" },
-    { label: "Dashboard", href: "/dashboard" },
-  ],
-  navMenuItems: [
-    { label: "หน้าแรก", href: "/" },
-    { label: "เข้าสู่ระบบ", href: "/login" },
-    { label: "Dashboard", href: "/dashboard" },
-  ],
-  links: {
-    github: "https://github.com/heroui-inc/heroui",
-    docs: "https://heroui.com",
+  hospitalName: "โรงพยาบาลราชพิพัฒน์",
+  department: "ฝ่ายวิชาการและแผนงาน",
+  colors: {
+    primary: "#1B5E4B",
+    secondary: "#C9A227",
+    line: "#06C755",
+  },
+  labels: {
+    dashboard: "แดชบอร์ด",
+    organizations: "หน่วยงาน",
+    lineAccounts: "บัญชี LINE OA",
+    richMenus: "Rich Menu",
+    deployLogs: "บันทึกการ Deploy",
+    users: "จัดการผู้ใช้",
+    profile: "โปรไฟล์",
+    importRichMenu: "นำเข้า Rich Menu",
+    roleAdmin: "ผู้ดูแลระบบ",
+    roleUser: "ผู้ใช้งาน",
+    analyticsTitle: "สถิติการคลิก Rich Menu",
   },
 };
+
+export function getFooterText(): string {
+  return `${siteConfig.department} ${siteConfig.hospitalName}`;
+}

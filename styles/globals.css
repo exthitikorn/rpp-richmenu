@@ -7,8 +7,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-    --font-sans: "font", sans-serif;
-    --font-mono: "monospace", monospace;
+    --font-sans: var(--font-sans), "Noto Sans Thai", sans-serif;
+    --font-mono: var(--font-mono), ui-monospace, monospace;
+    --color-line-green: #06C755;
 }
 
 /* รองรับมือถือ: safe area สำหรับอุปกรณ์มี notch */
