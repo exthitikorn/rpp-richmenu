@@ -293,99 +293,104 @@ export function LineAccountList({
       </div>
 
       {/* Desktop: Table */}
-      <Card className="hidden min-w-0 overflow-hidden md:block">
-        <CardBody className="p-0 overflow-x-auto">
-          <Table
-            fullWidth
-            isStriped
-            removeWrapper
-            aria-label="รายการ LINE Accounts"
-            classNames={{
-              base: "min-w-[520px]",
-              td: "align-middle",
-            }}
-          >
-            <TableHeader>
-              {systemAdmin ? (
-                <>
-                  <TableColumn className="text-center">ชื่อ</TableColumn>
-                  <TableColumn className="text-center">Channel ID</TableColumn>
-                  <TableColumn className="text-center">Rich Menus</TableColumn>
-                  <TableColumn className="text-center">
-                    ผู้ได้รับสิทธิ์
-                  </TableColumn>
-                  <TableColumn className="text-center">จัดการ</TableColumn>
-                </>
-              ) : (
-                <>
-                  <TableColumn className="text-center">ชื่อ</TableColumn>
-                  <TableColumn className="text-center">Channel ID</TableColumn>
-                  <TableColumn className="text-center">Rich Menus</TableColumn>
-                  <TableColumn className="text-center">
-                    ผู้ได้รับสิทธิ์
-                  </TableColumn>
-                </>
-              )}
-            </TableHeader>
-            <TableBody>
-              {lineAccounts.map((la) => (
-                <TableRow key={la.id}>
-                  {systemAdmin ? (
-                    <>
-                      <TableCell>
-                        <Link
-                          as={NextLink}
-                          className="font-medium"
-                          href={`/line-accounts/${la.id}`}
-                        >
-                          {la.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-default-400 truncate text-center">
-                        {la.channelId}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {la._count.richMenus}
-                      </TableCell>
-                      <TableCell className="text-center text-default-500 text-sm">
-                        {formatAssignees(la)}
-                      </TableCell>
-                      <TableCell className="text-center space-x-2">
-                        <EditLineAccountButton la={la} />
-                        <DeleteLineAccountButton
-                          laId={la.id}
-                          laName={la.name}
-                        />
-                      </TableCell>
-                    </>
-                  ) : (
-                    <>
-                      <TableCell>
-                        <Link
-                          as={NextLink}
-                          className="font-medium"
-                          href={`/line-accounts/${la.id}`}
-                        >
-                          {la.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-default-400 truncate text-center">
-                        {la.channelId}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {la._count.richMenus}
-                      </TableCell>
-                      <TableCell className="text-center text-default-500 text-sm">
-                        {formatAssignees(la)}
-                      </TableCell>
-                    </>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      {systemAdmin ? (
+        <Card className="hidden min-w-0 overflow-hidden md:block">
+          <CardBody className="p-0 overflow-x-auto">
+            <Table
+              fullWidth
+              isStriped
+              removeWrapper
+              aria-label="รายการ LINE Accounts"
+              classNames={{
+                base: "min-w-[520px]",
+                td: "align-middle",
+              }}
+            >
+              <TableHeader>
+                <TableColumn className="text-center">ชื่อ</TableColumn>
+                <TableColumn className="text-center">Channel ID</TableColumn>
+                <TableColumn className="text-center">Rich Menus</TableColumn>
+                <TableColumn className="text-center">ผู้ได้รับสิทธิ์</TableColumn>
+                <TableColumn className="text-center">จัดการ</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {lineAccounts.map((la) => (
+                  <TableRow key={la.id}>
+                    <TableCell>
+                      <Link
+                        as={NextLink}
+                        className="font-medium"
+                        href={`/line-accounts/${la.id}`}
+                      >
+                        {la.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-default-400 truncate text-center">
+                      {la.channelId}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {la._count.richMenus}
+                    </TableCell>
+                    <TableCell className="text-center text-default-500 text-sm">
+                      {formatAssignees(la)}
+                    </TableCell>
+                    <TableCell className="text-center space-x-2">
+                      <EditLineAccountButton la={la} />
+                      <DeleteLineAccountButton laId={la.id} laName={la.name} />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
+      ) : (
+        <Card className="hidden min-w-0 overflow-hidden md:block">
+          <CardBody className="p-0 overflow-x-auto">
+            <Table
+              fullWidth
+              isStriped
+              removeWrapper
+              aria-label="รายการ LINE Accounts"
+              classNames={{
+                base: "min-w-[520px]",
+                td: "align-middle",
+              }}
+            >
+              <TableHeader>
+                <TableColumn className="text-center">ชื่อ</TableColumn>
+                <TableColumn className="text-center">Channel ID</TableColumn>
+                <TableColumn className="text-center">Rich Menus</TableColumn>
+                <TableColumn className="text-center">ผู้ได้รับสิทธิ์</TableColumn>
+              </TableHeader>
+              <TableBody>
+                {lineAccounts.map((la) => (
+                  <TableRow key={la.id}>
+                    <TableCell>
+                      <Link
+                        as={NextLink}
+                        className="font-medium"
+                        href={`/line-accounts/${la.id}`}
+                      >
+                        {la.name}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="text-default-400 truncate text-center">
+                      {la.channelId}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {la._count.richMenus}
+                    </TableCell>
+                    <TableCell className="text-center text-default-500 text-sm">
+                      {formatAssignees(la)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 }
