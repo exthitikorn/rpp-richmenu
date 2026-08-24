@@ -3,10 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { prisma } from "@/lib/prisma";
 
-export {
-  requireOrgRole as requireRole,
-  requireSystemAdmin,
-} from "@/lib/access";
+export { requireLineAccountAccess, requireSystemAdmin } from "@/lib/access";
 
 export async function getSession() {
   return getServerSession(authOptions);
@@ -20,8 +17,8 @@ export async function getCurrentUser() {
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     include: {
-      memberships: {
-        include: { organization: true },
+      lineAccountAssignments: {
+        include: { lineAccount: true },
       },
     },
   });
@@ -37,17 +34,4 @@ export async function requireAuth() {
   if (!user) throw new Error("Unauthorized");
 
   return user;
-}
-
-export async function getMembership(organizationId: string) {
-  const user = await getCurrentUser();
-
-  if (!user) return null;
-
-  return prisma.membership.findUnique({
-    where: {
-      userId_organizationId: { userId: user.id, organizationId },
-    },
-    include: { organization: true },
-  });
 }

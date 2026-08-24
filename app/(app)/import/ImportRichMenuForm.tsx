@@ -18,10 +18,9 @@ import {
 import { useAppToast } from "@/components/AppToastProvider";
 import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 
-type LineAccountWithOrg = {
+type LineAccountOption = {
   id: string;
   name: string;
-  organization: { name: string };
 };
 
 type InitialArea = {
@@ -122,7 +121,7 @@ export function ImportRichMenuForm({
   mode = "import",
   initialData = null,
 }: {
-  lineAccounts: LineAccountWithOrg[];
+  lineAccounts: LineAccountOption[];
   defaultLineAccountId: string | null;
   mode?: "import" | "edit";
   initialData?: EditInitialData | null;
@@ -929,11 +928,8 @@ export function ImportRichMenuForm({
                   }}
                 >
                   {lineAccounts.map((la) => (
-                    <SelectItem
-                      key={la.id}
-                      textValue={`${la.name} (${la.organization.name})`}
-                    >
-                      {la.name} ({la.organization.name})
+                    <SelectItem key={la.id} textValue={la.name}>
+                      {la.name}
                     </SelectItem>
                   ))}
                 </Select>
@@ -1107,7 +1103,7 @@ export function ImportRichMenuForm({
                             <Select
                               disallowEmptySelection
                               isRequired
-                              description="เลือกจาก Rich Menu ที่มีในหน่วยงานเดียวกัน"
+                              description="เลือกจาก Rich Menu ที่อยู่ใน LINE OA เดียวกัน"
                               isLoading={loadingAliases}
                               label="Rich Menu Alias ID (action.richMenuAliasId)"
                               placeholder={

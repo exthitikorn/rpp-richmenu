@@ -1,15 +1,18 @@
 "use client";
 
-import type { LineAccount, Organization } from "@/app/generated/prisma/client";
+import type {
+  LineAccount,
+  LineAccountAssignment,
+  User,
+} from "@/app/generated/prisma/client";
 
 import { useState } from "react";
 import NextLink from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Link } from "@heroui/link";
-import { Select, SelectItem } from "@heroui/select";
 import {
   Modal,
   ModalBody,
@@ -20,15 +23,17 @@ import {
 } from "@heroui/modal";
 import {
   Table,
-  TableHeader,
-  TableColumn,
   TableBody,
-  TableRow,
   TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
 } from "@heroui/table";
 
 type LineAccountWithRelations = LineAccount & {
-  organization: Organization;
+  assignments: (LineAccountAssignment & {
+    user: Pick<User, "id" | "name" | "email" | "ldapUsername">;
+  })[];
   _count: { richMenus: number };
 };
 
@@ -36,6 +41,20 @@ type ApiResponse = {
   success?: boolean;
   error?: string;
 };
+
+function formatAssignees(la: LineAccountWithRelations) {
+  if (la.assignments.length === 0) {
+    return "ยังไม่มีผู้ได้รับสิทธิ์";
+  }
+
+  return la.assignments
+    .map((assignment) => {
+      const user = assignment.user;
+
+      return user.name ?? user.ldapUsername ?? user.email ?? "—";
+    })
+    .join(", ");
+}
 
 function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -193,7 +212,13 @@ function DeleteLineAccountButton({
   );
 }
 
-function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
+function LineAccountCardItem({
+  la,
+  systemAdmin,
+}: {
+  la: LineAccountWithRelations;
+  systemAdmin: boolean;
+}) {
   return (
     <Card className="w-full shadow-sm" role="listitem">
       <CardBody className="gap-0 p-0">
@@ -206,8 +231,6 @@ function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
             {la.name}
           </Link>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-default-500">หน่วยงาน</dt>
-            <dd className="text-foreground">{la.organization.name}</dd>
             <dt className="text-default-500">Channel ID</dt>
             <dd
               className="truncate font-mono text-default-700"
@@ -217,14 +240,21 @@ function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
             </dd>
             <dt className="text-default-500">Rich Menus</dt>
             <dd className="text-foreground">{la._count.richMenus}</dd>
+            <dt className="text-default-500">ผู้ได้รับสิทธิ์</dt>
+            <dd className="text-foreground">{la.assignments.length}</dd>
           </dl>
+          <p className="mt-3 text-xs text-default-500 line-clamp-2">
+            {formatAssignees(la)}
+          </p>
         </div>
-        <div className="border-t border-default-200 px-4 py-3 justify-center flex">
-          <div className="flex flex-wrap items-center gap-2 [&_button]:min-w-[4.5rem] [&_button]:whitespace-nowrap">
-            <EditLineAccountButton la={la} />
-            <DeleteLineAccountButton laId={la.id} laName={la.name} />
+        {systemAdmin ? (
+          <div className="border-t border-default-200 px-4 py-3 justify-center flex">
+            <div className="flex flex-wrap items-center gap-2 [&_button]:min-w-[4.5rem] [&_button]:whitespace-nowrap">
+              <EditLineAccountButton la={la} />
+              <DeleteLineAccountButton laId={la.id} laName={la.name} />
+            </div>
           </div>
-        </div>
+        ) : null}
       </CardBody>
     </Card>
   );
@@ -232,86 +262,25 @@ function LineAccountCardItem({ la }: { la: LineAccountWithRelations }) {
 
 export function LineAccountList({
   lineAccounts,
-  currentOrganizationId,
-  organizations,
+  systemAdmin,
 }: {
   lineAccounts: LineAccountWithRelations[];
-  currentOrganizationId: string | null;
-  organizations: Organization[];
+  systemAdmin: boolean;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  function onOrganizationChange(keys: "all" | Set<React.Key>) {
-    const id = keys === "all" ? "" : Array.from(keys)[0];
-    const next = new URLSearchParams(searchParams);
-
-    if (id && id !== "all") next.set("organizationId", String(id));
-    else next.delete("organizationId");
-    router.push(`/line-accounts?${next.toString()}`);
-  }
-
-  const selectedKey =
-    currentOrganizationId &&
-    organizations.some((o) => o.id === currentOrganizationId)
-      ? currentOrganizationId
-      : "all";
-
   if (lineAccounts.length === 0) {
     return (
-      <div className="w-full min-w-0 space-y-4">
-        {organizations.length > 1 && (
-          <Select
-            className="w-full sm:max-w-xs"
-            items={[
-              { id: "all", name: "ทั้งหมด" },
-              ...organizations.map((o) => ({ id: o.id, name: o.name })),
-            ]}
-            label="หน่วยงาน"
-            placeholder="ทั้งหมด"
-            selectedKeys={selectedKey === "all" ? ["all"] : [selectedKey]}
-            onSelectionChange={(keys) => {
-              const k = keys as "all" | Set<React.Key>;
-
-              if (k === "all" || k.size === 0) onOrganizationChange("all");
-              else onOrganizationChange(k);
-            }}
-          >
-            {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
-          </Select>
-        )}
-        <Card className="w-full min-w-0 overflow-hidden">
-          <CardBody className="text-center text-default-500 py-12">
-            ยังไม่มี LINE Account เพิ่มจากปุ่มด้านบน
-          </CardBody>
-        </Card>
-      </div>
+      <Card className="w-full min-w-0 overflow-hidden">
+        <CardBody className="text-center text-default-500 py-12">
+          {systemAdmin
+            ? "ยังไม่มี LINE Account เพิ่มจากปุ่มด้านบน"
+            : "ยังไม่มี LINE Account ที่คุณได้รับสิทธิ์"}
+        </CardBody>
+      </Card>
     );
   }
 
   return (
     <div className="w-full min-w-0 space-y-4">
-      {organizations.length > 1 && (
-        <Select
-          className="w-full sm:max-w-xs"
-          items={[
-            { id: "all", name: "ทั้งหมด" },
-            ...organizations.map((o) => ({ id: o.id, name: o.name })),
-          ]}
-          label="หน่วยงาน"
-          placeholder="ทั้งหมด"
-          selectedKeys={selectedKey === "all" ? ["all"] : [selectedKey]}
-          onSelectionChange={(keys) => {
-            const k = keys as "all" | Set<React.Key>;
-
-            if (k === "all" || k.size === 0) onOrganizationChange("all");
-            else onOrganizationChange(k);
-          }}
-        >
-          {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
-        </Select>
-      )}
-
       {/* Mobile: Card list */}
       <div
         aria-label="รายการ LINE Accounts"
@@ -319,7 +288,7 @@ export function LineAccountList({
         role="list"
       >
         {lineAccounts.map((la) => (
-          <LineAccountCardItem key={la.id} la={la} />
+          <LineAccountCardItem key={la.id} la={la} systemAdmin={systemAdmin} />
         ))}
       </div>
 
@@ -337,37 +306,80 @@ export function LineAccountList({
             }}
           >
             <TableHeader>
-              <TableColumn className="text-center">ชื่อ</TableColumn>
-              <TableColumn className="text-center">หน่วยงาน</TableColumn>
-              <TableColumn className="text-center">Channel ID</TableColumn>
-              <TableColumn className="text-center">Rich Menus</TableColumn>
-              <TableColumn className="text-center">จัดการ</TableColumn>
+              {systemAdmin ? (
+                <>
+                  <TableColumn className="text-center">ชื่อ</TableColumn>
+                  <TableColumn className="text-center">Channel ID</TableColumn>
+                  <TableColumn className="text-center">Rich Menus</TableColumn>
+                  <TableColumn className="text-center">
+                    ผู้ได้รับสิทธิ์
+                  </TableColumn>
+                  <TableColumn className="text-center">จัดการ</TableColumn>
+                </>
+              ) : (
+                <>
+                  <TableColumn className="text-center">ชื่อ</TableColumn>
+                  <TableColumn className="text-center">Channel ID</TableColumn>
+                  <TableColumn className="text-center">Rich Menus</TableColumn>
+                  <TableColumn className="text-center">
+                    ผู้ได้รับสิทธิ์
+                  </TableColumn>
+                </>
+              )}
             </TableHeader>
             <TableBody>
               {lineAccounts.map((la) => (
                 <TableRow key={la.id}>
-                  <TableCell>
-                    <Link
-                      as={NextLink}
-                      className="font-medium"
-                      href={`/line-accounts/${la.id}`}
-                    >
-                      {la.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-default-500">
-                    {la.organization.name}
-                  </TableCell>
-                  <TableCell className="text-default-400 truncate text-center">
-                    {la.channelId}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {la._count.richMenus}
-                  </TableCell>
-                  <TableCell className="text-center space-x-2">
-                    <EditLineAccountButton la={la} />
-                    <DeleteLineAccountButton laId={la.id} laName={la.name} />
-                  </TableCell>
+                  {systemAdmin ? (
+                    <>
+                      <TableCell>
+                        <Link
+                          as={NextLink}
+                          className="font-medium"
+                          href={`/line-accounts/${la.id}`}
+                        >
+                          {la.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-default-400 truncate text-center">
+                        {la.channelId}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {la._count.richMenus}
+                      </TableCell>
+                      <TableCell className="text-center text-default-500 text-sm">
+                        {formatAssignees(la)}
+                      </TableCell>
+                      <TableCell className="text-center space-x-2">
+                        <EditLineAccountButton la={la} />
+                        <DeleteLineAccountButton
+                          laId={la.id}
+                          laName={la.name}
+                        />
+                      </TableCell>
+                    </>
+                  ) : (
+                    <>
+                      <TableCell>
+                        <Link
+                          as={NextLink}
+                          className="font-medium"
+                          href={`/line-accounts/${la.id}`}
+                        >
+                          {la.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-default-400 truncate text-center">
+                        {la.channelId}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {la._count.richMenus}
+                      </TableCell>
+                      <TableCell className="text-center text-default-500 text-sm">
+                        {formatAssignees(la)}
+                      </TableCell>
+                    </>
+                  )}
                 </TableRow>
               ))}
             </TableBody>

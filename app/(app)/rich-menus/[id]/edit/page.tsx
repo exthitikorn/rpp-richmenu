@@ -21,7 +21,7 @@ export default async function RichMenuEditPage({
     where: richMenuByIdWhere(user, id),
     include: {
       areas: { orderBy: { order: "asc" } },
-      lineAccount: { include: { organization: true } },
+      lineAccount: true,
     },
   });
 
@@ -29,7 +29,6 @@ export default async function RichMenuEditPage({
 
   const lineAccounts = await prisma.lineAccount.findMany({
     where: lineAccountWhere(user),
-    include: { organization: true },
     orderBy: { name: "asc" },
   });
 
@@ -45,7 +44,7 @@ export default async function RichMenuEditPage({
             กลับไปหน้า Rich Menus
           </Button>
         }
-        description={`"${richMenu.name}" · ${richMenu.lineAccount.name} · ${richMenu.lineAccount.organization.name} · ${richMenu.width}×${richMenu.height}px · ${richMenu.status}${richMenu.isDefault ? " · Default" : ""}`}
+        description={`"${richMenu.name}" · ${richMenu.lineAccount.name} · ${richMenu.width}×${richMenu.height}px · ${richMenu.status}${richMenu.isDefault ? " · Default" : ""}`}
         title="แก้ไข Rich Menu"
       />
       <ImportRichMenuForm

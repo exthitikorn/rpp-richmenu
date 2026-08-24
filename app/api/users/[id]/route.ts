@@ -8,15 +8,7 @@ const updateUserSchema = z.object({
   name: z.string().optional(),
   isApproved: z.boolean().optional(),
   isSystemAdmin: z.boolean().optional(),
-  organizationIds: z.array(z.string()).optional(),
-  memberships: z
-    .array(
-      z.object({
-        organizationId: z.string(),
-        role: z.enum(["ADMIN", "USER"]),
-      }),
-    )
-    .optional(),
+  lineAccountIds: z.array(z.string()).optional(),
 });
 
 export async function PATCH(
@@ -55,12 +47,9 @@ export async function PATCH(
       name,
       isApproved,
       isSystemAdmin: nextIsSystemAdmin,
-      organizationIds,
-      memberships,
+      lineAccountIds,
     } = parsed.data;
     const isSelfUpdate = currentUser.id === id;
-    const hasMembershipsUpdate = typeof memberships !== "undefined";
-    const hasOrganizationIdsUpdate = typeof organizationIds !== "undefined";
     const hasNonMembershipUpdate =
       typeof name !== "undefined" ||
       typeof isApproved !== "undefined" ||
@@ -71,16 +60,6 @@ export async function PATCH(
         {
           success: false,
           error: "ไม่สามารถแก้ไขข้อมูลสำคัญของบัญชีตัวเองจากหน้านี้ได้",
-        },
-        { status: 400 },
-      );
-    }
-
-    if (isSelfUpdate && hasOrganizationIdsUpdate && !hasMembershipsUpdate) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "การแก้ไขบัญชีตัวเองต้องกำหนดสิทธิ์แบบละเอียด (memberships)",
         },
         { status: 400 },
       );
@@ -131,82 +110,33 @@ export async function PATCH(
       data.isSystemAdmin = nextIsSystemAdmin;
     }
 
-    if (typeof memberships !== "undefined") {
+    if (typeof lineAccountIds !== "undefined") {
       await prisma.$transaction(async (tx) => {
-        if (memberships.length === 0) {
-          await tx.membership.deleteMany({
+        if (lineAccountIds.length === 0) {
+          await tx.lineAccountAssignment.deleteMany({
             where: { userId: id },
           });
         } else {
-          const organizationIdsForMemberships = memberships.map(
-            (membership) => membership.organizationId,
-          );
-
-          await tx.membership.deleteMany({
+          await tx.lineAccountAssignment.deleteMany({
             where: {
               userId: id,
-              organizationId: { notIn: organizationIdsForMemberships },
+              lineAccountId: { notIn: lineAccountIds },
             },
           });
 
-          for (const membership of memberships) {
-            await tx.membership.upsert({
+          for (const lineAccountId of lineAccountIds) {
+            await tx.lineAccountAssignment.upsert({
               where: {
-                userId_organizationId: {
+                userId_lineAccountId: {
                   userId: id,
-                  organizationId: membership.organizationId,
+                  lineAccountId,
                 },
               },
               create: {
                 userId: id,
-                organizationId: membership.organizationId,
-                role: membership.role,
+                lineAccountId,
               },
-              update: {
-                role: membership.role,
-              },
-            });
-          }
-        }
-
-        if (Object.keys(data).length > 0) {
-          await tx.user.update({
-            where: { id },
-            data,
-          });
-        }
-      });
-    } else if (typeof organizationIds !== "undefined") {
-      await prisma.$transaction(async (tx) => {
-        if (organizationIds.length === 0) {
-          await tx.membership.deleteMany({
-            where: { userId: id },
-          });
-        } else {
-          await tx.membership.deleteMany({
-            where: { userId: id, organizationId: { notIn: organizationIds } },
-          });
-
-          const existingMemberships = await tx.membership.findMany({
-            where: { userId: id, organizationId: { in: organizationIds } },
-            select: { organizationId: true },
-          });
-
-          const existingOrgIds = new Set(
-            existingMemberships.map((m) => m.organizationId),
-          );
-
-          const newOrgIds = organizationIds.filter(
-            (orgId) => !existingOrgIds.has(orgId),
-          );
-
-          if (newOrgIds.length > 0) {
-            await tx.membership.createMany({
-              data: newOrgIds.map((orgId) => ({
-                userId: id,
-                organizationId: orgId,
-                role: "USER",
-              })),
+              update: {},
             });
           }
         }

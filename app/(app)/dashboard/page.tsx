@@ -11,7 +11,6 @@ import {
   clickEventWhere,
   isSystemAdmin,
   lineAccountWhere,
-  organizationWhere,
   richMenuWhere,
 } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
@@ -26,13 +25,11 @@ export default async function DashboardPage() {
   if (!user) return null;
 
   const systemAdmin = isSystemAdmin(user);
-  const orgWhere = organizationWhere(user);
   const lineWhere = lineAccountWhere(user);
   const menuWhere = richMenuWhere(user);
   const clicksWhere = clickEventWhere(user);
 
   const [
-    orgCount,
     lineAccountCount,
     richMenuCount,
     totalClicks,
@@ -40,7 +37,6 @@ export default async function DashboardPage() {
     byMenuRaw,
     pendingSummary,
   ] = await Promise.all([
-    prisma.organization.count({ where: orgWhere }),
     prisma.lineAccount.count({ where: lineWhere }),
     prisma.richMenu.count({ where: menuWhere }),
     prisma.clickEvent.count({ where: clicksWhere }),
@@ -159,19 +155,11 @@ export default async function DashboardPage() {
 
   const overviewMetrics = [
     {
-      key: "organizations",
-      label: siteConfig.labels.organizations,
-      description: systemAdmin
-        ? "จำนวนหน่วยงานทั้งหมดในระบบ"
-        : "จำนวนหน่วยงานที่คุณเป็นสมาชิก",
-      value: orgCount,
-    },
-    {
       key: "lineAccounts",
       label: "บัญชี LINE",
       description: systemAdmin
         ? "จำนวนบัญชี LINE ทั้งหมดในระบบ"
-        : "จำนวนบัญชี LINE ในหน่วยงานของคุณ",
+        : "จำนวนบัญชี LINE ที่คุณได้รับสิทธิ์",
       value: lineAccountCount,
     },
     {
@@ -179,7 +167,7 @@ export default async function DashboardPage() {
       label: "Rich Menu",
       description: systemAdmin
         ? "จำนวน Rich Menu ทั้งหมดในระบบ"
-        : "จำนวน Rich Menu ในหน่วยงานของคุณ",
+        : "จำนวน Rich Menu ในบัญชี LINE ที่คุณเข้าถึงได้",
       value: richMenuCount,
     },
     {
@@ -187,7 +175,7 @@ export default async function DashboardPage() {
       label: "การกดทั้งหมด",
       description: systemAdmin
         ? "จำนวนการกด Rich Menu รวมทั้งระบบ"
-        : "จำนวนการกด Rich Menu ในหน่วยงานของคุณ",
+        : "จำนวนการกด Rich Menu ในบัญชี LINE ที่คุณเข้าถึงได้",
       value: totalClicks,
     },
   ];
@@ -208,7 +196,7 @@ export default async function DashboardPage() {
         description={
           systemAdmin
             ? `สวัสดี, ${user.name ?? user.email} — ดูภาพรวมสถิติทั้งระบบได้ที่นี่`
-            : `สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ในหน่วยงานของคุณได้ที่นี่`
+            : `สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ที่คุณได้รับสิทธิ์ได้ที่นี่`
         }
         title="แดชบอร์ดภาพรวม"
         variant="hero"
@@ -306,7 +294,7 @@ export default async function DashboardPage() {
             <p className="text-sm text-default-500">
               {systemAdmin
                 ? "วิเคราะห์สถิติการกด Rich Menu ทั้งระบบ"
-                : "วิเคราะห์สถิติการกด Rich Menu ในหน่วยงานของคุณ"}
+                : "วิเคราะห์สถิติการกด Rich Menu ในบัญชี LINE ที่คุณเข้าถึงได้"}
             </p>
           </div>
           <Card className="border border-default-200 bg-gradient-to-br from-background via-background to-primary-50/30 shadow-sm">

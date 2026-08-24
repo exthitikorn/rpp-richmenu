@@ -1,5 +1,6 @@
 import { DeployLogsTable, type DeployLogRow } from "./DeployLogsTable";
 
+import { deployLogWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
@@ -21,7 +22,7 @@ export default async function DeployLogsPage({
   const { page: pageParam } = await searchParams;
   const page = Math.max(1, parseInt(String(pageParam), 10) || 1);
 
-  const where = {};
+  const where = deployLogWhere(user);
 
   const [totalCount, logs] = await Promise.all([
     prisma.deployLog.count({ where }),
@@ -30,7 +31,7 @@ export default async function DeployLogsPage({
       include: {
         richMenu: {
           include: {
-            lineAccount: { include: { organization: true } },
+            lineAccount: true,
           },
         },
       },

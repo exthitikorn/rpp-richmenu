@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
     const lineAccount = await prisma.lineAccount.findFirst({
       where: lineAccountByIdWhere(user, lineAccountId),
-      select: { organizationId: true },
+      select: { id: true },
     });
 
     if (!lineAccount) {
@@ -40,9 +40,7 @@ export async function GET(request: Request) {
 
     const richMenus = await prisma.richMenu.findMany({
       where: {
-        lineAccount: {
-          organizationId: lineAccount.organizationId,
-        },
+        lineAccountId: lineAccount.id,
       },
       select: {
         id: true,

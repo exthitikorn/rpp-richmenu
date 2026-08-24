@@ -1,109 +1,89 @@
 import type { Prisma } from "@/app/generated/prisma/client";
-import type { Role } from "@/app/generated/prisma/client";
 
 import { getCurrentUser } from "@/lib/auth";
 
-type UserWithMemberships = NonNullable<
+type UserWithAssignments = NonNullable<
   Awaited<ReturnType<typeof getCurrentUser>>
 >;
 
 export function isSystemAdmin(
-  user: Pick<UserWithMemberships, "isSystemAdmin">,
+  user: Pick<UserWithAssignments, "isSystemAdmin">,
 ): boolean {
   return user.isSystemAdmin === true;
 }
 
-export function isOrgAdmin(
-  user: Pick<UserWithMemberships, "memberships">,
-  organizationId: string,
+export function isAssignedToLineAccount(
+  user: Pick<UserWithAssignments, "lineAccountAssignments">,
+  lineAccountId: string,
 ): boolean {
-  return user.memberships.some(
-    (membership) =>
-      membership.organizationId === organizationId &&
-      membership.role === "ADMIN",
+  return user.lineAccountAssignments.some(
+    (assignment) => assignment.lineAccountId === lineAccountId,
   );
-}
-
-export function isOrgMember(
-  user: Pick<UserWithMemberships, "memberships">,
-  organizationId: string,
-): boolean {
-  return user.memberships.some(
-    (membership) => membership.organizationId === organizationId,
-  );
-}
-
-export function organizationWhere(
-  user: UserWithMemberships,
-): Prisma.OrganizationWhereInput {
-  if (isSystemAdmin(user)) return {};
-
-  return { memberships: { some: { userId: user.id } } };
 }
 
 export function lineAccountWhere(
-  user: UserWithMemberships,
+  user: UserWithAssignments,
 ): Prisma.LineAccountWhereInput {
   if (isSystemAdmin(user)) return {};
 
   return {
-    organization: { memberships: { some: { userId: user.id } } },
+    assignments: { some: { userId: user.id } },
   };
 }
 
 export function richMenuWhere(
-  user: UserWithMemberships,
+  user: UserWithAssignments,
 ): Prisma.RichMenuWhereInput {
   if (isSystemAdmin(user)) return {};
 
   return {
     lineAccount: {
-      organization: { memberships: { some: { userId: user.id } } },
+      assignments: { some: { userId: user.id } },
     },
   };
 }
 
 export function richMenuByIdWhere(
-  user: UserWithMemberships,
+  user: UserWithAssignments,
   id: string,
 ): Prisma.RichMenuWhereInput {
   return { id, ...richMenuWhere(user) };
 }
 
 export function lineAccountByIdWhere(
-  user: UserWithMemberships,
+  user: UserWithAssignments,
   id: string,
 ): Prisma.LineAccountWhereInput {
   return { id, ...lineAccountWhere(user) };
 }
 
 export function clickEventWhere(
-  user: UserWithMemberships,
+  user: UserWithAssignments,
 ): Prisma.ClickEventWhereInput {
   if (isSystemAdmin(user)) return {};
 
   return {
     lineAccount: {
-      organization: { memberships: { some: { userId: user.id } } },
+      assignments: { some: { userId: user.id } },
     },
   };
 }
 
 export function deployLogWhere(
-  user: UserWithMemberships,
+  user: UserWithAssignments,
 ): Prisma.DeployLogWhereInput {
   if (isSystemAdmin(user)) return {};
 
   return {
     richMenu: {
       lineAccount: {
-        organization: { memberships: { some: { userId: user.id } } },
+        assignments: { some: { userId: user.id } },
       },
     },
   };
 }
 
-export async function requireSystemAdmin(): Promise<UserWithMemberships> {
+export async function requireSystemAdmin(): Promise<UserWithAssignments> {
   const user = await getCurrentUser();
 
   if (!user) throw new Error("Unauthorized");
@@ -112,36 +92,16 @@ export async function requireSystemAdmin(): Promise<UserWithMemberships> {
   return user;
 }
 
-export async function requireOrgRole(
-  organizationId: string,
-  allowedRoles: Role[],
-): Promise<{
-  user: UserWithMemberships;
-  membership: UserWithMemberships["memberships"][number] | null;
-}> {
+export async function requireLineAccountAccess(
+  lineAccountId: string,
+): Promise<UserWithAssignments> {
   const user = await getCurrentUser();
 
   if (!user) throw new Error("Unauthorized");
-
-  if (isSystemAdmin(user)) {
-    const membership =
-      user.memberships.find((item) => item.organizationId === organizationId) ??
-      null;
-
-    return { user, membership };
+  if (isSystemAdmin(user)) return user;
+  if (!isAssignedToLineAccount(user, lineAccountId)) {
+    throw new Error("Forbidden: line account access required");
   }
 
-  const membership = user.memberships.find(
-    (item) => item.organizationId === organizationId,
-  );
-
-  if (!membership) {
-    throw new Error("Forbidden: not a member of this organization");
-  }
-
-  if (!allowedRoles.includes(membership.role)) {
-    throw new Error("Forbidden: insufficient role");
-  }
-
-  return { user, membership };
+  return user;
 }

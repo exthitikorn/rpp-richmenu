@@ -17,7 +17,6 @@ type AppNavItem = {
 
 const appNavItems: AppNavItem[] = [
   { label: siteConfig.labels.dashboard, href: "/dashboard" },
-  { label: siteConfig.labels.organizations, href: "/organizations" },
   { label: siteConfig.labels.lineAccounts, href: "/line-accounts" },
   { label: siteConfig.labels.richMenus, href: "/rich-menus" },
   {

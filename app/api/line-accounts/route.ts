@@ -1,12 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/lib/auth";
-import { requireRole } from "@/lib/auth";
+import { requireSystemAdmin } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
-  organizationId: z.string().cuid(),
   name: z.string().min(1, "กรุณาระบุชื่อ"),
   channelId: z.string().min(1, "กรุณาระบุ Channel ID"),
   channelSecret: z.string().min(1, "กรุณาระบุ Channel Secret"),
@@ -15,14 +13,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    const user = await getCurrentUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    await requireSystemAdmin();
     const body = await request.json();
     const parsed = bodySchema.safeParse(body);
 
@@ -33,14 +24,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
-    const { organizationId, name, channelId, channelSecret, accessToken } =
-      parsed.data;
-
-    await requireRole(organizationId, ["ADMIN"]);
+    const { name, channelId, channelSecret, accessToken } = parsed.data;
 
     await prisma.lineAccount.create({
       data: {
-        organizationId,
         name,
         channelId,
         channelSecret,
@@ -50,8 +37,24 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    const message = e instanceof Error ? e.message : "เกิดข้อผิดพลาด";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "เกิดข้อผิดพลาด" + e },
+      { success: false, error: "เกิดข้อผิดพลาด" },
       { status: 500 },
     );
   }

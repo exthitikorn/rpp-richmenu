@@ -21,7 +21,13 @@ export default async function LineAccountDetailPage({
   const account = await prisma.lineAccount.findFirst({
     where: lineAccountByIdWhere(user, id),
     include: {
-      organization: true,
+      assignments: {
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, ldapUsername: true },
+          },
+        },
+      },
       richMenus: { orderBy: { updatedAt: "desc" } },
     },
   });
@@ -49,7 +55,7 @@ export default async function LineAccountDetailPage({
             </Button>
           </div>
         }
-        description={account.organization.name}
+        description={`ผู้ได้รับสิทธิ์ ${account.assignments.length} คน`}
         title={account.name}
       />
       <Card>

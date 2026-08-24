@@ -5,7 +5,6 @@ import { NextResponse } from "next/server";
 
 const protectedPaths = [
   "/dashboard",
-  "/organizations",
   "/line-accounts",
   "/rich-menus",
   "/users",
@@ -14,7 +13,7 @@ const protectedPaths = [
   "/profile",
 ];
 
-const systemAdminOnlyPaths = ["/deploy-logs", "/users"];
+const systemAdminOnlyPaths = ["/users"];
 
 function isProtectedPath(pathname: string): boolean {
   return protectedPaths.some(

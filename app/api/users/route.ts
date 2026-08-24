@@ -10,9 +10,9 @@ export async function GET() {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        memberships: {
+        lineAccountAssignments: {
           include: {
-            organization: {
+            lineAccount: {
               select: { id: true, name: true },
             },
           },

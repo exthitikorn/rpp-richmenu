@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "@/lib/auth";
+import { requireSystemAdmin } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
@@ -15,27 +15,10 @@ export async function PATCH(
   const { id } = await params;
 
   try {
-    const user = await getCurrentUser();
+    await requireSystemAdmin();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const account = await prisma.lineAccount.findFirst({
-      where: {
-        id,
-        organization: {
-          memberships: {
-            some: {
-              userId: user.id,
-              role: { in: ["ADMIN"] },
-            },
-          },
-        },
-      },
+    const account = await prisma.lineAccount.findUnique({
+      where: { id },
       select: { id: true },
     });
 
@@ -66,8 +49,25 @@ export async function PATCH(
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "แก้ไข LINE Account ไม่สำเร็จ";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "แก้ไข LINE Account ไม่สำเร็จ" + e },
+      { success: false, error: "แก้ไข LINE Account ไม่สำเร็จ" },
       { status: 400 },
     );
   }
@@ -80,27 +80,10 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    const user = await getCurrentUser();
+    await requireSystemAdmin();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
-
-    const account = await prisma.lineAccount.findFirst({
-      where: {
-        id,
-        organization: {
-          memberships: {
-            some: {
-              userId: user.id,
-              role: { in: ["ADMIN"] },
-            },
-          },
-        },
-      },
+    const account = await prisma.lineAccount.findUnique({
+      where: { id },
       include: {
         _count: {
           select: {
@@ -133,8 +116,25 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (e) {
+    const message =
+      e instanceof Error ? e.message : "ลบ LINE Account ไม่สำเร็จ";
+
+    if (message === "Unauthorized") {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
+    if (message === "Forbidden: system admin required") {
+      return NextResponse.json(
+        { success: false, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "ลบ LINE Account ไม่สำเร็จ" + e },
+      { success: false, error: "ลบ LINE Account ไม่สำเร็จ" },
       { status: 400 },
     );
   }

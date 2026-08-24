@@ -17,7 +17,6 @@ export default async function ImportPage({
   if (!user) return null;
   const lineAccounts = await prisma.lineAccount.findMany({
     where: lineAccountWhere(user),
-    include: { organization: true },
     orderBy: { name: "asc" },
   });
 

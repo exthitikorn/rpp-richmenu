@@ -1,7 +1,5 @@
 "use client";
 
-import type { Organization } from "@/app/generated/prisma/client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -14,19 +12,13 @@ import {
   ModalFooter,
   useDisclosure,
 } from "@heroui/modal";
-import { Select, SelectItem } from "@heroui/select";
 
 import { useAppToast } from "@/components/AppToastProvider";
 
-export function CreateLineAccountForm({
-  organizations,
-}: {
-  organizations: Organization[];
-}) {
+export function CreateLineAccountForm() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
   const toast = useAppToast();
-  const [organizationId, setOrganizationId] = useState("");
   const [name, setName] = useState("");
   const [channelId, setChannelId] = useState("");
   const [channelSecret, setChannelSecret] = useState("");
@@ -36,12 +28,6 @@ export function CreateLineAccountForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!organizationId) {
-      setError("กรุณาเลือกหน่วยงาน");
-      toast.error("กรุณาเลือกหน่วยงาน");
-
-      return;
-    }
     setError("");
     setLoading(true);
     try {
@@ -49,7 +35,6 @@ export function CreateLineAccountForm({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          organizationId,
           name,
           channelId,
           channelSecret,
@@ -72,7 +57,6 @@ export function CreateLineAccountForm({
       setChannelId("");
       setChannelSecret("");
       setAccessToken("");
-      setOrganizationId("");
       setLoading(false);
       toast.success("สร้าง LINE Account เรียบร้อยแล้ว");
       router.refresh();
@@ -85,11 +69,7 @@ export function CreateLineAccountForm({
 
   return (
     <>
-      <Button
-        color="primary"
-        isDisabled={organizations.length === 0}
-        onPress={onOpen}
-      >
+      <Button color="primary" onPress={onOpen}>
         เพิ่ม LINE Account
       </Button>
       <Modal
@@ -108,21 +88,6 @@ export function CreateLineAccountForm({
                   {error}
                 </p>
               )}
-              <Select
-                isRequired
-                label="หน่วยงาน"
-                placeholder="เลือกหน่วยงาน"
-                selectedKeys={organizationId ? [organizationId] : []}
-                onSelectionChange={(keys) => {
-                  const k = Array.from(keys)[0];
-
-                  setOrganizationId(k ? String(k) : "");
-                }}
-              >
-                {organizations.map((o) => (
-                  <SelectItem key={o.id}>{o.name}</SelectItem>
-                ))}
-              </Select>
               <Input
                 isRequired
                 label="ชื่อ (แสดงในระบบ)"

@@ -36,13 +36,13 @@ export default async function UsersPage() {
   const users = await prisma.user.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      memberships: {
-        include: { organization: true },
+      lineAccountAssignments: {
+        include: { lineAccount: true },
       },
     },
   });
 
-  const organizations = await prisma.organization.findMany({
+  const lineAccounts = await prisma.lineAccount.findMany({
     select: { id: true, name: true },
     orderBy: { createdAt: "asc" },
   });
@@ -54,12 +54,12 @@ export default async function UsersPage() {
         title={siteConfig.labels.users}
       />
       <DataTableCard
-        description="ผู้ใช้จะถูกสร้างอัตโนมัติเมื่อเข้าสู่ระบบครั้งแรก และต้องได้รับการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน"
+        description="ผู้ใช้จะถูกสร้างอัตโนมัติเมื่อเข้าสู่ระบบครั้งแรก และต้องได้รับการอนุมัติจากผู้ดูแลระบบก่อนใช้งาน โดยสิทธิ์การจัดการจะผูกตาม LINE OA ที่ได้รับมอบหมาย"
         title="รายการผู้ใช้"
       >
         <UsersTable
           currentUserId={currentUser.id}
-          organizations={organizations}
+          lineAccounts={lineAccounts}
           users={users}
         />
       </DataTableCard>

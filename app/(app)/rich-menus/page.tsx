@@ -28,7 +28,7 @@ export default async function RichMenusPage({
         ...(lineAccountId ? { lineAccountId } : {}),
       },
       include: {
-        lineAccount: { include: { organization: true } },
+        lineAccount: true,
         _count: { select: { areas: true } },
       },
       orderBy: { updatedAt: "desc" },

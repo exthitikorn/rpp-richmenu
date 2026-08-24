@@ -10,11 +10,6 @@ datasource db {
   provider = "mysql"
 }
 
-enum Role {
-  ADMIN
-  USER
-}
-
 enum RichMenuStatus {
   DRAFT
   DEPLOYED
@@ -27,65 +22,52 @@ enum DeployStatus {
 }
 
 model User {
-  id             String        @id @default(cuid())
-  ldapUsername   String?       @unique
-  email          String?       @unique
-  name           String?
-  image          String?       @db.Text
-  emailVerified  DateTime?
-  passwordHash   String?
-  isApproved     Boolean       @default(false)
-  isSystemAdmin  Boolean       @default(false)
+  id                  String                  @id @default(cuid())
+  ldapUsername        String?                 @unique
+  email               String?                 @unique
+  name                String?
+  department          String?
+  image               String?                 @db.Text
+  emailVerified       DateTime?
+  passwordHash        String?
+  isApproved          Boolean                 @default(false)
+  isSystemAdmin       Boolean                 @default(false)
 
   // LINE Login binding
-  lineUserId      String?      @unique
-  lineDisplayName String?
-  linePictureUrl  String?      @db.Text
+  lineUserId          String?                 @unique
+  lineDisplayName     String?
+  linePictureUrl      String?                 @db.Text
 
-  memberships    Membership[]
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-}
-
-model Organization {
-  id           String        @id @default(cuid())
-  name         String
-  slug         String        @unique
-  memberships  Membership[]
-  lineAccounts LineAccount[]
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
-
-model Membership {
-  id             String        @id @default(cuid())
-  userId         String
-  organizationId String
-  role           Role
-  createdAt      DateTime      @default(now())
-
-  user          User          @relation(fields: [userId], references: [id])
-  organization  Organization  @relation(fields: [organizationId], references: [id])
-
-  @@unique([userId, organizationId])
-  @@index([organizationId, role])
+  lineAccountAssignments LineAccountAssignment[]
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
 }
 
 model LineAccount {
-  id             String        @id @default(cuid())
-  organizationId String
-  name           String
-  channelId      String
-  channelSecret  String
-  accessToken    String
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id                  String                  @id @default(cuid())
+  name                String
+  channelId           String
+  channelSecret       String
+  accessToken         String
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  richMenus    RichMenu[]
-  clickEvents  ClickEvent[]
+  assignments         LineAccountAssignment[]
+  richMenus           RichMenu[]
+  clickEvents         ClickEvent[]
+}
 
-  @@index([organizationId])
+model LineAccountAssignment {
+  id            String      @id @default(cuid())
+  userId        String
+  lineAccountId String
+  createdAt     DateTime    @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineAccount   LineAccount @relation(fields: [lineAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lineAccountId])
+  @@index([lineAccountId])
 }
 
 model RichMenu {

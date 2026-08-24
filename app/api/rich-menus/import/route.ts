@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 import sizeOf from "image-size";
 
 import { lineAccountByIdWhere } from "@/lib/access";
-import { getCurrentUser, requireRole } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { parseRichMenuJson, validateImageSize } from "@/lib/richmenu/parser";
 import { RichMenuStatus } from "@/app/generated/prisma/client";
@@ -46,7 +46,6 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
-    await requireRole(lineAccount.organizationId, ["ADMIN"]);
 
     const jsonText = await jsonFile.text();
     const parsed = parseRichMenuJson(jsonText);

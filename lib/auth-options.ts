@@ -41,11 +41,13 @@ const providers: NextAuthOptions["providers"] = [
             ldapUsername: ldapUser.ldapUsername,
             name: ldapUser.displayName,
             email: ldapUser.email,
+            department: ldapUser.department,
             isApproved: false,
           },
           update: {
             name: ldapUser.displayName,
             email: ldapUser.email,
+            department: ldapUser.department,
           },
         });
 
@@ -149,6 +151,7 @@ export const authOptions: NextAuthOptions = {
         session.user.isApproved = dbUser.isApproved;
         session.user.isSystemAdmin = dbUser.isSystemAdmin;
         session.user.ldapUsername = dbUser.ldapUsername;
+        session.user.department = dbUser.department;
       } else {
         session.user.id = userId;
       }
@@ -173,6 +176,7 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       ldapUsername?: string | null;
+      department?: string | null;
       isApproved?: boolean;
       isSystemAdmin?: boolean;
     };
