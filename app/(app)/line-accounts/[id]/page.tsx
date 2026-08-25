@@ -4,6 +4,8 @@ import { Link } from "@heroui/link";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
+import { LineRichMenusOnLine } from "./LineRichMenusOnLine";
+
 import { lineAccountByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -88,6 +90,10 @@ export default async function LineAccountDetailPage({
           )}
         </CardBody>
       </Card>
+      <LineRichMenusOnLine
+        lineAccountId={account.id}
+        systemAdmin={user.isSystemAdmin}
+      />
     </div>
   );
 }

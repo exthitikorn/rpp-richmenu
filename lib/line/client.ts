@@ -289,6 +289,32 @@ export async function linkRichMenuToUser(
   }
 }
 
+export type LineListedRichMenu = {
+  richMenuId: string;
+  name: string;
+  chatBarText: string;
+  selected: boolean;
+  size: { width: number; height: number };
+};
+
+export async function getRichMenus(
+  accessToken: string,
+): Promise<LineListedRichMenu[]> {
+  const res = await lineFetch("/richmenu/list", accessToken, {
+    method: "GET",
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+
+    throw new Error(`LINE API getRichMenus: ${res.status} ${err}`);
+  }
+
+  const data = (await res.json()) as { richmenus?: LineListedRichMenu[] };
+
+  return data.richmenus ?? [];
+}
+
 export async function deleteRichMenu(
   accessToken: string,
   richMenuId: string,
