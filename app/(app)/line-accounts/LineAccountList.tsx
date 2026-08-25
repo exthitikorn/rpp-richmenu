@@ -62,8 +62,18 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
   const [name, setName] = useState(la.name);
+  const [channelSecret, setChannelSecret] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  function handleOpen() {
+    setName(la.name);
+    setChannelSecret("");
+    setAccessToken("");
+    setError("");
+    onOpen();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -74,7 +84,11 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
       const res = await fetch(`/api/line-accounts/${la.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({
+          name,
+          channelSecret: channelSecret.trim() || undefined,
+          accessToken: accessToken.trim() || undefined,
+        }),
       });
       const data = (await res.json()) as ApiResponse;
 
@@ -86,6 +100,8 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
       }
 
       setLoading(false);
+      setChannelSecret("");
+      setAccessToken("");
       onOpenChange();
       router.refresh();
     } catch {
@@ -96,10 +112,16 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
 
   return (
     <>
-      <Button size="sm" variant="light" onPress={onOpen}>
+      <Button size="sm" variant="light" onPress={handleOpen}>
         แก้ไข
       </Button>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal
+        backdrop="blur"
+        isOpen={isOpen}
+        placement="center"
+        size="2xl"
+        onOpenChange={onOpenChange}
+      >
         <ModalContent>
           <form onSubmit={handleSubmit}>
             <ModalHeader>แก้ไข LINE Account</ModalHeader>
@@ -112,8 +134,34 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
               <Input
                 isRequired
                 label="ชื่อ (แสดงในระบบ)"
+                labelPlacement="outside"
                 value={name}
                 onValueChange={setName}
+              />
+              <Input
+                isReadOnly
+                description="ไม่สามารถเปลี่ยนได้หลังสร้างแล้ว"
+                label="Channel ID"
+                labelPlacement="outside"
+                value={la.channelId}
+              />
+              <Input
+                description="เว้นว่างหากไม่ต้องการเปลี่ยน — ระบบจะตรวจสอบกับ LINE ก่อนบันทึก"
+                label="Channel Secret"
+                labelPlacement="outside"
+                placeholder="เว้นว่างหากไม่เปลี่ยน"
+                type="password"
+                value={channelSecret}
+                onValueChange={setChannelSecret}
+              />
+              <Input
+                description="เว้นว่างหากไม่ต้องการเปลี่ยน — ระบบจะตรวจสอบกับ LINE ก่อนบันทึก"
+                label="Channel Access Token"
+                labelPlacement="outside"
+                placeholder="เว้นว่างหากไม่เปลี่ยน"
+                type="password"
+                value={accessToken}
+                onValueChange={setAccessToken}
               />
             </ModalBody>
             <ModalFooter>

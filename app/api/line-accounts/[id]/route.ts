@@ -2,10 +2,18 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireSystemAdmin } from "@/lib/access";
+import { verifyLineCredentialUpdates } from "@/lib/line/verify-credentials";
 import { prisma } from "@/lib/prisma";
+
+const optionalCredential = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? undefined : v));
 
 const bodySchema = z.object({
   name: z.string().min(1, "กรุณาระบุชื่อ"),
+  channelSecret: optionalCredential.optional(),
+  accessToken: optionalCredential.optional(),
 });
 
 export async function PATCH(
@@ -19,7 +27,7 @@ export async function PATCH(
 
     const account = await prisma.lineAccount.findUnique({
       where: { id },
-      select: { id: true },
+      select: { id: true, channelId: true },
     });
 
     if (!account) {
@@ -40,11 +48,28 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
 
-    const { name } = parsed.data;
+    const { name, channelSecret, accessToken } = parsed.data;
+
+    const verified = await verifyLineCredentialUpdates({
+      channelId: account.channelId,
+      channelSecret,
+      accessToken,
+    });
+
+    if (!verified.ok) {
+      return NextResponse.json(
+        { success: false, error: verified.error },
+        { status: 400 },
+      );
+    }
 
     await prisma.lineAccount.update({
       where: { id },
-      data: { name },
+      data: {
+        name,
+        ...(channelSecret ? { channelSecret } : {}),
+        ...(accessToken ? { accessToken } : {}),
+      },
     });
 
     return NextResponse.json({ success: true });

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireSystemAdmin } from "@/lib/access";
+import { verifyLineCredentials } from "@/lib/line/verify-credentials";
 import { prisma } from "@/lib/prisma";
 
 const bodySchema = z.object({
@@ -25,6 +26,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
     const { name, channelId, channelSecret, accessToken } = parsed.data;
+
+    const verified = await verifyLineCredentials({
+      channelId,
+      channelSecret,
+      accessToken,
+    });
+
+    if (!verified.ok) {
+      return NextResponse.json(
+        { success: false, error: verified.error },
+        { status: 400 },
+      );
+    }
 
     await prisma.lineAccount.create({
       data: {

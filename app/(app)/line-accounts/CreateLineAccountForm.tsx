@@ -118,6 +118,10 @@ export function CreateLineAccountForm() {
                 value={accessToken}
                 onValueChange={setAccessToken}
               />
+              <p className="text-default-500 text-sm">
+                ระบบจะตรวจสอบ Channel ID, Secret และ Access Token กับ LINE
+                ก่อนบันทึก
+              </p>
               <div className="rounded-medium border border-default-200 bg-default-50 p-3 text-sm text-default-700">
                 <p className="font-medium text-default-900">
                   แหล่งที่มาข้อมูลสำหรับกรอกฟอร์ม
