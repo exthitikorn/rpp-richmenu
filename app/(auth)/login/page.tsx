@@ -6,6 +6,7 @@ import { LoginForm } from "./LoginForm";
 import { getCurrentUser } from "@/lib/auth";
 import { getDefaultLoginCallbackUrl } from "@/lib/auth-redirect";
 import { isLineLoginConfigured } from "@/lib/auth/providers/line.provider";
+import { LoadingState } from "@/components/ui/LoadingState";
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
@@ -15,13 +16,7 @@ export default async function LoginPage() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[60vh] items-center justify-center">
-          <p className="text-default-500">กำลังโหลด...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingState />}>
       <LoginForm lineLoginEnabled={isLineLoginConfigured()} />
     </Suspense>
   );

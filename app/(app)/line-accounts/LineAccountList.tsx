@@ -30,6 +30,8 @@ import {
   TableRow,
 } from "@heroui/table";
 
+import { EmptyState } from "@/components/ui/EmptyState";
+
 type LineAccountWithRelations = LineAccount & {
   assignments: (LineAccountAssignment & {
     user: Pick<User, "id" | "name" | "email" | "ldapUsername">;
@@ -269,11 +271,16 @@ export function LineAccountList({
 }) {
   if (lineAccounts.length === 0) {
     return (
-      <Card className="w-full min-w-0 overflow-hidden">
-        <CardBody className="text-center text-default-500 py-12">
-          {systemAdmin
-            ? "ยังไม่มี LINE Account เพิ่มจากปุ่มด้านบน"
-            : "ยังไม่มี LINE Account ที่คุณได้รับสิทธิ์"}
+      <Card className="w-full min-w-0 overflow-hidden border border-default-200 shadow-none">
+        <CardBody>
+          <EmptyState
+            description={systemAdmin ? "เพิ่มจากปุ่มด้านบน" : undefined}
+            title={
+              systemAdmin
+                ? "ยังไม่มี LINE Account"
+                : "ยังไม่มี LINE Account ที่คุณได้รับสิทธิ์"
+            }
+          />
         </CardBody>
       </Card>
     );
@@ -294,7 +301,7 @@ export function LineAccountList({
 
       {/* Desktop: Table */}
       {systemAdmin ? (
-        <Card className="hidden min-w-0 overflow-hidden md:block">
+        <Card className="hidden min-w-0 overflow-hidden border border-default-200 shadow-none md:block">
           <CardBody className="p-0 overflow-x-auto">
             <Table
               fullWidth
@@ -310,7 +317,9 @@ export function LineAccountList({
                 <TableColumn className="text-center">ชื่อ</TableColumn>
                 <TableColumn className="text-center">Channel ID</TableColumn>
                 <TableColumn className="text-center">Rich Menus</TableColumn>
-                <TableColumn className="text-center">ผู้ได้รับสิทธิ์</TableColumn>
+                <TableColumn className="text-center">
+                  ผู้ได้รับสิทธิ์
+                </TableColumn>
                 <TableColumn className="text-center">จัดการ</TableColumn>
               </TableHeader>
               <TableBody>
@@ -345,7 +354,7 @@ export function LineAccountList({
           </CardBody>
         </Card>
       ) : (
-        <Card className="hidden min-w-0 overflow-hidden md:block">
+        <Card className="hidden min-w-0 overflow-hidden border border-default-200 shadow-none md:block">
           <CardBody className="p-0 overflow-x-auto">
             <Table
               fullWidth
@@ -361,7 +370,9 @@ export function LineAccountList({
                 <TableColumn className="text-center">ชื่อ</TableColumn>
                 <TableColumn className="text-center">Channel ID</TableColumn>
                 <TableColumn className="text-center">Rich Menus</TableColumn>
-                <TableColumn className="text-center">ผู้ได้รับสิทธิ์</TableColumn>
+                <TableColumn className="text-center">
+                  ผู้ได้รับสิทธิ์
+                </TableColumn>
               </TableHeader>
               <TableBody>
                 {lineAccounts.map((la) => (

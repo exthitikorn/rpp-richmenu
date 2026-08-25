@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
 import { DataTableCard } from "@/components/data/DataTableCard";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { siteConfig } from "@/config/site";
 
 const PAGE_SIZE = 10;
@@ -63,11 +64,7 @@ export default async function DeployLogsPage({
       />
       <DataTableCard
         description="รายการ Deploy ล่าสุด"
-        emptyState={
-          <p className="py-4 text-sm text-default-500">
-            ยังไม่มีบันทึกการ Deploy
-          </p>
-        }
+        emptyState={<EmptyState title="ยังไม่มีบันทึกการ Deploy" />}
         isEmpty={rows.length === 0}
         title="ประวัติการ Deploy"
       >

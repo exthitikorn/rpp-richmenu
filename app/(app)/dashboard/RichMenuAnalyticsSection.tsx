@@ -5,6 +5,8 @@ import { useMemo, useState } from "react";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Select, SelectItem } from "@heroui/select";
 
+import { EmptyState } from "@/components/ui/EmptyState";
+
 type HeatmapArea = {
   id: string;
   x: number;
@@ -112,11 +114,9 @@ export function RichMenuAnalyticsSection({ menus, totalClicks }: Props) {
 
   if (menus.length === 0) {
     return (
-      <Card className="border border-dashed border-default-200 bg-default-50/60">
+      <Card className="border border-default-200 shadow-none">
         <CardBody>
-          <p className="text-sm text-default-500">
-            ยังไม่มีข้อมูลการคลิก Rich Menu
-          </p>
+          <EmptyState title="ยังไม่มีข้อมูลการคลิก Rich Menu" />
         </CardBody>
       </Card>
     );

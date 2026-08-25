@@ -57,7 +57,7 @@ export default async function RootLayout({
               {children}
             </main>
             <footer
-              className="flex w-full items-center justify-center border-t border-default-200 py-3"
+              className="flex w-full items-center justify-center border-t border-default-200 bg-content1 py-3"
               style={{
                 paddingBottom:
                   "calc(0.75rem + env(safe-area-inset-bottom, 0px))",

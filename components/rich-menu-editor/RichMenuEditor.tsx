@@ -245,7 +245,7 @@ export function RichMenuEditor({
     Boolean(richMenu.lineRichMenuId) && richMenu.status === "DEPLOYED";
 
   return (
-    <Card>
+    <Card className="border border-default-200 shadow-none">
       <CardBody>
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           <div className="w-full space-y-4 lg:w-1/2">

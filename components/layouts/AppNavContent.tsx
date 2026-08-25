@@ -25,7 +25,6 @@ const appNavItems: AppNavItem[] = [
     systemAdminOnly: true,
   },
   { label: siteConfig.labels.users, href: "/users", systemAdminOnly: true },
-  { label: siteConfig.labels.profile, href: "/profile" },
 ];
 
 const isPathActive = (pathname: string, href: string): boolean =>
@@ -76,10 +75,10 @@ export function AppNavContent({
                   aria-current={isActive ? "page" : undefined}
                   as={NextLink}
                   className={clsx(
-                    "w-full justify-start min-h-[44px] items-center",
+                    "w-full justify-start min-h-[44px] items-center rounded-lg px-2 py-1",
                     isActive
-                      ? "text-primary font-medium bg-primary/10 rounded-lg px-2 py-1"
-                      : "text-default-600",
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-default-600 hover:bg-default-100/80 hover:text-foreground",
                   )}
                   href={item.href}
                   onClick={onNavigate}

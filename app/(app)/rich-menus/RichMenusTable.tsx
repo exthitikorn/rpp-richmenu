@@ -3,6 +3,7 @@
 import type { LineAccount, RichMenu } from "@/app/generated/prisma/client";
 
 import { useState } from "react";
+import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
@@ -25,6 +26,8 @@ import {
   TableCell,
 } from "@heroui/table";
 
+import { EmptyState } from "@/components/ui/EmptyState";
+
 type RichMenuWithRelations = RichMenu & {
   lineAccount: LineAccount;
   _count: { areas: number };
@@ -34,6 +37,17 @@ type ApiResponse = {
   success?: boolean;
   error?: string;
 };
+
+type ImagePreview = {
+  name: string;
+  imageUrl: string;
+  width: number;
+  height: number;
+};
+
+const TABLE_THUMB_W = 48;
+const CARD_BANNER_MAX_H = 140;
+const MODAL_MAX_W = 720;
 
 function DeleteRichMenuButton({ id, name }: { id: string; name: string }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
@@ -108,10 +122,78 @@ function DeleteRichMenuButton({ id, name }: { id: string; name: string }) {
   );
 }
 
-function RichMenuCardItem({ rm }: { rm: RichMenuWithRelations }) {
+function RichMenuThumbButton({
+  rm,
+  variant,
+  onPreview,
+}: {
+  rm: RichMenuWithRelations;
+  variant: "table" | "card";
+  onPreview: (preview: ImagePreview) => void;
+}) {
+  const openPreview = () =>
+    onPreview({
+      name: rm.name,
+      imageUrl: rm.imageUrl,
+      width: rm.width,
+      height: rm.height,
+    });
+
+  if (variant === "card") {
+    return (
+      <button
+        aria-label={`ดูรูป ${rm.name}`}
+        className="relative block w-full overflow-hidden border-b border-default-200 bg-default-100"
+        style={{ height: CARD_BANNER_MAX_H }}
+        type="button"
+        onClick={openPreview}
+      >
+        <Image
+          fill
+          alt=""
+          className="object-contain"
+          sizes="100vw"
+          src={rm.imageUrl}
+        />
+      </button>
+    );
+  }
+
+  const thumbH = Math.max(
+    1,
+    Math.round((TABLE_THUMB_W * rm.height) / Math.max(rm.width, 1)),
+  );
+
+  return (
+    <button
+      aria-label={`ดูรูป ${rm.name}`}
+      className="inline-flex overflow-hidden rounded-md border border-default-200 bg-default-100"
+      style={{ width: TABLE_THUMB_W, height: thumbH }}
+      type="button"
+      onClick={openPreview}
+    >
+      <Image
+        alt=""
+        className="object-contain"
+        height={thumbH}
+        src={rm.imageUrl}
+        width={TABLE_THUMB_W}
+      />
+    </button>
+  );
+}
+
+function RichMenuCardItem({
+  rm,
+  onPreview,
+}: {
+  rm: RichMenuWithRelations;
+  onPreview: (preview: ImagePreview) => void;
+}) {
   return (
     <Card className="w-full shadow-sm">
       <CardBody className="gap-0 p-0">
+        <RichMenuThumbButton rm={rm} variant="card" onPreview={onPreview} />
         <div className="p-4 pb-3">
           <Link
             as={NextLink}
@@ -151,17 +233,68 @@ function RichMenuCardItem({ rm }: { rm: RichMenuWithRelations }) {
   );
 }
 
+function ImagePreviewModal({
+  preview,
+  onClose,
+}: {
+  preview: ImagePreview | null;
+  onClose: () => void;
+}) {
+  const scale =
+    preview && preview.width > 0 ? Math.min(MODAL_MAX_W / preview.width, 1) : 1;
+  const displayWidth = preview ? Math.round(preview.width * scale) : 0;
+  const displayHeight = preview ? Math.round(preview.height * scale) : 0;
+
+  return (
+    <Modal
+      isOpen={preview !== null}
+      size="3xl"
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+    >
+      <ModalContent>
+        {preview && (
+          <>
+            <ModalHeader>{preview.name}</ModalHeader>
+            <ModalBody className="items-center">
+              <div
+                className="relative overflow-hidden rounded-lg border border-default-200 bg-default-100"
+                style={{ width: displayWidth, height: displayHeight }}
+              >
+                <Image
+                  alt={preview.name}
+                  className="object-contain"
+                  height={displayHeight}
+                  src={preview.imageUrl}
+                  width={displayWidth}
+                />
+              </div>
+            </ModalBody>
+            <ModalFooter>
+              <Button color="danger" variant="flat" onPress={onClose}>
+                ปิด
+              </Button>
+            </ModalFooter>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+}
+
 export function RichMenusTable({
   richMenus,
 }: {
   richMenus: RichMenuWithRelations[];
 }) {
+  const [preview, setPreview] = useState<ImagePreview | null>(null);
+
   if (richMenus.length === 0) {
     return (
-      <Card className="w-full min-w-0 overflow-hidden">
-        <CardBody className="text-center text-default-500 py-12">
-          ยังไม่มี Rich Menu — Import จาก LINE Bot Designer
-          หรือสร้างใหม่จากปุ่มด้านบน
+      <Card className="w-full min-w-0 overflow-hidden border border-default-200 shadow-none">
+        <CardBody>
+          <EmptyState title="ยังไม่มี Rich Menu" />
         </CardBody>
       </Card>
     );
@@ -176,12 +309,12 @@ export function RichMenusTable({
         role="list"
       >
         {richMenus.map((rm) => (
-          <RichMenuCardItem key={rm.id} rm={rm} />
+          <RichMenuCardItem key={rm.id} rm={rm} onPreview={setPreview} />
         ))}
       </div>
 
       {/* Desktop: Table */}
-      <Card className="hidden min-w-0 overflow-hidden md:block">
+      <Card className="hidden min-w-0 overflow-hidden border border-default-200 shadow-none md:block">
         <CardBody className="p-0 overflow-x-auto">
           <Table
             fullWidth
@@ -194,6 +327,7 @@ export function RichMenusTable({
             }}
           >
             <TableHeader>
+              <TableColumn className="w-16 text-center">รูป</TableColumn>
               <TableColumn className="text-center">ชื่อ</TableColumn>
               <TableColumn className="text-center">LINE Account</TableColumn>
               <TableColumn className="text-center">ขนาด</TableColumn>
@@ -204,6 +338,13 @@ export function RichMenusTable({
             <TableBody>
               {richMenus.map((rm) => (
                 <TableRow key={rm.id}>
+                  <TableCell className="text-center">
+                    <RichMenuThumbButton
+                      rm={rm}
+                      variant="table"
+                      onPreview={setPreview}
+                    />
+                  </TableCell>
                   <TableCell>
                     <Link
                       as={NextLink}
@@ -240,6 +381,8 @@ export function RichMenusTable({
           </Table>
         </CardBody>
       </Card>
+
+      <ImagePreviewModal preview={preview} onClose={() => setPreview(null)} />
     </>
   );
 }

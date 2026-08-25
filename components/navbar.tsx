@@ -28,10 +28,14 @@ export const Navbar = ({ onMenuOpen }: NavbarProps) => {
 
   const profileLabel =
     session?.user?.name ?? session?.user?.email ?? "บัญชีของฉัน";
+  const department = session?.user?.department?.trim() || "—";
+  const roleLabel = session?.user?.isSystemAdmin
+    ? siteConfig.labels.roleAdmin
+    : siteConfig.labels.roleUser;
 
   return (
     <HeroUINavbar
-      className="w-full border-b border-default-200"
+      className="w-full border-b border-default-200 bg-content1"
       maxWidth="full"
       position="sticky"
     >
@@ -63,7 +67,7 @@ export const Navbar = ({ onMenuOpen }: NavbarProps) => {
         ) : null}
         <NavbarBrand className="max-w-fit">
           <NextLink
-            className="flex items-center gap-2 rounded-lg px-1 py-1 transition-colors hover:bg-default-100"
+            className="flex items-center gap-2 px-1 py-1"
             href="/dashboard"
           >
             <Logo size={32} />
@@ -84,21 +88,26 @@ export const Navbar = ({ onMenuOpen }: NavbarProps) => {
           <Dropdown placement="bottom-end">
             <DropdownTrigger>
               <Button
-                aria-label={`เมนูโปรไฟล์: ${profileLabel}`}
-                className="max-w-[220px] font-medium"
+                aria-label={`เมนูโปรไฟล์: ${profileLabel}, ${department}, ${roleLabel}`}
+                className="h-auto max-w-[260px] py-1.5 font-medium"
                 color="default"
                 size="sm"
                 variant="light"
               >
-                <span className="flex items-center gap-2 truncate text-sm text-default-700">
+                <span className="flex items-center gap-2 text-left text-default-700">
                   <Avatar
                     className="shrink-0"
                     name={profileLabel}
                     size="sm"
                     src={session?.user?.image ?? undefined}
                   />
-                  <span className="hidden truncate sm:inline">
-                    {profileLabel}
+                  <span className="hidden min-w-0 sm:block">
+                    <span className="block truncate text-sm font-medium leading-tight">
+                      {profileLabel}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs font-normal text-default-500">
+                      {department} · {roleLabel}
+                    </span>
                   </span>
                 </span>
               </Button>

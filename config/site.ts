@@ -13,7 +13,6 @@ export const siteConfig = {
   },
   labels: {
     dashboard: "แดชบอร์ด",
-    organizations: "หน่วยงาน",
     lineAccounts: "บัญชี LINE OA",
     richMenus: "Rich Menu",
     deployLogs: "บันทึกการ Deploy",

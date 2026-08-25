@@ -1,11 +1,13 @@
-import NextLink from "next/link";
 import { notFound } from "next/navigation";
-import { Button } from "@heroui/button";
+
+import { EditRichMenuHeaderMeta } from "./EditRichMenuHeaderMeta";
 
 import { lineAccountWhere, richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
 import { PageHeader } from "@/components/page-header";
+import { PageShell } from "@/components/layouts/PageShell";
 import { ImportRichMenuForm } from "@/app/(app)/import/ImportRichMenuForm";
 
 export default async function RichMenuEditPage({
@@ -33,18 +35,14 @@ export default async function RichMenuEditPage({
   });
 
   return (
-    <div className="space-y-6">
+    <PageShell>
       <PageHeader
-        actions={
-          <Button
-            as={NextLink}
-            href={`/rich-menus?lineAccountId=${richMenu.lineAccountId}`}
-            variant="light"
-          >
-            กลับไปหน้า Rich Menus
-          </Button>
+        badges={
+          <EditRichMenuHeaderMeta
+            aliasId={getRichMenuAliasId(richMenu.id)}
+            lineAccountName={richMenu.lineAccount.name}
+          />
         }
-        description={`"${richMenu.name}" · ${richMenu.lineAccount.name} · ${richMenu.width}×${richMenu.height}px · ${richMenu.status}${richMenu.isDefault ? " · Default" : ""}`}
         title="แก้ไข Rich Menu"
       />
       <ImportRichMenuForm
@@ -75,6 +73,6 @@ export default async function RichMenuEditPage({
         lineAccounts={lineAccounts}
         mode="edit"
       />
-    </div>
+    </PageShell>
   );
 }

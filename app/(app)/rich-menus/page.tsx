@@ -1,5 +1,6 @@
 import NextLink from "next/link";
 import { Button } from "@heroui/button";
+import { Card } from "@heroui/card";
 
 import { RichMenusFilter } from "./RichMenusFilter";
 import { RichMenusTable } from "./RichMenusTable";
@@ -47,16 +48,15 @@ export default async function RichMenusPage({
             {siteConfig.labels.importRichMenu}
           </Button>
         }
-        description="จัดการ Rich Menu และพื้นที่กด (Areas)"
         title={siteConfig.labels.richMenus}
       />
-      <div className="w-full min-w-0 space-y-4">
+      <Card className="space-y-4 p-4">
         <RichMenusFilter
           currentLineAccountId={lineAccountId ?? null}
           lineAccounts={lineAccounts}
         />
         <RichMenusTable richMenus={richMenus} />
-      </div>
+      </Card>
     </PageShell>
   );
 }

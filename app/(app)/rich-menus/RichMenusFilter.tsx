@@ -39,6 +39,7 @@ export function RichMenusFilter({ currentLineAccountId, lineAccounts }: Props) {
         ...lineAccounts.map((la) => ({ id: la.id, name: la.name })),
       ]}
       label="LINE Account"
+      labelPlacement="outside"
       placeholder="ทั้งหมด"
       selectedKeys={selectedKey === "all" ? ["all"] : [selectedKey]}
       onSelectionChange={(keys) => {

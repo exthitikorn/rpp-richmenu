@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
-import { Card, CardBody, CardHeader } from "@heroui/card";
 import {
   Modal,
   ModalBody,
@@ -14,6 +14,7 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@heroui/modal";
+import { Card, CardBody } from "@heroui/card";
 
 import { useAppToast } from "@/components/AppToastProvider";
 import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
@@ -47,6 +48,13 @@ type EditInitialData = {
 };
 
 type ActionType = "message" | "uri" | "richmenuswitch" | "location";
+
+const AREA_ACTION_HINT: Record<ActionType, string> = {
+  message: "msg",
+  uri: "uri",
+  richmenuswitch: "switch",
+  location: "loc",
+};
 
 type AreaDraft = {
   id: string;
@@ -187,9 +195,11 @@ export function ImportRichMenuForm({
             ? (area.action.uri as string)
             : "",
         data:
-          typeof area.action?.data === "string"
+          typeof area.action?.data === "string" && area.action.data
             ? (area.action.data as string)
-            : "",
+            : actionType === "richmenuswitch"
+              ? "action=switch_menu"
+              : "",
         richMenuAliasId:
           typeof area.action?.richMenuAliasId === "string"
             ? (area.action.richMenuAliasId as string)
@@ -214,7 +224,6 @@ export function ImportRichMenuForm({
   const [isDefaultRichMenu, setIsDefaultRichMenu] = useState(
     initialData?.isDefault ?? false,
   );
-  const [error, setError] = useState("");
   const [zoomPercent, setZoomPercent] = useState(25);
   const [renderedFrame, setRenderedFrame] = useState<RenderedImageFrame | null>(
     null,
@@ -475,7 +484,6 @@ export function ImportRichMenuForm({
 
     setAreas((prev) => [...prev, newArea]);
     setSelectedAreaId(newArea.id);
-    setError("");
   }
 
   function updateAreaBounds(areaId: string, nextBounds: AreaDraft["bounds"]) {
@@ -622,103 +630,95 @@ export function ImportRichMenuForm({
         ? "กรุณาตรวจสอบข้อมูล Rich Menu และรูปภาพให้เรียบร้อย"
         : "กรุณาเลือก LINE Account และอัปโหลดรูปภาพให้เรียบร้อย";
 
-      setError(message);
       toast.error(message);
 
       return;
     }
     if (areas.length === 0) {
-      const message = "กรุณาวาดพื้นที่กดอย่างน้อย 1 พื้นที่";
-
-      setError(message);
-      toast.error(message);
+      toast.error("กรุณาวาดพื้นที่กดอย่างน้อย 1 พื้นที่");
 
       return;
     }
 
-    const normalizedAreas = areas.map((area, index) => {
-      if (area.actionType === "message" && !area.text.trim()) {
-        throw new Error(
-          `พื้นที่ที่ ${index + 1}: กรุณากรอกข้อความสำหรับ Message Action`,
-        );
-      }
-      if (area.actionType === "uri" && !area.uri.trim()) {
-        throw new Error(
-          `พื้นที่ที่ ${index + 1}: กรุณากรอก URL สำหรับ URI Action`,
-        );
-      }
-      if (area.actionType === "richmenuswitch" && !area.data.trim()) {
-        throw new Error(
-          `พื้นที่ที่ ${index + 1}: กรุณากรอก Data สำหรับ RichMenuSwitch Action`,
-        );
-      }
-      if (
-        area.actionType === "richmenuswitch" &&
-        !area.richMenuAliasId.trim()
-      ) {
-        throw new Error(
-          `พื้นที่ที่ ${index + 1}: กรุณากรอก Rich Menu Alias ID`,
-        );
-      }
-
-      const baseAction = area.label.trim() ? { label: area.label.trim() } : {};
-
-      if (area.actionType === "message") {
-        return {
-          bounds: area.bounds,
-          action: {
-            ...baseAction,
-            type: "message" as const,
-            text: area.text.trim(),
-          },
-        };
-      }
-      if (area.actionType === "uri") {
-        return {
-          bounds: area.bounds,
-          action: {
-            ...baseAction,
-            type: "uri" as const,
-            uri: area.uri.trim(),
-          },
-        };
-      }
-
-      if (area.actionType === "richmenuswitch") {
-        return {
-          bounds: area.bounds,
-          action: {
-            ...baseAction,
-            type: "richmenuswitch" as const,
-            richMenuAliasId: area.richMenuAliasId.trim(),
-            data: area.data.trim(),
-          },
-        };
-      }
-
-      return {
-        bounds: area.bounds,
-        action: {
-          ...baseAction,
-          type: "location" as const,
-        },
-      };
-    });
-
-    const richMenuJson = {
-      size: {
-        width: imageSize.width,
-        height: imageSize.height,
-      },
-      selected: false,
-      name: name.trim() || `Imported Rich Menu ${new Date().toISOString()}`,
-      chatBarText: chatBarText.trim() || "Tap here",
-      areas: normalizedAreas,
-    };
-
-    setError("");
     setLoading(true);
     try {
+      const normalizedAreas = areas.map((area, index) => {
+        if (area.actionType === "message" && !area.text.trim()) {
+          throw new Error(
+            `พื้นที่ที่ ${index + 1}: กรุณากรอกข้อความสำหรับ Message Action`,
+          );
+        }
+        if (area.actionType === "uri" && !area.uri.trim()) {
+          throw new Error(
+            `พื้นที่ที่ ${index + 1}: กรุณากรอก URL สำหรับ URI Action`,
+          );
+        }
+        if (
+          area.actionType === "richmenuswitch" &&
+          !area.richMenuAliasId.trim()
+        ) {
+          throw new Error(
+            `พื้นที่ที่ ${index + 1}: กรุณาเลือก Rich Menu ปลายทาง`,
+          );
+        }
+
+        const baseAction = area.label.trim()
+          ? { label: area.label.trim() }
+          : {};
+
+        if (area.actionType === "message") {
+          return {
+            bounds: area.bounds,
+            action: {
+              ...baseAction,
+              type: "message" as const,
+              text: area.text.trim(),
+            },
+          };
+        }
+        if (area.actionType === "uri") {
+          return {
+            bounds: area.bounds,
+            action: {
+              ...baseAction,
+              type: "uri" as const,
+              uri: area.uri.trim(),
+            },
+          };
+        }
+
+        if (area.actionType === "richmenuswitch") {
+          return {
+            bounds: area.bounds,
+            action: {
+              ...baseAction,
+              type: "richmenuswitch" as const,
+              richMenuAliasId: area.richMenuAliasId.trim(),
+              data: area.data.trim() || "action=switch_menu",
+            },
+          };
+        }
+
+        return {
+          bounds: area.bounds,
+          action: {
+            ...baseAction,
+            type: "location" as const,
+          },
+        };
+      });
+
+      const richMenuJson = {
+        size: {
+          width: imageSize.width,
+          height: imageSize.height,
+        },
+        selected: false,
+        name: name.trim() || `Imported Rich Menu ${new Date().toISOString()}`,
+        chatBarText: chatBarText.trim() || "Tap here",
+        areas: normalizedAreas,
+      };
+
       if (isEditMode && initialData) {
         const patchRes = await fetch(
           `/api/rich-menus/${initialData.richMenuId}`,
@@ -837,7 +837,6 @@ export function ImportRichMenuForm({
     } catch (err) {
       const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
 
-      setError(message);
       toast.error(message);
       setLoading(false);
     }
@@ -848,566 +847,363 @@ export function ImportRichMenuForm({
     Boolean(initialData?.lineRichMenuId) &&
     editStatus === "DEPLOYED";
 
-  return (
-    <Card className="w-full min-w-0 overflow-hidden border border-default-200/70 shadow-sm">
-      <CardHeader className="flex flex-col items-start gap-2 border-b border-default-200/70 bg-default-50/60 pb-4 pt-5">
-        <h2 className="text-xl font-semibold tracking-tight">
-          {isEditMode ? "ข้อมูลและการตั้งค่า" : "นำเข้า Rich Menu"}
-        </h2>
-        <p className="text-sm text-default-500">
-          {isEditMode
-            ? "แก้ไขรูปภาพและพื้นที่กด (Areas) ของ Rich Menu เดิมได้ในหน้าจอเดียว"
-            : "อัปโหลดรูปภาพ จากนั้นวาดพื้นที่กด (Areas) และกำหนด Action เพื่อสร้าง JSON อัตโนมัติ"}
-        </p>
-      </CardHeader>
-      <CardBody className="pt-5">
-        <form className="flex flex-col gap-6" onSubmit={handleSubmit}>
-          {error && (
-            <div
-              className="rounded-lg border border-danger-200 bg-danger-50 px-4 py-3 text-danger text-sm dark:border-danger-800 dark:bg-danger-950/30"
-              role="alert"
-            >
-              {error}
-            </div>
-          )}
+  const selectedArea =
+    areas.find((area) => area.id === selectedAreaId) ?? areas[0] ?? null;
+  const selectedAreaIndex = selectedArea
+    ? areas.findIndex((area) => area.id === selectedArea.id)
+    : -1;
 
-          <section className="flex flex-col gap-5">
-            {isEditMode && initialData && (
-              <div className="rounded-xl border border-default-200 bg-default-50 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-sm font-medium text-default-700">
-                      Rich Menu Alias ID
-                    </p>
-                    <p className="text-xs text-default-500">
-                      ใช้ใน action แบบ Switch Rich Menu
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      isReadOnly
-                      aria-label="Rich Menu Alias ID"
-                      className="max-w-xs font-mono"
-                      size="sm"
-                      value={aliasId}
-                      variant="bordered"
-                      onClick={(event) => event.currentTarget.select()}
-                    />
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={() => {
-                        void navigator.clipboard.writeText(aliasId);
-                        toast.success("คัดลอก Alias ID แล้ว");
-                      }}
-                    >
-                      คัดลอก
-                    </Button>
-                  </div>
-                </div>
-              </div>
+  return (
+    <Card className="w-full">
+      <CardBody>
+        <form
+          noValidate
+          className="flex flex-col gap-6"
+          onSubmit={handleSubmit}
+        >
+          <section
+            className={
+              isEditMode
+                ? "grid gap-4 md:grid-cols-2 xl:grid-cols-3"
+                : "grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+            }
+          >
+            {isEditMode ? null : (
+              <Select
+                isRequired
+                label="LINE Account"
+                labelPlacement="outside"
+                placeholder="เลือก account"
+                selectedKeys={
+                  lineAccountId ? new Set([lineAccountId]) : new Set()
+                }
+                onSelectionChange={(keys) => {
+                  const k = Array.from(keys)[0];
+
+                  setLineAccountId(k != null ? String(k) : "");
+                }}
+              >
+                {lineAccounts.map((la) => (
+                  <SelectItem key={la.id} textValue={la.name}>
+                    {la.name}
+                  </SelectItem>
+                ))}
+              </Select>
             )}
 
-            <div className="rounded-xl border border-default-200 p-4">
-              <p className="mb-3 text-sm font-medium text-default-700">
-                ข้อมูลพื้นฐาน
-              </p>
-              <div className="grid gap-4">
-                <Select
-                  isRequired
-                  isDisabled={isEditMode}
-                  label="LINE Account"
-                  placeholder="เลือก account ที่จะนำ Rich Menu เข้า"
-                  selectedKeys={
-                    lineAccountId ? new Set([lineAccountId]) : new Set()
-                  }
-                  onSelectionChange={(keys) => {
-                    const k = Array.from(keys)[0];
+            <Input
+              accept="image/jpeg,image/png"
+              isRequired={!isEditMode}
+              label={isEditMode ? "เปลี่ยนรูป" : "รูป Rich Menu"}
+              labelPlacement="outside"
+              type="file"
+              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+            />
 
-                    setLineAccountId(k != null ? String(k) : "");
-                  }}
-                >
-                  {lineAccounts.map((la) => (
-                    <SelectItem key={la.id} textValue={la.name}>
-                      {la.name}
-                    </SelectItem>
-                  ))}
-                </Select>
+            <Input
+              isRequired
+              label="ชื่อ Rich Menu"
+              labelPlacement="outside"
+              placeholder="เช่น Main Menu"
+              value={name}
+              onValueChange={setName}
+            />
+            <Input
+              isRequired
+              label="Chat Bar Text"
+              labelPlacement="outside"
+              placeholder="เช่น เมนูหลัก"
+              value={chatBarText}
+              onValueChange={setChatBarText}
+            />
+          </section>
 
-                <div className="space-y-1">
-                  <Input
-                    accept="image/jpeg,image/png"
-                    description={
-                      isEditMode
-                        ? "เลือกไฟล์ใหม่เมื่อต้องการเปลี่ยนรูป (JPEG/PNG)"
-                        : "JPEG หรือ PNG (ระบบจะใช้ขนาดรูปเป็น size ของ Rich Menu)"
+          <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)]">
+            <div className="order-2 space-y-3 xl:order-1">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-default-500">
+                  ลากเพื่อวาด · ลากกรอบเพื่อย้าย · มุมเพื่อ resize
+                </p>
+                <label className="flex items-center gap-2 text-xs text-default-600">
+                  <span>Zoom {zoomPercent}%</span>
+                  <input
+                    aria-label="Zoom preview"
+                    className="w-28"
+                    max={100}
+                    min={25}
+                    step={5}
+                    type="range"
+                    value={zoomPercent}
+                    onChange={(event) =>
+                      setZoomPercent(Number(event.currentTarget.value))
                     }
-                    isRequired={!isEditMode}
-                    label={
-                      isEditMode
-                        ? "รูป Rich Menu (เปลี่ยนใหม่ถ้าต้องการ)"
-                        : "รูป Rich Menu"
-                    }
-                    type="file"
-                    onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
                   />
-                  {imageFile && (
-                    <p className="text-xs text-default-500">
-                      เลือกแล้ว: {imageFile.name}
-                    </p>
-                  )}
-                </div>
+                </label>
               </div>
-            </div>
+              <div className="overflow-auto rounded-lg border border-default-200 bg-content1">
+                <div
+                  ref={imageContainerRef}
+                  className="relative w-fit touch-none"
+                  role="presentation"
+                  onPointerCancel={() => {
+                    if (
+                      interaction &&
+                      imageContainerRef.current?.hasPointerCapture(
+                        interaction.pointerId,
+                      )
+                    ) {
+                      imageContainerRef.current.releasePointerCapture(
+                        interaction.pointerId,
+                      );
+                    }
+                    setDragRect(null);
+                    setInteraction(null);
+                  }}
+                  onPointerDown={(event) => {
+                    if (event.button !== 0 || interaction || !imagePreviewUrl) {
+                      return;
+                    }
 
-            <div className="grid gap-4 rounded-xl border border-default-200 p-4 lg:grid-cols-2">
-              <Input
-                isRequired
-                description="ใช้ตั้งชื่อ Rich Menu ใน LINE"
-                label="ชื่อ Rich Menu"
-                placeholder="เช่น Main Menu"
-                value={name}
-                onValueChange={setName}
-              />
-              <Input
-                isRequired
-                description="ข้อความบน chat bar (ไม่เกิน 14 ตัวอักษรโดยแนะนำ)"
-                label="Chat Bar Text"
-                placeholder="เช่น เมนูหลัก"
-                value={chatBarText}
-                onValueChange={setChatBarText}
-              />
-            </div>
+                    const point = toLocalPoint(event);
+                    const draft = {
+                      startX: point.x,
+                      startY: point.y,
+                      endX: point.x,
+                      endY: point.y,
+                    };
 
-            <div className="grid gap-4 xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
-              <div className="space-y-3 rounded-xl border border-default-200 bg-default-50/40 p-4">
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-default-700">
-                  แก้ไข Areas ทั้งหมด ({areas.length})
-                </h3>
-                {areas.length === 0 ? (
-                  <p className="text-sm text-default-500">
-                    ยังไม่มีพื้นที่กด ลากเมาส์บนรูปด้านขวาเพื่อสร้าง Area
-                  </p>
-                ) : (
-                  <div className="max-h-[72vh] space-y-3 overflow-y-auto pr-1">
-                    {areas.map((area, index) => (
-                      <div
-                        key={area.id}
-                        className="space-y-4 rounded-xl border border-default-200 bg-content1 p-4 shadow-sm"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <p className="text-sm font-semibold text-default-800">
-                              Area {index + 1}
-                            </p>
-                            <p className="text-xs text-default-500">
-                              ตำแหน่ง: ({area.bounds.x}, {area.bounds.y}) •
-                              ขนาด: {area.bounds.width} x {area.bounds.height}
-                            </p>
-                          </div>
-                          <Button
-                            color="danger"
-                            size="sm"
-                            variant="light"
-                            onPress={() => {
-                              setAreas((prev) =>
-                                prev.filter((item) => item.id !== area.id),
-                              );
-                              setSelectedAreaId((prev) =>
-                                prev === area.id ? "" : prev,
-                              );
-                            }}
-                          >
-                            ลบ Area
-                          </Button>
-                        </div>
+                    setDragRect(draft);
+                    setInteraction({
+                      type: "draw",
+                      pointerId: event.pointerId,
+                      draft,
+                    });
+                    event.currentTarget.setPointerCapture(event.pointerId);
+                  }}
+                  onPointerMove={(event) => {
+                    if (
+                      !interaction ||
+                      interaction.pointerId !== event.pointerId
+                    ) {
+                      return;
+                    }
+                    const point = toLocalPoint(event);
 
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <Select
-                            label="Action Type"
-                            selectedKeys={[area.actionType]}
-                            onSelectionChange={(keys) => {
-                              const key = Array.from(keys)[0];
-
-                              if (!key) {
-                                return;
-                              }
-                              updateAreaById(area.id, (prev) => ({
-                                ...prev,
-                                actionType: String(key) as ActionType,
-                              }));
-                            }}
-                          >
-                            <SelectItem key="message">message</SelectItem>
-                            <SelectItem key="uri">uri</SelectItem>
-                            <SelectItem key="richmenuswitch">
-                              richmenuswitch
-                            </SelectItem>
-                            <SelectItem key="location">location</SelectItem>
-                          </Select>
-                          <Input
-                            // description="ไม่บังคับ (บาง action ใน LINE อาจไม่ใช้ค่า label)"
-                            label="Label (optional)"
-                            value={area.label}
-                            onValueChange={(value) =>
-                              updateAreaById(area.id, (prev) => ({
-                                ...prev,
-                                label: value,
-                              }))
-                            }
-                          />
-                        </div>
-
-                        {area.actionType === "message" && (
-                          <Input
-                            isRequired
-                            label="ข้อความ (message.text)"
-                            placeholder="เช่น ติดต่อแอดมิน"
-                            value={area.text}
-                            onValueChange={(value) =>
-                              updateAreaById(area.id, (prev) => ({
-                                ...prev,
-                                text: value,
-                              }))
-                            }
-                          />
-                        )}
-                        {area.actionType === "uri" && (
-                          <Input
-                            isRequired
-                            label="URL (action.uri)"
-                            placeholder="https://example.com"
-                            value={area.uri}
-                            onValueChange={(value) =>
-                              updateAreaById(area.id, (prev) => ({
-                                ...prev,
-                                uri: value,
-                              }))
-                            }
-                          />
-                        )}
-                        {area.actionType === "richmenuswitch" && (
-                          <>
-                            <Input
-                              isRequired
-                              label="Data (action.data)"
-                              placeholder="action=switch_menu&target=service"
-                              value={area.data}
-                              onValueChange={(value) =>
-                                updateAreaById(area.id, (prev) => ({
-                                  ...prev,
-                                  data: value,
-                                }))
-                              }
-                            />
-                            <Select
-                              disallowEmptySelection
-                              isRequired
-                              description="เลือกจาก Rich Menu ที่อยู่ใน LINE OA เดียวกัน"
-                              isLoading={loadingAliases}
-                              label="Rich Menu Alias ID (action.richMenuAliasId)"
-                              placeholder={
-                                loadingAliases
-                                  ? "กำลังโหลด Alias..."
-                                  : "เลือกปลายทางของการสลับเมนู"
-                              }
-                              selectedKeys={
-                                area.richMenuAliasId
-                                  ? new Set([area.richMenuAliasId])
-                                  : new Set()
-                              }
-                              onSelectionChange={(keys) => {
-                                const key = Array.from(keys)[0];
-
-                                updateAreaById(area.id, (prev) => ({
-                                  ...prev,
-                                  richMenuAliasId: key ? String(key) : "",
-                                }));
-                              }}
-                            >
-                              {[
-                                ...availableAliases,
-                                ...(area.richMenuAliasId &&
-                                !availableAliases.some(
-                                  (alias) =>
-                                    alias.aliasId === area.richMenuAliasId,
-                                )
-                                  ? [
-                                      {
-                                        richMenuId: "custom",
-                                        aliasId: area.richMenuAliasId,
-                                        name: "Alias ปัจจุบัน",
-                                        lineAccountName: "Custom",
-                                      } satisfies RichMenuAliasOption,
-                                    ]
-                                  : []),
-                              ].map((alias) => (
-                                <SelectItem
-                                  key={alias.aliasId}
-                                  textValue={`${alias.aliasId} ${alias.name}`}
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="font-mono text-xs">
-                                      {alias.aliasId}
-                                    </span>
-                                    <span className="text-xs text-default-500">
-                                      {alias.name} ({alias.lineAccountName})
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </Select>
-                          </>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-3 rounded-xl border border-default-200 bg-default-50/30 p-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-default-600">
-                    ลากบนพื้นที่ว่างเพื่อวาด Area, ลากกรอบเพื่อย้าย,
-                    ลากจุดมุมเพื่อ resize
-                  </p>
-                  <label className="flex items-center gap-2 text-xs text-default-600">
-                    <span>Zoom {zoomPercent}%</span>
-                    <input
-                      aria-label="Zoom preview"
-                      className="w-32"
-                      max={100}
-                      min={25}
-                      step={5}
-                      type="range"
-                      value={zoomPercent}
-                      onChange={(event) =>
-                        setZoomPercent(Number(event.currentTarget.value))
-                      }
-                    />
-                  </label>
-                </div>
-                <div className="overflow-auto rounded-lg border border-default-200 bg-content1">
-                  <div
-                    ref={imageContainerRef}
-                    className="relative w-fit touch-none"
-                    role="presentation"
-                    onPointerCancel={() => {
-                      if (
-                        interaction &&
-                        imageContainerRef.current?.hasPointerCapture(
-                          interaction.pointerId,
-                        )
-                      ) {
-                        imageContainerRef.current.releasePointerCapture(
-                          interaction.pointerId,
-                        );
-                      }
-                      setDragRect(null);
-                      setInteraction(null);
-                    }}
-                    onPointerDown={(event) => {
-                      if (
-                        event.button !== 0 ||
-                        interaction ||
-                        !imagePreviewUrl
-                      ) {
-                        return;
-                      }
-
-                      const point = toLocalPoint(event);
-                      const draft = {
-                        startX: point.x,
-                        startY: point.y,
+                    if (interaction.type === "draw") {
+                      const nextDraft = {
+                        ...interaction.draft,
                         endX: point.x,
                         endY: point.y,
                       };
 
-                      setDragRect(draft);
+                      setDragRect(nextDraft);
                       setInteraction({
-                        type: "draw",
-                        pointerId: event.pointerId,
-                        draft,
+                        ...interaction,
+                        draft: nextDraft,
                       });
-                      event.currentTarget.setPointerCapture(event.pointerId);
-                    }}
-                    onPointerMove={(event) => {
-                      if (
-                        !interaction ||
-                        interaction.pointerId !== event.pointerId
-                      ) {
-                        return;
-                      }
-                      const point = toLocalPoint(event);
 
-                      if (interaction.type === "draw") {
-                        const nextDraft = {
-                          ...interaction.draft,
-                          endX: point.x,
-                          endY: point.y,
-                        };
+                      return;
+                    }
 
-                        setDragRect(nextDraft);
-                        setInteraction({
-                          ...interaction,
-                          draft: nextDraft,
-                        });
+                    const deltaX = point.x - interaction.startPoint.x;
+                    const deltaY = point.y - interaction.startPoint.y;
+                    const naturalDelta = toNaturalDelta(deltaX, deltaY);
 
-                        return;
-                      }
+                    if (!naturalDelta) {
+                      return;
+                    }
 
-                      const deltaX = point.x - interaction.startPoint.x;
-                      const deltaY = point.y - interaction.startPoint.y;
-                      const naturalDelta = toNaturalDelta(deltaX, deltaY);
+                    if (interaction.type === "move") {
+                      updateAreaBounds(interaction.areaId, {
+                        ...interaction.initialBounds,
+                        x: interaction.initialBounds.x + naturalDelta.x,
+                        y: interaction.initialBounds.y + naturalDelta.y,
+                      });
 
-                      if (!naturalDelta) {
-                        return;
-                      }
+                      return;
+                    }
 
-                      if (interaction.type === "move") {
-                        updateAreaBounds(interaction.areaId, {
-                          ...interaction.initialBounds,
-                          x: interaction.initialBounds.x + naturalDelta.x,
-                          y: interaction.initialBounds.y + naturalDelta.y,
-                        });
+                    const b = interaction.initialBounds;
+                    const dx = naturalDelta.x;
+                    const dy = naturalDelta.y;
+                    let nextBounds = { ...b };
 
-                        return;
-                      }
+                    if (interaction.handle === "nw") {
+                      nextBounds = {
+                        x: b.x + dx,
+                        y: b.y + dy,
+                        width: b.width - dx,
+                        height: b.height - dy,
+                      };
+                    } else if (interaction.handle === "ne") {
+                      nextBounds = {
+                        x: b.x,
+                        y: b.y + dy,
+                        width: b.width + dx,
+                        height: b.height - dy,
+                      };
+                    } else if (interaction.handle === "sw") {
+                      nextBounds = {
+                        x: b.x + dx,
+                        y: b.y,
+                        width: b.width - dx,
+                        height: b.height + dy,
+                      };
+                    } else if (interaction.handle === "se") {
+                      nextBounds = {
+                        x: b.x,
+                        y: b.y,
+                        width: b.width + dx,
+                        height: b.height + dy,
+                      };
+                    }
 
-                      const b = interaction.initialBounds;
-                      const dx = naturalDelta.x;
-                      const dy = naturalDelta.y;
-                      let nextBounds = { ...b };
+                    updateAreaBounds(interaction.areaId, nextBounds);
+                  }}
+                  onPointerUp={(event) => {
+                    if (
+                      !interaction ||
+                      interaction.pointerId !== event.pointerId
+                    ) {
+                      return;
+                    }
+                    if (
+                      imageContainerRef.current?.hasPointerCapture(
+                        event.pointerId,
+                      )
+                    ) {
+                      imageContainerRef.current.releasePointerCapture(
+                        event.pointerId,
+                      );
+                    }
+                    if (interaction.type === "draw") {
+                      finalizeDraw(interaction.draft);
 
-                      if (interaction.handle === "nw") {
-                        nextBounds = {
-                          x: b.x + dx,
-                          y: b.y + dy,
-                          width: b.width - dx,
-                          height: b.height - dy,
-                        };
-                      } else if (interaction.handle === "ne") {
-                        nextBounds = {
-                          x: b.x,
-                          y: b.y + dy,
-                          width: b.width + dx,
-                          height: b.height - dy,
-                        };
-                      } else if (interaction.handle === "sw") {
-                        nextBounds = {
-                          x: b.x + dx,
-                          y: b.y,
-                          width: b.width - dx,
-                          height: b.height + dy,
-                        };
-                      } else if (interaction.handle === "se") {
-                        nextBounds = {
-                          x: b.x,
-                          y: b.y,
-                          width: b.width + dx,
-                          height: b.height + dy,
-                        };
-                      }
+                      return;
+                    }
 
-                      updateAreaBounds(interaction.areaId, nextBounds);
-                    }}
-                    onPointerUp={(event) => {
-                      if (
-                        !interaction ||
-                        interaction.pointerId !== event.pointerId
-                      ) {
-                        return;
-                      }
-                      if (
-                        imageContainerRef.current?.hasPointerCapture(
-                          event.pointerId,
-                        )
-                      ) {
-                        imageContainerRef.current.releasePointerCapture(
-                          event.pointerId,
-                        );
-                      }
-                      if (interaction.type === "draw") {
-                        finalizeDraw(interaction.draft);
+                    setInteraction(null);
+                  }}
+                >
+                  {imagePreviewUrl ? (
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        ref={imageRef}
+                        alt="Rich menu preview"
+                        className="block h-auto max-w-none select-none"
+                        src={imagePreviewUrl}
+                        style={
+                          imageSize.width > 0
+                            ? {
+                                width: `${Math.round((imageSize.width * zoomPercent) / 100)}px`,
+                              }
+                            : undefined
+                        }
+                        onLoad={(e) => {
+                          const target = e.currentTarget;
 
-                        return;
-                      }
-
-                      setInteraction(null);
-                    }}
-                  >
-                    {imagePreviewUrl ? (
-                      <>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          ref={imageRef}
-                          alt="Rich menu preview"
-                          className="block h-auto max-w-none select-none"
-                          src={imagePreviewUrl}
-                          style={
-                            imageSize.width > 0
-                              ? {
-                                  width: `${Math.round((imageSize.width * zoomPercent) / 100)}px`,
-                                }
-                              : undefined
-                          }
-                          onLoad={(e) => {
-                            const target = e.currentTarget;
-
-                            setImageSize({
-                              width: target.naturalWidth,
-                              height: target.naturalHeight,
-                            });
+                          setImageSize({
+                            width: target.naturalWidth,
+                            height: target.naturalHeight,
+                          });
+                        }}
+                      />
+                      {renderedFrame && (
+                        <div
+                          className="absolute"
+                          style={{
+                            left: `${renderedFrame.left}px`,
+                            top: `${renderedFrame.top}px`,
+                            width: `${renderedFrame.width}px`,
+                            height: `${renderedFrame.height}px`,
                           }}
-                        />
-                        {renderedFrame && (
-                          <div
-                            className="absolute"
-                            style={{
-                              left: `${renderedFrame.left}px`,
-                              top: `${renderedFrame.top}px`,
-                              width: `${renderedFrame.width}px`,
-                              height: `${renderedFrame.height}px`,
-                            }}
-                          >
-                            {areas.map((area, index) => {
-                              const widthRatio =
-                                imageSize.width > 0
-                                  ? area.bounds.width / imageSize.width
-                                  : 0;
-                              const heightRatio =
-                                imageSize.height > 0
-                                  ? area.bounds.height / imageSize.height
-                                  : 0;
-                              const xRatio =
-                                imageSize.width > 0
-                                  ? area.bounds.x / imageSize.width
-                                  : 0;
-                              const yRatio =
-                                imageSize.height > 0
-                                  ? area.bounds.y / imageSize.height
-                                  : 0;
-                              const isSelected = area.id === selectedAreaId;
+                        >
+                          {areas.map((area, index) => {
+                            const widthRatio =
+                              imageSize.width > 0
+                                ? area.bounds.width / imageSize.width
+                                : 0;
+                            const heightRatio =
+                              imageSize.height > 0
+                                ? area.bounds.height / imageSize.height
+                                : 0;
+                            const xRatio =
+                              imageSize.width > 0
+                                ? area.bounds.x / imageSize.width
+                                : 0;
+                            const yRatio =
+                              imageSize.height > 0
+                                ? area.bounds.y / imageSize.height
+                                : 0;
+                            const isSelected = area.id === selectedAreaId;
 
-                              return (
-                                <div
-                                  key={area.id}
-                                  className={`absolute box-border select-none border-2 text-[10px] font-semibold ${
-                                    isSelected
-                                      ? "border-primary bg-primary/20 text-primary-700"
-                                      : "border-warning bg-warning/15 text-warning-700"
-                                  }`}
-                                  style={{
-                                    left: `${xRatio * 100}%`,
-                                    top: `${yRatio * 100}%`,
-                                    width: `${widthRatio * 100}%`,
-                                    height: `${heightRatio * 100}%`,
+                            return (
+                              <div
+                                key={area.id}
+                                className={`absolute box-border select-none border-2 text-[10px] font-semibold ${
+                                  isSelected
+                                    ? "border-primary bg-primary/20 text-primary-700"
+                                    : "border-warning bg-warning/15 text-warning-700"
+                                }`}
+                                style={{
+                                  left: `${xRatio * 100}%`,
+                                  top: `${yRatio * 100}%`,
+                                  width: `${widthRatio * 100}%`,
+                                  height: `${heightRatio * 100}%`,
+                                }}
+                              >
+                                <button
+                                  className="flex h-full w-full items-start justify-start p-1 text-left"
+                                  type="button"
+                                  onClick={() => setSelectedAreaId(area.id)}
+                                  onPointerDown={(event) => {
+                                    event.stopPropagation();
+                                    if (event.button !== 0 || interaction) {
+                                      return;
+                                    }
+                                    const point = toLocalPoint(event);
+
+                                    setSelectedAreaId(area.id);
+                                    setInteraction({
+                                      type: "move",
+                                      pointerId: event.pointerId,
+                                      areaId: area.id,
+                                      startPoint: point,
+                                      initialBounds: area.bounds,
+                                    });
+                                    imageContainerRef.current?.setPointerCapture(
+                                      event.pointerId,
+                                    );
                                   }}
                                 >
+                                  Area {index + 1}
+                                </button>
+                                {(
+                                  [
+                                    [
+                                      "nw",
+                                      "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
+                                    ],
+                                    [
+                                      "ne",
+                                      "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
+                                    ],
+                                    [
+                                      "sw",
+                                      "left-0 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
+                                    ],
+                                    [
+                                      "se",
+                                      "right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
+                                    ],
+                                  ] as Array<[ResizeHandle, string]>
+                                ).map(([handle, positionClass]) => (
                                   <button
-                                    className="flex h-full w-full items-start justify-start p-1 text-left"
+                                    key={handle}
+                                    aria-label={`Resize ${handle}`}
+                                    className={`absolute h-3 w-3 rounded-full border border-primary-700 bg-primary ${positionClass}`}
                                     type="button"
-                                    onClick={() => setSelectedAreaId(area.id)}
                                     onPointerDown={(event) => {
                                       event.stopPropagation();
                                       if (event.button !== 0 || interaction) {
@@ -1417,9 +1213,10 @@ export function ImportRichMenuForm({
 
                                       setSelectedAreaId(area.id);
                                       setInteraction({
-                                        type: "move",
+                                        type: "resize",
                                         pointerId: event.pointerId,
                                         areaId: area.id,
+                                        handle,
                                         startPoint: point,
                                         initialBounds: area.bounds,
                                       });
@@ -1427,163 +1224,351 @@ export function ImportRichMenuForm({
                                         event.pointerId,
                                       );
                                     }}
-                                  >
-                                    Area {index + 1}
-                                  </button>
-                                  {(
-                                    [
-                                      [
-                                        "nw",
-                                        "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
-                                      ],
-                                      [
-                                        "ne",
-                                        "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
-                                      ],
-                                      [
-                                        "sw",
-                                        "left-0 bottom-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
-                                      ],
-                                      [
-                                        "se",
-                                        "right-0 bottom-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
-                                      ],
-                                    ] as Array<[ResizeHandle, string]>
-                                  ).map(([handle, positionClass]) => (
-                                    <button
-                                      key={handle}
-                                      aria-label={`Resize ${handle}`}
-                                      className={`absolute h-3 w-3 rounded-full border border-primary-700 bg-primary ${positionClass}`}
-                                      type="button"
-                                      onPointerDown={(event) => {
-                                        event.stopPropagation();
-                                        if (event.button !== 0 || interaction) {
-                                          return;
-                                        }
-                                        const point = toLocalPoint(event);
-
-                                        setSelectedAreaId(area.id);
-                                        setInteraction({
-                                          type: "resize",
-                                          pointerId: event.pointerId,
-                                          areaId: area.id,
-                                          handle,
-                                          startPoint: point,
-                                          initialBounds: area.bounds,
-                                        });
-                                        imageContainerRef.current?.setPointerCapture(
-                                          event.pointerId,
-                                        );
-                                      }}
-                                    />
-                                  ))}
-                                </div>
-                              );
-                            })}
-                            {dragRect && (
-                              <div
-                                className="pointer-events-none absolute box-border border-2 border-success bg-success/10"
-                                style={{
-                                  left: `${Math.min(dragRect.startX, dragRect.endX)}px`,
-                                  top: `${Math.min(dragRect.startY, dragRect.endY)}px`,
-                                  width: `${Math.abs(dragRect.endX - dragRect.startX)}px`,
-                                  height: `${Math.abs(dragRect.endY - dragRect.startY)}px`,
-                                }}
-                              />
-                            )}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <div className="flex min-h-[380px] items-center justify-center px-4 text-sm text-default-500">
-                        {isEditMode
-                          ? "ยังไม่มีรูป Rich Menu กรุณาอัปโหลดรูปใหม่"
-                          : "อัปโหลดรูป Rich Menu เพื่อเริ่มวาดพื้นที่"}
-                      </div>
-                    )}
-                  </div>
+                                  />
+                                ))}
+                              </div>
+                            );
+                          })}
+                          {dragRect && (
+                            <div
+                              className="pointer-events-none absolute box-border border-2 border-success bg-success/10"
+                              style={{
+                                left: `${Math.min(dragRect.startX, dragRect.endX)}px`,
+                                top: `${Math.min(dragRect.startY, dragRect.endY)}px`,
+                                width: `${Math.abs(dragRect.endX - dragRect.startX)}px`,
+                                height: `${Math.abs(dragRect.endY - dragRect.startY)}px`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex min-h-[380px] items-center justify-center px-4 text-sm text-default-500">
+                      {isEditMode
+                        ? "ยังไม่มีรูป Rich Menu กรุณาอัปโหลดรูปใหม่"
+                        : "อัปโหลดรูป Rich Menu เพื่อเริ่มวาดพื้นที่"}
+                    </div>
+                  )}
                 </div>
-                {imageSize.width > 0 && imageSize.height > 0 && (
-                  <p className="text-xs text-default-500">
-                    ขนาดรูป: {imageSize.width} x {imageSize.height} px
-                  </p>
-                )}
               </div>
+              {imageSize.width > 0 && imageSize.height > 0 && (
+                <p className="text-xs text-default-500">
+                  ขนาดรูป: {imageSize.width} × {imageSize.height} px
+                </p>
+              )}
             </div>
+
+            <aside className="order-1 space-y-3 xl:order-2">
+              <h3 className="text-sm font-semibold text-foreground">
+                Areas ({areas.length})
+              </h3>
+
+              {isEditMode && (
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    color="warning"
+                    isDisabled={areas.length === 0 || clearingAreas}
+                    size="sm"
+                    variant="flat"
+                    onPress={onOpenClearAreasModal}
+                  >
+                    ล้าง Areas
+                  </Button>
+                  <Button
+                    color="success"
+                    isLoading={deploying}
+                    size="sm"
+                    variant="flat"
+                    onPress={handleDeploy}
+                  >
+                    {editStatus === "DEPLOYED"
+                      ? "Deploy ใหม่ไป LINE"
+                      : "Deploy ไป LINE"}
+                  </Button>
+                  {canSetDefault && (
+                    <Button
+                      color={isDefaultRichMenu ? "default" : "secondary"}
+                      isDisabled={isDefaultRichMenu}
+                      isLoading={settingDefault}
+                      size="sm"
+                      variant={isDefaultRichMenu ? "flat" : "bordered"}
+                      onPress={handleSetDefault}
+                    >
+                      {isDefaultRichMenu
+                        ? "เป็น Default อยู่แล้ว"
+                        : "ตั้งเป็น Default"}
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {areas.length === 0 ? (
+                <p className="text-sm text-default-500">
+                  ลากบนรูปเพื่อสร้าง Area
+                </p>
+              ) : (
+                <>
+                  <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    {areas.map((area, index) => {
+                      const active = area.id === selectedArea?.id;
+
+                      return (
+                        <Button
+                          key={area.id}
+                          className="shrink-0"
+                          color={active ? "primary" : "default"}
+                          size="sm"
+                          variant={active ? "flat" : "light"}
+                          onPress={() => setSelectedAreaId(area.id)}
+                        >
+                          Area {index + 1} · {AREA_ACTION_HINT[area.actionType]}
+                        </Button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedArea ? (
+                    <div className="grid gap-2 border-t border-default-200 pt-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="text-sm font-medium">
+                            Area {selectedAreaIndex + 1}
+                          </p>
+                          <p className="text-xs text-default-500">
+                            ({selectedArea.bounds.x}, {selectedArea.bounds.y}) ·{" "}
+                            {selectedArea.bounds.width}×
+                            {selectedArea.bounds.height}
+                          </p>
+                        </div>
+                        <Button
+                          color="danger"
+                          size="sm"
+                          variant="solid"
+                          onPress={() => {
+                            const id = selectedArea.id;
+
+                            setAreas((prev) =>
+                              prev.filter((item) => item.id !== id),
+                            );
+                            setSelectedAreaId("");
+                          }}
+                        >
+                          ลบ
+                        </Button>
+                      </div>
+
+                      <Select
+                        label="Action Type"
+                        labelPlacement="outside"
+                        selectedKeys={[selectedArea.actionType]}
+                        onSelectionChange={(keys) => {
+                          const key = Array.from(keys)[0];
+
+                          if (!key) return;
+                          const nextType = String(key) as ActionType;
+
+                          updateAreaById(selectedArea.id, (prev) => ({
+                            ...prev,
+                            actionType: nextType,
+                            ...(nextType === "richmenuswitch" &&
+                            !prev.data.trim()
+                              ? { data: "action=switch_menu" }
+                              : {}),
+                          }));
+                        }}
+                      >
+                        <SelectItem key="message">message</SelectItem>
+                        <SelectItem key="uri">uri</SelectItem>
+                        <SelectItem key="richmenuswitch">
+                          richmenuswitch
+                        </SelectItem>
+                        <SelectItem key="location">location</SelectItem>
+                      </Select>
+
+                      {selectedArea.actionType === "message" && (
+                        <Input
+                          label="ข้อความ"
+                          labelPlacement="outside"
+                          placeholder="เช่น ติดต่อแอดมิน"
+                          value={selectedArea.text}
+                          onValueChange={(value) =>
+                            updateAreaById(selectedArea.id, (prev) => ({
+                              ...prev,
+                              text: value,
+                            }))
+                          }
+                        />
+                      )}
+                      {selectedArea.actionType === "uri" && (
+                        <Input
+                          label="URL"
+                          labelPlacement="outside"
+                          placeholder="https://example.com"
+                          value={selectedArea.uri}
+                          onValueChange={(value) =>
+                            updateAreaById(selectedArea.id, (prev) => ({
+                              ...prev,
+                              uri: value,
+                            }))
+                          }
+                        />
+                      )}
+                      {selectedArea.actionType === "richmenuswitch" && (
+                        <>
+                          <Input
+                            label="Data"
+                            labelPlacement="outside"
+                            placeholder="เช่น action=switch_menu"
+                            value={selectedArea.data}
+                            onValueChange={(value) =>
+                              updateAreaById(selectedArea.id, (prev) => ({
+                                ...prev,
+                                data: value,
+                              }))
+                            }
+                          />
+                          <Select
+                            disallowEmptySelection
+                            isLoading={loadingAliases}
+                            label="Rich Menu ปลายทาง"
+                            labelPlacement="outside"
+                            placeholder={
+                              loadingAliases
+                                ? "กำลังโหลด..."
+                                : "เลือก Rich Menu ปลายทาง"
+                            }
+                            selectedKeys={
+                              selectedArea.richMenuAliasId
+                                ? [selectedArea.richMenuAliasId]
+                                : []
+                            }
+                            onSelectionChange={(keys) => {
+                              const key = Array.from(keys)[0];
+
+                              // HeroUI may fire empty selection when items re-render;
+                              // ignore it so a chosen alias is not wiped before submit.
+                              if (!key) return;
+                              updateAreaById(selectedArea.id, (prev) => ({
+                                ...prev,
+                                richMenuAliasId: String(key),
+                              }));
+                            }}
+                          >
+                            {[
+                              ...availableAliases.filter(
+                                (alias) =>
+                                  !isEditMode ||
+                                  (alias.richMenuId !==
+                                    initialData.richMenuId &&
+                                    alias.aliasId !== aliasId),
+                              ),
+                              ...(selectedArea.richMenuAliasId &&
+                              selectedArea.richMenuAliasId !== aliasId &&
+                              !availableAliases.some(
+                                (alias) =>
+                                  alias.aliasId ===
+                                  selectedArea.richMenuAliasId,
+                              )
+                                ? [
+                                    {
+                                      richMenuId: "custom",
+                                      aliasId: selectedArea.richMenuAliasId,
+                                      name: "Alias ปัจจุบัน",
+                                      lineAccountName: "Custom",
+                                    } satisfies RichMenuAliasOption,
+                                  ]
+                                : []),
+                            ].map((alias) => (
+                              <SelectItem
+                                key={alias.aliasId}
+                                textValue={`${alias.name} ${alias.lineAccountName} ${alias.aliasId}`}
+                              >
+                                <div className="flex flex-col">
+                                  <span className="text-sm">
+                                    {alias.name} ({alias.lineAccountName})
+                                  </span>
+                                  <span className="font-mono text-xs text-default-500">
+                                    {alias.aliasId}
+                                  </span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </Select>
+                        </>
+                      )}
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </aside>
           </section>
 
-          <div className="sticky bottom-0 z-10 -mx-2 flex flex-wrap items-center justify-end gap-2 border-t border-default-200 bg-background/90 px-2 pb-1 pt-4 backdrop-blur">
-            {isEditMode && (
+          <div className="flex items-center justify-center gap-3 border-t border-default-200 py-3">
+            {isEditMode ? (
               <>
                 <Button
+                  as={NextLink}
+                  className="text-white"
                   color="warning"
-                  isDisabled={areas.length === 0 || clearingAreas}
-                  variant="flat"
-                  onPress={onOpenClearAreasModal}
+                  href={`/rich-menus?lineAccountId=${encodeURIComponent(lineAccountId)}`}
+                  variant="solid"
                 >
-                  ล้าง Areas
+                  ย้อนกลับ
                 </Button>
+                <Button color="primary" isLoading={loading} type="submit">
+                  บันทึกการแก้ไข
+                </Button>
+              </>
+            ) : (
+              <>
                 <Button
-                  color="success"
-                  isLoading={deploying}
-                  variant="flat"
-                  onPress={handleDeploy}
+                  as={NextLink}
+                  className="text-white"
+                  color="warning"
+                  href={`/rich-menus?lineAccountId=${encodeURIComponent(lineAccountId)}`}
+                  variant="solid"
                 >
-                  {editStatus === "DEPLOYED"
-                    ? "Deploy ใหม่ไป LINE"
-                    : "Deploy ไป LINE"}
+                  ย้อนกลับ
                 </Button>
-                {canSetDefault && (
-                  <Button
-                    color={isDefaultRichMenu ? "default" : "secondary"}
-                    isDisabled={isDefaultRichMenu}
-                    isLoading={settingDefault}
-                    variant={isDefaultRichMenu ? "flat" : "bordered"}
-                    onPress={handleSetDefault}
-                  >
-                    {isDefaultRichMenu
-                      ? "เป็น Default อยู่แล้ว"
-                      : "ตั้งเป็น Default"}
-                  </Button>
-                )}
+                <Button color="primary" isLoading={loading} type="submit">
+                  นำเข้า Rich Menu
+                </Button>
               </>
             )}
-            <Button color="primary" isLoading={loading} size="lg" type="submit">
-              {isEditMode ? "บันทึกการแก้ไข" : "นำเข้า Rich Menu"}
-            </Button>
           </div>
         </form>
+        <Modal
+          isOpen={isClearAreasModalOpen}
+          onOpenChange={onClearAreasModalOpenChange}
+        >
+          <ModalContent>
+            <ModalHeader>ยืนยันการล้าง Areas</ModalHeader>
+            <ModalBody>
+              <p>คุณต้องการล้าง Areas ทั้งหมดของ Rich Menu นี้ใช่หรือไม่?</p>
+              <p className="text-default-500 text-sm">
+                การล้าง Areas จะลบจุดกดทั้งหมดบนรูป และไม่สามารถย้อนกลับได้
+              </p>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                type="button"
+                variant="light"
+                onPress={() => onClearAreasModalOpenChange()}
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                color="warning"
+                isLoading={clearingAreas}
+                onPress={handleClearAreas}
+              >
+                ยืนยันล้าง Areas
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </CardBody>
-      <Modal
-        isOpen={isClearAreasModalOpen}
-        onOpenChange={onClearAreasModalOpenChange}
-      >
-        <ModalContent>
-          <ModalHeader>ยืนยันการล้าง Areas</ModalHeader>
-          <ModalBody>
-            <p>คุณต้องการล้าง Areas ทั้งหมดของ Rich Menu นี้ใช่หรือไม่?</p>
-            <p className="text-default-500 text-sm">
-              การล้าง Areas จะลบจุดกดทั้งหมดบนรูป และไม่สามารถย้อนกลับได้
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button
-              type="button"
-              variant="light"
-              onPress={() => onClearAreasModalOpenChange()}
-            >
-              ยกเลิก
-            </Button>
-            <Button
-              color="warning"
-              isLoading={clearingAreas}
-              onPress={handleClearAreas}
-            >
-              ยืนยันล้าง Areas
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </Card>
   );
 }

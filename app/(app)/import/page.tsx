@@ -22,10 +22,7 @@ export default async function ImportPage({
 
   return (
     <PageShell>
-      <PageHeader
-        description="นำเข้า Rich Menu จาก LINE หรือสร้างใหม่"
-        title={siteConfig.labels.importRichMenu}
-      />
+      <PageHeader title={siteConfig.labels.importRichMenu} />
       <ImportRichMenuForm
         defaultLineAccountId={(await searchParams).lineAccountId ?? null}
         lineAccounts={lineAccounts}

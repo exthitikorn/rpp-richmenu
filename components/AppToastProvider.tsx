@@ -25,6 +25,7 @@ export function useAppToast(): AppToast {
         title: message,
         description: options?.description,
         timeout: options?.timeout,
+        color: "success",
         severity: "success",
       });
     },
@@ -33,6 +34,7 @@ export function useAppToast(): AppToast {
         title: message,
         description: options?.description,
         timeout: options?.timeout,
+        color: "danger",
         severity: "danger",
       });
     },
@@ -41,6 +43,7 @@ export function useAppToast(): AppToast {
         title: message,
         description: options?.description,
         timeout: options?.timeout,
+        color: "primary",
         severity: "primary",
       });
     },
@@ -49,6 +52,7 @@ export function useAppToast(): AppToast {
         title: message,
         description: options?.description,
         timeout: options?.timeout,
+        color: "warning",
         severity: "warning",
       });
     },

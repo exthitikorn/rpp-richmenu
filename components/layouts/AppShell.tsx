@@ -19,7 +19,7 @@ export function AppShell({ children }: AppShellProps) {
       <Navbar onMenuOpen={onOpen} />
       <div className="flex h-full min-h-0 flex-1">
         <AppSidebar />
-        <div className="min-w-0 flex-1 overflow-auto p-4 md:p-6">
+        <div className="min-w-0 flex-1 overflow-auto bg-background p-4 md:p-6">
           <MobileAppDrawer isOpen={isOpen} onOpenChange={onOpenChange} />
           {children}
         </div>

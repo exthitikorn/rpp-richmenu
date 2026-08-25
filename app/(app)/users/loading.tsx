@@ -1,9 +1,5 @@
-import { Spinner } from "@heroui/spinner";
+import { LoadingState } from "@/components/ui/LoadingState";
 
-export default function UsersLoading() {
-  return (
-    <div className="flex items-center justify-center py-12">
-      <Spinner size="lg" />
-    </div>
-  );
+export default function Loading() {
+  return <LoadingState />;
 }

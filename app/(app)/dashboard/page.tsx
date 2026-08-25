@@ -206,10 +206,9 @@ export default async function DashboardPage() {
           {overviewMetrics.map((metric) => (
             <Card
               key={metric.key}
-              className="group relative overflow-hidden border border-default-200 bg-gradient-to-br from-default-50/90 via-background to-background shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary-200/70 hover:shadow-lg motion-reduce:transform-none motion-reduce:transition-none"
+              className="group relative overflow-hidden border border-default-200 bg-content1 shadow-none transition-colors hover:border-primary-200/70"
             >
-              <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_color-mix(in_srgb,var(--heroui-primary)_22%,transparent),_transparent_55%)] opacity-75 transition-opacity duration-300 group-hover:opacity-100" />
-              <CardHeader className="relative z-10 flex flex-col gap-1 pb-1">
+              <CardHeader className="flex flex-col gap-1 pb-1">
                 <p className="text-xs font-medium uppercase tracking-wide text-default-500">
                   {metric.label}
                 </p>
@@ -217,7 +216,7 @@ export default async function DashboardPage() {
                   {metric.description}
                 </p>
               </CardHeader>
-              <CardBody className="relative z-10 flex items-center justify-center pt-1">
+              <CardBody className="flex items-center justify-center pt-1">
                 <p className="text-3xl font-bold tracking-tight text-primary">
                   {metric.value.toLocaleString("th-TH")}
                 </p>

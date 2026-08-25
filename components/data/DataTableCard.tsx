@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { Card, CardBody, CardHeader } from "@heroui/card";
 
+import { EmptyState } from "@/components/ui/EmptyState";
+
 interface DataTableCardProps {
   title?: string;
   description?: string;
@@ -20,7 +22,7 @@ export function DataTableCard({
   isEmpty = false,
 }: DataTableCardProps) {
   return (
-    <Card className="w-full min-w-0 overflow-hidden">
+    <Card className="w-full min-w-0 overflow-hidden border border-default-200 shadow-none">
       {title || description || headerActions ? (
         <CardHeader className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -35,7 +37,9 @@ export function DataTableCard({
         </CardHeader>
       ) : null}
       <CardBody className="min-w-0 overflow-x-auto px-4 py-3">
-        {isEmpty && emptyState ? emptyState : children}
+        {isEmpty
+          ? (emptyState ?? <EmptyState title="ไม่มีข้อมูล" />)
+          : children}
       </CardBody>
     </Card>
   );

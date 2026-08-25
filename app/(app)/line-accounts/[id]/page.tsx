@@ -8,6 +8,7 @@ import { lineAccountByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 export default async function LineAccountDetailPage({
   params,
@@ -58,11 +59,11 @@ export default async function LineAccountDetailPage({
         description={`ผู้ได้รับสิทธิ์ ${account.assignments.length} คน`}
         title={account.name}
       />
-      <Card>
+      <Card className="border border-default-200 shadow-none">
         <CardHeader>Rich Menus ({account.richMenus.length})</CardHeader>
         <CardBody>
           {account.richMenus.length === 0 ? (
-            <p className="text-default-500">ยังไม่มี Rich Menu</p>
+            <EmptyState title="ยังไม่มี Rich Menu" />
           ) : (
             <ul className="divide-y divide-default-200">
               {account.richMenus.map((rm) => (

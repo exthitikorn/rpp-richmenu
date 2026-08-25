@@ -10,7 +10,7 @@ export function AwaitingApprovalMessage() {
     <AuthCard
       header={
         <>
-          <h2 className="text-2xl font-semibold">รอการอนุมัติ</h2>
+          <h2 className="text-xl font-semibold sm:text-2xl">รอการอนุมัติ</h2>
           <p className="text-center text-sm text-default-500" role="status">
             บัญชีของคุณถูกสร้างในระบบแล้ว
             กรุณารอผู้ดูแลระบบอนุมัติบัญชีก่อนจึงจะเข้าใช้งานได้

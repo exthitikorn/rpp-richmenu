@@ -10,6 +10,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
+import { Input } from "@heroui/input";
 import {
   Modal,
   ModalBody,
@@ -29,6 +30,7 @@ import {
 } from "@heroui/table";
 
 import { useAppToast } from "@/components/AppToastProvider";
+import { EmptyState } from "@/components/ui/EmptyState";
 
 type UserWithRelations = User & {
   lineAccountAssignments: (LineAccountAssignment & {
@@ -139,14 +141,72 @@ function EditUserLineAccountsButton({
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
   const toast = useAppToast();
-  const initialSelected = useMemo(
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
     () =>
       new Set(user.lineAccountAssignments.map((item) => item.lineAccount.id)),
-    [user.lineAccountAssignments],
   );
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(initialSelected);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const filteredLineAccounts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+
+    if (!query) {
+      return lineAccounts;
+    }
+
+    return lineAccounts.filter((lineAccount) =>
+      lineAccount.name.toLowerCase().includes(query),
+    );
+  }, [lineAccounts, searchQuery]);
+
+  function handleOpen() {
+    setSelectedIds(
+      new Set(user.lineAccountAssignments.map((item) => item.lineAccount.id)),
+    );
+    setSearchQuery("");
+    setError("");
+    onOpen();
+  }
+
+  function selectAllFiltered() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      for (const lineAccount of filteredLineAccounts) {
+        next.add(lineAccount.id);
+      }
+
+      return next;
+    });
+  }
+
+  function clearAllFiltered() {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      for (const lineAccount of filteredLineAccounts) {
+        next.delete(lineAccount.id);
+      }
+
+      return next;
+    });
+  }
+
+  function toggleLineAccount(lineAccountId: string, value: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+
+      if (value) {
+        next.add(lineAccountId);
+      } else {
+        next.delete(lineAccountId);
+      }
+
+      return next;
+    });
+  }
 
   async function handleSave() {
     setError("");
@@ -187,11 +247,11 @@ function EditUserLineAccountsButton({
         isDisabled={lineAccounts.length === 0}
         size="sm"
         variant="light"
-        onPress={onOpen}
+        onPress={handleOpen}
       >
         จัดการ LineOA
       </Button>
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal isOpen={isOpen} size="lg" onOpenChange={onOpenChange}>
         <ModalContent>
           <ModalHeader>กำหนดสิทธิ์ LineOA</ModalHeader>
           <ModalBody>
@@ -205,34 +265,56 @@ function EditUserLineAccountsButton({
               <span className="font-semibold">{formatUserLabel(user)}</span>{" "}
               สามารถเข้าถึงได้
             </p>
-            <div className="mt-3 space-y-2">
-              {lineAccounts.map((lineAccount) => {
-                const isSelected = selectedIds.has(lineAccount.id);
-
-                return (
-                  <Switch
-                    key={lineAccount.id}
-                    aria-label={`กำหนดสิทธิ์เข้าถึง ${lineAccount.name}`}
-                    isSelected={isSelected}
-                    size="sm"
-                    onValueChange={(value) => {
-                      setSelectedIds((prev) => {
-                        const next = new Set(prev);
-
-                        if (value) {
-                          next.add(lineAccount.id);
-                        } else {
-                          next.delete(lineAccount.id);
-                        }
-
-                        return next;
-                      });
-                    }}
-                  >
-                    {lineAccount.name}
-                  </Switch>
-                );
-              })}
+            <Input
+              aria-label="ค้นหา LineOA"
+              className="mt-3"
+              placeholder="ค้นหาชื่อ LineOA"
+              size="sm"
+              value={searchQuery}
+              onValueChange={setSearchQuery}
+            />
+            <div className="mt-2 flex gap-2">
+              <Button
+                isDisabled={filteredLineAccounts.length === 0}
+                size="sm"
+                variant="flat"
+                onPress={selectAllFiltered}
+              >
+                เลือกทั้งหมด
+              </Button>
+              <Button
+                isDisabled={filteredLineAccounts.length === 0}
+                size="sm"
+                variant="light"
+                onPress={clearAllFiltered}
+              >
+                ยกเลิกทั้งหมด
+              </Button>
+            </div>
+            <div className="mt-2 max-h-80 overflow-auto">
+              <Table removeWrapper aria-label="ตารางกำหนดสิทธิ์ LineOA">
+                <TableHeader>
+                  <TableColumn>ชื่อ LineOA</TableColumn>
+                  <TableColumn className="w-24 text-center">สิทธิ์</TableColumn>
+                </TableHeader>
+                <TableBody emptyContent="ไม่พบ LineOA ที่ตรงกับการค้นหา">
+                  {filteredLineAccounts.map((lineAccount) => (
+                    <TableRow key={lineAccount.id}>
+                      <TableCell>{lineAccount.name}</TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          aria-label={`กำหนดสิทธิ์เข้าถึง ${lineAccount.name}`}
+                          isSelected={selectedIds.has(lineAccount.id)}
+                          size="sm"
+                          onValueChange={(value) =>
+                            toggleLineAccount(lineAccount.id, value)
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
             <p className="text-default-500 text-xs">
               ถ้าไม่เลือก LineOA ใดเลย
@@ -425,9 +507,7 @@ export function UsersTable({
   }
 
   if (users.length === 0) {
-    return (
-      <p className="text-default-500 text-center py-8">ยังไม่มีผู้ใช้ในระบบ</p>
-    );
+    return <EmptyState title="ยังไม่มีผู้ใช้ในระบบ" />;
   }
 
   return (

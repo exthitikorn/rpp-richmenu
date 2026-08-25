@@ -4,6 +4,25 @@ export default heroui({
   themes: {
     light: {
       colors: {
+        // Clean: near-white canvas, white surfaces, brand green as accent only
+        background: "#F5F6F5",
+        foreground: "#111827",
+        content1: "#FFFFFF",
+        content2: "#F0F1F0",
+        default: {
+          50: "#FAFAFA",
+          100: "#F4F4F5",
+          200: "#E4E4E7",
+          300: "#D4D4D8",
+          400: "#A1A1AA",
+          500: "#71717A",
+          600: "#52525B",
+          700: "#3F3F46",
+          800: "#27272A",
+          900: "#18181B",
+          DEFAULT: "#D4D4D8",
+          foreground: "#111827",
+        },
         primary: {
           50: "#E8F3EF",
           100: "#C5E2D8",

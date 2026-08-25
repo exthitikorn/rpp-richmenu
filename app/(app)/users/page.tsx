@@ -1,5 +1,3 @@
-import { Card, CardBody } from "@heroui/card";
-
 import { UsersTable } from "./UsersTable";
 
 import { isSystemAdmin } from "@/lib/access";
@@ -8,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
 import { DataTableCard } from "@/components/data/DataTableCard";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { siteConfig } from "@/config/site";
 
 export default async function UsersPage() {
@@ -22,13 +21,10 @@ export default async function UsersPage() {
           description="จัดการผู้ใช้ระบบและสถานะการอนุมัติ"
           title={siteConfig.labels.users}
         />
-        <Card className="w-full min-w-0 overflow-hidden">
-          <CardBody>
-            <p className="text-danger">
-              คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (ต้องเป็นผู้ดูแลระบบ)
-            </p>
-          </CardBody>
-        </Card>
+        <ErrorState
+          description="ต้องเป็นผู้ดูแลระบบ"
+          title="คุณไม่มีสิทธิ์เข้าถึงหน้านี้"
+        />
       </PageShell>
     );
   }
