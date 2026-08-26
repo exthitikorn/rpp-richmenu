@@ -31,6 +31,10 @@ export async function GET(
           status: true,
           isDefault: true,
           lineRichMenuId: true,
+          imageUrl: true,
+          chatBarText: true,
+          width: true,
+          height: true,
         },
       },
     },
@@ -65,6 +69,7 @@ export async function GET(
                 linkedName: linked.name,
                 linkedStatus: linked.status,
                 isDefault: linked.isDefault,
+                imageUrl: linked.imageUrl,
               }
             : {}),
         };
@@ -75,9 +80,39 @@ export async function GET(
         return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
       });
 
+    const previewMenus = account.richMenus
+      .slice()
+      .sort((a, b) => {
+        if (a.isDefault !== b.isDefault) return a.isDefault ? -1 : 1;
+
+        return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+      })
+      .map((rm) => ({
+        id: rm.id,
+        name: rm.name,
+        imageUrl: rm.imageUrl,
+        chatBarText: rm.chatBarText,
+        width: rm.width,
+        height: rm.height,
+        isDefault: rm.isDefault,
+        lineRichMenuId: rm.lineRichMenuId,
+      }));
+
+    const selectedLine = listed.find((m) => m.selected);
+    const linkedDefaultId = selectedLine
+      ? byLineId.get(selectedLine.richMenuId)?.id
+      : undefined;
+    const defaultPreviewMenuId =
+      linkedDefaultId ??
+      previewMenus.find((m) => m.isDefault)?.id ??
+      previewMenus[0]?.id ??
+      null;
+
     return NextResponse.json({
       ...summary,
       richMenus,
+      previewMenus,
+      defaultPreviewMenuId,
     });
   } catch (e) {
     const message =

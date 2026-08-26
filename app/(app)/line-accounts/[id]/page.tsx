@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import NextLink from "next/link";
 import { Button } from "@heroui/button";
+import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Chip } from "@heroui/chip";
 
+import { DefaultRichMenuChatPreview } from "./DefaultRichMenuChatPreview";
 import { LineAccountWebhookCopy } from "./LineAccountWebhookCopy";
 import { LineRichMenusOnLine } from "./LineRichMenusOnLine";
 
@@ -80,16 +83,40 @@ export default async function LineAccountDetailPage({
         description={`ผู้ได้รับสิทธิ์ ${account.assignments.length} คน`}
         title={account.name}
       />
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          Rich Menus ({account.richMenus.length})
-        </h2>
-        <RichMenusTable richMenus={account.richMenus} />
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="min-w-0 space-y-6">
+          <Card className="border border-default-200 shadow-none">
+            <CardHeader className="flex flex-wrap items-start justify-between gap-2 pb-2">
+              <div className="flex min-w-0 flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Chip color="secondary" size="sm" variant="flat">
+                    ระบบ
+                  </Chip>
+                  <h2 className="text-lg font-semibold">
+                    Rich Menus ในระบบ ({account.richMenus.length})
+                  </h2>
+                </div>
+                <p className="text-default-500 text-sm font-normal">
+                  ข้อมูลจากฐานข้อมูล — นำเข้า แก้ไข areas และ deploy จากที่นี่
+                </p>
+              </div>
+            </CardHeader>
+            <CardBody className="gap-3 pt-0">
+              <RichMenusTable embedded richMenus={account.richMenus} />
+            </CardBody>
+          </Card>
+          <LineRichMenusOnLine
+            lineAccountId={account.id}
+            systemAdmin={user.isSystemAdmin}
+          />
+        </div>
+        <aside className="lg:sticky lg:top-20">
+          <DefaultRichMenuChatPreview
+            accountName={account.name}
+            lineAccountId={account.id}
+          />
+        </aside>
       </div>
-      <LineRichMenusOnLine
-        lineAccountId={account.id}
-        systemAdmin={user.isSystemAdmin}
-      />
     </div>
   );
 }

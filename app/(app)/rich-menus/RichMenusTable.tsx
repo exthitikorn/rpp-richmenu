@@ -26,6 +26,7 @@ import {
   TableCell,
 } from "@heroui/table";
 
+import { RichMenuDefaultChip } from "@/components/rich-menu/RichMenuDefaultChip";
 import { RichMenuStatusChip } from "@/components/rich-menu/RichMenuStatusChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 
@@ -84,7 +85,7 @@ function DeleteRichMenuButton({ id, name }: { id: string; name: string }) {
 
   return (
     <>
-      <Button color="danger" size="sm" variant="light" onPress={onOpen}>
+      <Button color="danger" size="sm" variant="flat" onPress={onOpen}>
         ลบ
       </Button>
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
@@ -113,7 +114,12 @@ function DeleteRichMenuButton({ id, name }: { id: string; name: string }) {
             >
               ยกเลิก
             </Button>
-            <Button color="danger" isLoading={loading} onPress={handleDelete}>
+            <Button
+              color="danger"
+              isLoading={loading}
+              variant="flat"
+              onPress={handleDelete}
+            >
               ลบ
             </Button>
           </ModalFooter>
@@ -187,12 +193,20 @@ function RichMenuThumbButton({
 function RichMenuCardItem({
   rm,
   onPreview,
+  embedded = false,
 }: {
   rm: RichMenuWithRelations;
   onPreview: (preview: ImagePreview) => void;
+  embedded?: boolean;
 }) {
   return (
-    <Card className="w-full shadow-sm">
+    <Card
+      className={
+        embedded
+          ? "w-full border border-default-200 shadow-none"
+          : "w-full shadow-sm"
+      }
+    >
       <CardBody className="gap-0 p-0">
         <RichMenuThumbButton rm={rm} variant="card" onPreview={onPreview} />
         <div className="p-4 pb-3">
@@ -203,6 +217,11 @@ function RichMenuCardItem({
           >
             {rm.name}
           </Link>
+          {rm.isDefault ? (
+            <div className="mt-1">
+              <RichMenuDefaultChip />
+            </div>
+          ) : null}
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-default-500">LINE Account</dt>
             <dd className="text-foreground">{rm.lineAccount.name}</dd>
@@ -288,12 +307,19 @@ function ImagePreviewModal({
 
 export function RichMenusTable({
   richMenus,
+  embedded = false,
 }: {
   richMenus: RichMenuWithRelations[];
+  /** ใช้ภายใน Card ของ section อื่น — ไม่ใส่ Card ซ้อน */
+  embedded?: boolean;
 }) {
   const [preview, setPreview] = useState<ImagePreview | null>(null);
 
   if (richMenus.length === 0) {
+    if (embedded) {
+      return <EmptyState title="ยังไม่มี Rich Menu" />;
+    }
+
     return (
       <Card className="w-full min-w-0 overflow-hidden border border-default-200 shadow-none">
         <CardBody>
@@ -303,89 +329,127 @@ export function RichMenusTable({
     );
   }
 
+  const desktopTable = (
+    <Table
+      removeWrapper
+      aria-label="รายการ Rich Menus"
+      classNames={{
+        base: "min-w-[640px]",
+        ...(embedded ? {} : { td: "align-middle" }),
+      }}
+      {...(embedded ? {} : { fullWidth: true, isStriped: true })}
+    >
+      <TableHeader>
+        <TableColumn className={embedded ? undefined : "w-16 text-center"}>
+          รูป
+        </TableColumn>
+        <TableColumn className={embedded ? undefined : "text-center"}>
+          ชื่อ
+        </TableColumn>
+        <TableColumn className={embedded ? "hidden" : "text-center"}>
+          LINE Account
+        </TableColumn>
+        <TableColumn className={embedded ? undefined : "text-center"}>
+          ขนาด
+        </TableColumn>
+        <TableColumn className={embedded ? undefined : "text-center"}>
+          Areas
+        </TableColumn>
+        <TableColumn className={embedded ? undefined : "text-center"}>
+          สถานะ
+        </TableColumn>
+        <TableColumn className="text-center">จัดการ</TableColumn>
+      </TableHeader>
+      <TableBody>
+        {richMenus.map((rm) => (
+          <TableRow key={rm.id}>
+            <TableCell className={embedded ? undefined : "text-center"}>
+              <RichMenuThumbButton
+                rm={rm}
+                variant="table"
+                onPreview={setPreview}
+              />
+            </TableCell>
+            <TableCell>
+              <div
+                className={
+                  embedded
+                    ? "flex flex-wrap items-center gap-2"
+                    : "flex flex-wrap items-center justify-center gap-2"
+                }
+              >
+                <Link
+                  as={NextLink}
+                  className="font-medium"
+                  href={`/rich-menus/${rm.id}/edit`}
+                >
+                  {rm.name}
+                </Link>
+                {rm.isDefault ? <RichMenuDefaultChip /> : null}
+              </div>
+            </TableCell>
+            <TableCell
+              className={embedded ? "hidden" : "text-default-500 text-center"}
+            >
+              {rm.lineAccount.name}
+            </TableCell>
+            <TableCell
+              className={embedded ? undefined : "text-default-400 text-center"}
+            >
+              {rm.width}×{rm.height}
+            </TableCell>
+            <TableCell className={embedded ? undefined : "text-center"}>
+              {rm._count.areas}
+            </TableCell>
+            <TableCell className={embedded ? undefined : "text-center"}>
+              <RichMenuStatusChip status={rm.status} />
+            </TableCell>
+            <TableCell className="text-center space-x-2">
+              <Button
+                as={NextLink}
+                color="warning"
+                href={`/rich-menus/${rm.id}/edit`}
+                size="sm"
+                variant="flat"
+              >
+                แก้ไข
+              </Button>
+              <DeleteRichMenuButton id={rm.id} name={rm.name} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+
   return (
     <>
-      {/* Mobile: Card list */}
-      <div
-        aria-label="รายการ Rich Menus"
-        className="flex flex-col gap-3 md:hidden"
-        role="list"
-      >
-        {richMenus.map((rm) => (
-          <RichMenuCardItem key={rm.id} rm={rm} onPreview={setPreview} />
-        ))}
-      </div>
+      {/* Mobile: Card list (standalone page only) */}
+      {!embedded ? (
+        <div
+          aria-label="รายการ Rich Menus"
+          className="flex flex-col gap-3 md:hidden"
+          role="list"
+        >
+          {richMenus.map((rm) => (
+            <RichMenuCardItem
+              key={rm.id}
+              embedded={embedded}
+              rm={rm}
+              onPreview={setPreview}
+            />
+          ))}
+        </div>
+      ) : null}
 
-      {/* Desktop: Table */}
-      <Card className="hidden min-w-0 overflow-hidden border border-default-200 shadow-none md:block">
-        <CardBody className="p-0 overflow-x-auto">
-          <Table
-            fullWidth
-            isStriped
-            removeWrapper
-            aria-label="รายการ Rich Menus"
-            classNames={{
-              base: "min-w-[640px]",
-              td: "align-middle",
-            }}
-          >
-            <TableHeader>
-              <TableColumn className="w-16 text-center">รูป</TableColumn>
-              <TableColumn className="text-center">ชื่อ</TableColumn>
-              <TableColumn className="text-center">LINE Account</TableColumn>
-              <TableColumn className="text-center">ขนาด</TableColumn>
-              <TableColumn className="text-center">Areas</TableColumn>
-              <TableColumn className="text-center">สถานะ</TableColumn>
-              <TableColumn className="text-center">จัดการ</TableColumn>
-            </TableHeader>
-            <TableBody>
-              {richMenus.map((rm) => (
-                <TableRow key={rm.id}>
-                  <TableCell className="text-center">
-                    <RichMenuThumbButton
-                      rm={rm}
-                      variant="table"
-                      onPreview={setPreview}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Link
-                      as={NextLink}
-                      className="font-medium"
-                      href={`/rich-menus/${rm.id}/edit`}
-                    >
-                      {rm.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-default-500 text-center">
-                    {rm.lineAccount.name}
-                  </TableCell>
-                  <TableCell className="text-default-400 text-center">
-                    {rm.width}×{rm.height}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {rm._count.areas}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <RichMenuStatusChip status={rm.status} />
-                  </TableCell>
-                  <TableCell className="text-center space-x-2">
-                    <Button
-                      as={NextLink}
-                      href={`/rich-menus/${rm.id}/edit`}
-                      size="sm"
-                      variant="light"
-                    >
-                      แก้ไข
-                    </Button>
-                    <DeleteRichMenuButton id={rm.id} name={rm.name} />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardBody>
-      </Card>
+      {/* Desktop: Table (always on embedded; md+ on standalone) */}
+      {embedded ? (
+        <div className="overflow-x-auto">{desktopTable}</div>
+      ) : (
+        <Card className="hidden min-w-0 overflow-hidden border border-default-200 shadow-none md:block">
+          <CardBody className="overflow-x-auto p-0">{desktopTable}</CardBody>
+        </Card>
+      )}
 
       <ImagePreviewModal preview={preview} onClose={() => setPreview(null)} />
     </>

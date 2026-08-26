@@ -24,6 +24,7 @@ import {
   TableRow,
 } from "@heroui/table";
 
+import { RichMenuDefaultChip } from "@/components/rich-menu/RichMenuDefaultChip";
 import { RichMenuStatusChip } from "@/components/rich-menu/RichMenuStatusChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { badgeToneForRemaining } from "@/lib/line/rich-menu-limit";
@@ -195,16 +196,25 @@ export function LineRichMenusOnLine({
   return (
     <>
       <Card className="border border-default-200 shadow-none">
-        <CardHeader className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold">Rich Menus บน LINE</span>
-            {data ? (
-              <Chip color={chipColor} size="sm" variant="flat">
-                {data.count}/{data.max}
+        <CardHeader className="flex flex-wrap items-start justify-between gap-2 pb-2">
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <Chip color="primary" size="sm" variant="flat">
+                LINE API
               </Chip>
-            ) : null}
+              <span className="text-lg font-semibold">Rich Menus บน LINE</span>
+              {data ? (
+                <Chip color={chipColor} size="sm" variant="flat">
+                  {data.count}/{data.max}
+                </Chip>
+              ) : null}
+            </div>
+            <p className="text-default-500 text-sm font-normal">
+              ดึงจาก LINE Messaging API แบบ real-time (ไม่รวมที่สร้างจาก LINE
+              Official Account Manager) — สูงสุด 1,000 ต่อ OA
+            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             {systemAdmin && selectedIds.length > 0 ? (
               <Button
                 color="danger"
@@ -225,12 +235,7 @@ export function LineRichMenusOnLine({
             </Button>
           </div>
         </CardHeader>
-        <CardBody className="gap-3">
-          <p className="text-default-500 text-sm">
-            นับเฉพาะ Rich Menu ที่สร้างผ่าน Messaging API (ไม่รวมที่สร้างจาก
-            LINE Official Account Manager) — สูงสุด 1,000 ต่อ OA
-          </p>
-
+        <CardBody className="gap-3 pt-0">
           {loading ? (
             <p className="text-default-500 text-sm">กำลังโหลดจาก LINE…</p>
           ) : null}
@@ -275,9 +280,14 @@ export function LineRichMenusOnLine({
                     {pageItems.map((menu) => (
                       <TableRow key={menu.richMenuId}>
                         <TableCell>
-                          <div className="font-medium">{menu.name}</div>
-                          <div className="text-default-400 font-mono text-xs">
-                            {menu.richMenuId}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <div>
+                              <div className="font-medium">{menu.name}</div>
+                              <div className="text-default-400 font-mono text-xs">
+                                {menu.richMenuId}
+                              </div>
+                            </div>
+                            {menu.selected ? <RichMenuDefaultChip /> : null}
                           </div>
                         </TableCell>
                         <TableCell>
