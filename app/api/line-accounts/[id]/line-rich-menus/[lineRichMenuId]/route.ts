@@ -4,6 +4,7 @@ import { RichMenuStatus } from "@/app/generated/prisma/client";
 import { lineAccountByIdWhere, requireSystemAdmin } from "@/lib/access";
 import { deleteRichMenu } from "@/lib/line/client";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/secrets";
 
 export async function DELETE(
   _request: Request,
@@ -33,7 +34,7 @@ export async function DELETE(
       );
     }
 
-    await deleteRichMenu(account.accessToken, lineRichMenuId);
+    await deleteRichMenu(decryptSecret(account.accessToken), lineRichMenuId);
 
     const updated = await prisma.richMenu.updateMany({
       where: {

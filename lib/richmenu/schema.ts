@@ -33,11 +33,17 @@ const richMenuSwitchActionSchema = z.object({
   label: z.string().optional(),
 });
 
+const locationActionSchema = z.object({
+  type: z.literal("location"),
+  label: z.string().optional(),
+});
+
 const actionSchema = z.discriminatedUnion("type", [
   uriActionSchema,
   messageActionSchema,
   postbackActionSchema,
   richMenuSwitchActionSchema,
+  locationActionSchema,
 ]);
 
 const areaSchema = z.object({

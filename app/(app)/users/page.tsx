@@ -33,7 +33,9 @@ export default async function UsersPage() {
     orderBy: { createdAt: "desc" },
     include: {
       lineAccountAssignments: {
-        include: { lineAccount: true },
+        include: {
+          lineAccount: { select: { id: true, name: true } },
+        },
       },
     },
   });

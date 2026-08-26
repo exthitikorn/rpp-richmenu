@@ -40,7 +40,7 @@ export function PageHeader({
 
   if (variant === "hero") {
     return (
-      <section className="rounded-xl border border-default-200 bg-content1 p-6">
+      <section className="rounded-xl border border-primary-100/80 bg-gradient-to-br from-primary-50/80 via-background to-secondary-50/50 p-6 shadow-sm">
         <div className="space-y-4">
           {header}
           {badges ? <div className="flex flex-wrap gap-2">{badges}</div> : null}

@@ -8,6 +8,7 @@ import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteRichMenu } from "@/lib/line/client";
+import { decryptSecret } from "@/lib/secrets";
 
 const bodySchema = z.object({
   name: z.string().min(1, "กรุณาระบุชื่อ"),
@@ -105,7 +106,7 @@ export async function DELETE(
     if (richMenu.lineRichMenuId) {
       try {
         await deleteRichMenu(
-          richMenu.lineAccount.accessToken,
+          decryptSecret(richMenu.lineAccount.accessToken),
           richMenu.lineRichMenuId,
         );
       } catch {
@@ -114,9 +115,18 @@ export async function DELETE(
     }
 
     if (richMenu.imageUrl?.startsWith("/uploads/")) {
-      unlink(path.join(process.cwd(), "public", richMenu.imageUrl)).catch(
-        () => {},
-      );
+      const relative = richMenu.imageUrl.slice(1);
+      const storageRoot = path.resolve(process.cwd(), "storage");
+      const publicRoot = path.resolve(process.cwd(), "public");
+      const storageFile = path.resolve(storageRoot, relative);
+      const publicFile = path.resolve(publicRoot, relative);
+
+      if (storageFile.startsWith(storageRoot + path.sep)) {
+        unlink(storageFile).catch(() => {});
+      }
+      if (publicFile.startsWith(publicRoot + path.sep)) {
+        unlink(publicFile).catch(() => {});
+      }
     }
 
     await prisma.$transaction([

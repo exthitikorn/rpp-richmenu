@@ -12,7 +12,8 @@ export type LineRichMenuAction =
       richMenuAliasId: string;
       data: string;
       label?: string;
-    };
+    }
+  | { type: "location"; label?: string };
 
 export interface LineRichMenuPayload {
   size: { width: number; height: number };
@@ -61,6 +62,11 @@ export function normalizeRichMenuAction(
           raw.data && String(raw.data).trim() !== ""
             ? String(raw.data)
             : "switch",
+        ...(raw.label ? { label: raw.label } : {}),
+      };
+    case "location":
+      return {
+        type: "location",
         ...(raw.label ? { label: raw.label } : {}),
       };
     default:

@@ -38,8 +38,12 @@ export async function POST(
 
     const richMenu = await prisma.richMenu.findFirst({
       where: richMenuByIdWhere(user, richMenuId),
-      include: {
-        lineAccount: true,
+      select: {
+        id: true,
+        width: true,
+        height: true,
+        imageUrl: true,
+        lineAccountId: true,
       },
     });
 

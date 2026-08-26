@@ -5,6 +5,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getRichMenus } from "@/lib/line/client";
 import { summarizeRichMenuLimit } from "@/lib/line/rich-menu-limit";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/secrets";
 
 export async function GET(
   _request: Request,
@@ -40,7 +41,7 @@ export async function GET(
   }
 
   try {
-    const listed = await getRichMenus(account.accessToken);
+    const listed = await getRichMenus(decryptSecret(account.accessToken));
     const byLineId = new Map(
       account.richMenus
         .filter((rm) => rm.lineRichMenuId)
@@ -48,9 +49,8 @@ export async function GET(
     );
     const summary = summarizeRichMenuLimit(listed.length);
 
-    return NextResponse.json({
-      ...summary,
-      richMenus: listed.map((menu) => {
+    const richMenus = listed
+      .map((menu) => {
         const linked = byLineId.get(menu.richMenuId);
 
         return {
@@ -68,7 +68,16 @@ export async function GET(
               }
             : {}),
         };
-      }),
+      })
+      .sort((a, b) => {
+        if (a.selected !== b.selected) return a.selected ? -1 : 1;
+
+        return a.name.localeCompare(b.name, "en", { sensitivity: "base" });
+      });
+
+    return NextResponse.json({
+      ...summary,
+      richMenus,
     });
   } catch (e) {
     const message =

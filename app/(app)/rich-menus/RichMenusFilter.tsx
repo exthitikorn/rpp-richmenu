@@ -7,7 +7,7 @@ import { Select, SelectItem } from "@heroui/select";
 
 type Props = {
   currentLineAccountId: string | null;
-  lineAccounts: LineAccount[];
+  lineAccounts: Pick<LineAccount, "id" | "name">[];
 };
 
 export function RichMenusFilter({ currentLineAccountId, lineAccounts }: Props) {

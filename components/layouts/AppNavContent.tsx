@@ -75,7 +75,7 @@ export function AppNavContent({
                   aria-current={isActive ? "page" : undefined}
                   as={NextLink}
                   className={clsx(
-                    "w-full justify-start min-h-[44px] items-center rounded-lg px-2 py-1",
+                    "w-full justify-start min-h-[44px] items-center rounded-lg px-3 py-2 text-sm",
                     isActive
                       ? "bg-primary/10 font-medium text-primary"
                       : "text-default-600 hover:bg-default-100/80 hover:text-foreground",

@@ -76,9 +76,9 @@ export async function PUT(
     ]);
 
     return NextResponse.json({ success: true });
-  } catch (e) {
+  } catch {
     return NextResponse.json(
-      { success: false, error: "บันทึกไม่สำเร็จ" + e },
+      { success: false, error: "บันทึกไม่สำเร็จ" },
       { status: 500 },
     );
   }

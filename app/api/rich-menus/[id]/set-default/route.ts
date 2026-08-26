@@ -3,7 +3,11 @@ import { NextResponse } from "next/server";
 import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { clearDefaultRichMenu, setDefaultRichMenu } from "@/lib/line/client";
+import {
+  syncDefaultHint,
+  syncDefaultRichMenu,
+} from "@/lib/line/sync-default-rich-menu";
+import { decryptSecret } from "@/lib/secrets";
 
 /**
  * ตั้ง Rich Menu นี้เป็น Default บน LINE (เมนูแรกที่ผู้ใช้เห็น)
@@ -47,10 +51,7 @@ export async function POST(
       );
     }
 
-    const token = richMenu.lineAccount.accessToken;
-
-    await clearDefaultRichMenu(token);
-    await setDefaultRichMenu(token, richMenu.lineRichMenuId);
+    const token = decryptSecret(richMenu.lineAccount.accessToken);
 
     await prisma.$transaction([
       prisma.richMenu.update({
@@ -66,7 +67,26 @@ export async function POST(
       }),
     ]);
 
-    return NextResponse.json({ success: true });
+    try {
+      const sync = await syncDefaultRichMenu(token, richMenu.lineRichMenuId, {
+        extraUserIds: [user.lineUserId],
+      });
+
+      return NextResponse.json({
+        success: true,
+        followerSync: sync.followerSync,
+        hint: syncDefaultHint(sync),
+      });
+    } catch (syncErr) {
+      const syncMessage =
+        syncErr instanceof Error ? syncErr.message : "ตั้ง Default ไม่สำเร็จ";
+
+      return NextResponse.json({
+        success: true,
+        followerSync: "unavailable" as const,
+        hint: `บันทึกในระบบแล้ว แต่ตั้ง default บน LINE ไม่ครบ — ลองอีกครั้ง (${syncMessage})`,
+      });
+    }
   } catch (e) {
     const message = e instanceof Error ? e.message : "ตั้ง Default ไม่สำเร็จ";
 

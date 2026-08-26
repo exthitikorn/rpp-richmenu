@@ -14,6 +14,7 @@ import {
   ModalHeader,
   useDisclosure,
 } from "@heroui/modal";
+import { Pagination } from "@heroui/pagination";
 import {
   Table,
   TableBody,
@@ -23,8 +24,11 @@ import {
   TableRow,
 } from "@heroui/table";
 
+import { RichMenuStatusChip } from "@/components/rich-menu/RichMenuStatusChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { badgeToneForRemaining } from "@/lib/line/rich-menu-limit";
+
+const PAGE_SIZE = 10;
 
 type LineRichMenuRow = {
   richMenuId: string;
@@ -46,6 +50,9 @@ type ListResponse = {
   error?: string;
 };
 
+/** HeroUI may pass `"all"` or a Set; with paged rows we keep a Set of ids across pages. */
+type KeySelection = "all" | Set<string | number>;
+
 export function LineRichMenusOnLine({
   lineAccountId,
   systemAdmin,
@@ -56,9 +63,11 @@ export function LineRichMenusOnLine({
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState("");
-  const [target, setTarget] = useState<LineRichMenuRow | null>(null);
+  const [deleteProgress, setDeleteProgress] = useState("");
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
 
   const load = useCallback(async () => {
@@ -80,6 +89,8 @@ export function LineRichMenusOnLine({
       }
 
       setData(json);
+      setPage(1);
+      setSelectedIds([]);
       setLoading(false);
     } catch {
       setError("เกิดข้อผิดพลาด");
@@ -92,41 +103,86 @@ export function LineRichMenusOnLine({
     void load();
   }, [load]);
 
-  function openDelete(menu: LineRichMenuRow) {
-    setTarget(menu);
+  const totalPages = data
+    ? Math.max(1, Math.ceil(data.richMenus.length / PAGE_SIZE))
+    : 1;
+  const safePage = Math.min(page, totalPages);
+  const pageItems = data
+    ? data.richMenus.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE)
+    : [];
+  const pageIdSet = new Set(pageItems.map((m) => m.richMenuId));
+  const selectedMenus =
+    data?.richMenus.filter((m) => selectedIds.includes(m.richMenuId)) ?? [];
+  const linkedSelectedCount = selectedMenus.filter(
+    (m) => m.linkedRichMenuId,
+  ).length;
+
+  function handleSelectionChange(keys: KeySelection) {
+    const next = new Set(selectedIds);
+    const pageIds = Array.from(pageIdSet);
+
+    if (keys === "all") {
+      pageIds.forEach((id) => next.add(id));
+    } else {
+      const pageSelected = new Set(Array.from(keys).map(String));
+
+      pageIds.forEach((id) => {
+        if (pageSelected.has(id)) next.add(id);
+        else next.delete(id);
+      });
+    }
+
+    setSelectedIds(Array.from(next));
+  }
+
+  function openBulkDelete() {
+    if (selectedIds.length === 0) return;
     setDeleteError("");
+    setDeleteProgress("");
     onOpen();
   }
 
-  async function handleDelete() {
-    if (!target) return;
+  async function handleDeleteSelected() {
+    if (selectedIds.length === 0) return;
     setDeleting(true);
     setDeleteError("");
+    setDeleteProgress("");
+
+    const ids = [...selectedIds];
+    let done = 0;
 
     try {
-      const res = await fetch(
-        `/api/line-accounts/${lineAccountId}/line-rich-menus/${encodeURIComponent(target.richMenuId)}`,
-        { method: "DELETE" },
-      );
-      const json = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-      };
+      for (const richMenuId of ids) {
+        setDeleteProgress(`กำลังลบ ${done + 1}/${ids.length}…`);
+        const res = await fetch(
+          `/api/line-accounts/${lineAccountId}/line-rich-menus/${encodeURIComponent(richMenuId)}`,
+          { method: "DELETE" },
+        );
+        const json = (await res.json()) as {
+          success?: boolean;
+          error?: string;
+        };
 
-      if (!res.ok || !json.success) {
-        setDeleteError(json.error ?? "ลบไม่สำเร็จ");
-        setDeleting(false);
+        if (!res.ok || !json.success) {
+          setDeleteError(
+            json.error ?? `ลบไม่สำเร็จที่รายการที่ ${done + 1}/${ids.length}`,
+          );
+          setDeleting(false);
+          await load();
 
-        return;
+          return;
+        }
+
+        done += 1;
       }
 
       setDeleting(false);
       onOpenChange();
-      setTarget(null);
       await load();
     } catch {
       setDeleteError("เกิดข้อผิดพลาด");
       setDeleting(false);
+      await load();
     }
   }
 
@@ -148,14 +204,26 @@ export function LineRichMenusOnLine({
               </Chip>
             ) : null}
           </div>
-          <Button
-            isDisabled={loading}
-            size="sm"
-            variant="flat"
-            onPress={() => void load()}
-          >
-            รีเฟรช
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {systemAdmin && selectedIds.length > 0 ? (
+              <Button
+                color="danger"
+                size="sm"
+                variant="flat"
+                onPress={openBulkDelete}
+              >
+                ลบที่เลือก ({selectedIds.length})
+              </Button>
+            ) : null}
+            <Button
+              isDisabled={loading}
+              size="sm"
+              variant="flat"
+              onPress={() => void load()}
+            >
+              รีเฟรช
+            </Button>
+          </div>
         </CardHeader>
         <CardBody className="gap-3">
           <p className="text-default-500 text-sm">
@@ -183,69 +251,87 @@ export function LineRichMenusOnLine({
           ) : null}
 
           {!loading && !error && data && data.richMenus.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table
-                removeWrapper
-                aria-label="Rich Menus บน LINE"
-                classNames={{ base: "min-w-[640px]" }}
-              >
-                <TableHeader>
-                  <TableColumn>ชื่อบน LINE</TableColumn>
-                  <TableColumn>ขนาด</TableColumn>
-                  <TableColumn>Chat bar</TableColumn>
-                  <TableColumn>ในระบบ</TableColumn>
-                  <TableColumn>{systemAdmin ? "จัดการ" : " "}</TableColumn>
-                </TableHeader>
-                <TableBody>
-                  {data.richMenus.map((menu) => (
-                    <TableRow key={menu.richMenuId}>
-                      <TableCell>
-                        <div className="font-medium">{menu.name}</div>
-                        <div className="text-default-400 font-mono text-xs">
-                          {menu.richMenuId}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {menu.size.width}×{menu.size.height}
-                      </TableCell>
-                      <TableCell>{menu.chatBarText || "—"}</TableCell>
-                      <TableCell>
-                        {menu.linkedRichMenuId ? (
-                          <Link
-                            as={NextLink}
-                            href={`/rich-menus/${menu.linkedRichMenuId}/edit`}
-                          >
-                            {menu.linkedName ?? "ดูในระบบ"}
-                            {menu.linkedStatus ? ` (${menu.linkedStatus})` : ""}
-                          </Link>
-                        ) : (
-                          <span className="text-default-400 text-sm">
-                            ไม่พบในระบบ
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {systemAdmin ? (
-                          <Button
-                            color="danger"
-                            size="sm"
-                            variant="light"
-                            onPress={() => openDelete(menu)}
-                          >
-                            ลบ
-                          </Button>
-                        ) : null}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-3">
+              <div className="overflow-x-auto">
+                <Table
+                  removeWrapper
+                  aria-label="Rich Menus บน LINE"
+                  classNames={{ base: "min-w-[640px]" }}
+                  selectedKeys={systemAdmin ? new Set(selectedIds) : new Set()}
+                  selectionMode={systemAdmin ? "multiple" : "none"}
+                  onSelectionChange={
+                    systemAdmin
+                      ? (keys) => handleSelectionChange(keys as KeySelection)
+                      : undefined
+                  }
+                >
+                  <TableHeader>
+                    <TableColumn>ชื่อบน LINE</TableColumn>
+                    <TableColumn>ขนาด</TableColumn>
+                    <TableColumn>Chat bar</TableColumn>
+                    <TableColumn>ในระบบ</TableColumn>
+                  </TableHeader>
+                  <TableBody>
+                    {pageItems.map((menu) => (
+                      <TableRow key={menu.richMenuId}>
+                        <TableCell>
+                          <div className="font-medium">{menu.name}</div>
+                          <div className="text-default-400 font-mono text-xs">
+                            {menu.richMenuId}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {menu.size.width}×{menu.size.height}
+                        </TableCell>
+                        <TableCell>{menu.chatBarText || "—"}</TableCell>
+                        <TableCell>
+                          {menu.linkedRichMenuId ? (
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link
+                                as={NextLink}
+                                href={`/rich-menus/${menu.linkedRichMenuId}/edit`}
+                              >
+                                {menu.linkedName ?? "ดูในระบบ"}
+                              </Link>
+                              {menu.linkedStatus ? (
+                                <RichMenuStatusChip
+                                  status={menu.linkedStatus}
+                                />
+                              ) : null}
+                            </div>
+                          ) : (
+                            <span className="text-default-400 text-sm">
+                              ไม่พบในระบบ
+                            </span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+              {totalPages > 1 ? (
+                <div className="flex justify-center">
+                  <Pagination
+                    showControls
+                    page={safePage}
+                    size="sm"
+                    total={totalPages}
+                    onChange={setPage}
+                  />
+                </div>
+              ) : null}
             </div>
           ) : null}
         </CardBody>
       </Card>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal
+        isDismissable={!deleting}
+        isKeyboardDismissDisabled={deleting}
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+      >
         <ModalContent>
           <ModalHeader>ลบ Rich Menu บน LINE</ModalHeader>
           <ModalBody>
@@ -254,24 +340,27 @@ export function LineRichMenusOnLine({
                 {deleteError}
               </p>
             ) : null}
-            {target ? (
-              <>
-                <p>
-                  ลบ <span className="font-semibold">{target.name}</span> (
-                  <span className="font-mono text-sm">{target.richMenuId}</span>
-                  ) จาก LINE?
-                </p>
-                {target.linkedRichMenuId ? (
-                  <p className="text-default-500 text-sm">
-                    เมนูนี้ผูกกับรายการในระบบ — การลบจะยกเลิกการผูก
-                    (สถานะกลับเป็น DRAFT) แต่จะไม่ลบ record ในระบบ
-                  </p>
-                ) : null}
-              </>
+            {deleteProgress ? (
+              <p className="text-default-500 text-sm">{deleteProgress}</p>
             ) : null}
+            <p>
+              ลบ <span className="font-semibold">{selectedIds.length}</span>{" "}
+              รายการที่เลือกจาก LINE?
+            </p>
+            {linkedSelectedCount > 0 ? (
+              <p className="text-default-500 text-sm">
+                มี {linkedSelectedCount} รายการที่ผูกกับระบบ —
+                การลบจะยกเลิกการผูก (สถานะกลับเป็น DRAFT) แต่จะไม่ลบ record
+                ในระบบ
+              </p>
+            ) : null}
+            <p className="text-default-400 text-xs">
+              LINE จำกัดการสร้าง/ลบประมาณ 100 ครั้ง/ชั่วโมง
+            </p>
           </ModalBody>
           <ModalFooter>
             <Button
+              isDisabled={deleting}
               type="button"
               variant="light"
               onPress={() => onOpenChange()}
@@ -281,9 +370,9 @@ export function LineRichMenusOnLine({
             <Button
               color="danger"
               isLoading={deleting}
-              onPress={() => void handleDelete()}
+              onPress={() => void handleDeleteSelected()}
             >
-              ลบ
+              ลบที่เลือก
             </Button>
           </ModalFooter>
         </ModalContent>

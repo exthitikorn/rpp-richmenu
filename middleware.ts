@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 
+import { sanitizeCallbackUrl } from "@/lib/auth-redirect";
+
 const protectedPaths = [
   "/dashboard",
   "/line-accounts",
@@ -14,6 +16,12 @@ const protectedPaths = [
 ];
 
 const systemAdminOnlyPaths = ["/users"];
+
+const publicApiPrefixes = [
+  "/api/auth",
+  "/api/webhook/line",
+  "/api/rich-menus/redirect",
+];
 
 function isProtectedPath(pathname: string): boolean {
   return protectedPaths.some(
@@ -27,6 +35,12 @@ function isSystemAdminOnlyPath(pathname: string): boolean {
   );
 }
 
+function isPublicApi(pathname: string): boolean {
+  return publicApiPrefixes.some(
+    (p) => pathname === p || pathname.startsWith(p + "/"),
+  );
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -34,6 +48,18 @@ export async function middleware(request: NextRequest) {
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
   });
+
+  if (pathname.startsWith("/api/")) {
+    if (isPublicApi(pathname)) return NextResponse.next();
+    if (!token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if ((token.isApproved as boolean | undefined) !== true) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    return NextResponse.next();
+  }
 
   if (pathname === "/pending-approval") {
     if (!token) {
@@ -53,8 +79,9 @@ export async function middleware(request: NextRequest) {
 
   if (!token) {
     const loginUrl = new URL("/login", request.url);
+    const safe = sanitizeCallbackUrl(pathname);
 
-    loginUrl.searchParams.set("callbackUrl", pathname);
+    loginUrl.searchParams.set("callbackUrl", safe);
 
     return NextResponse.redirect(loginUrl);
   }
@@ -75,5 +102,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

@@ -26,10 +26,11 @@ import {
   TableCell,
 } from "@heroui/table";
 
+import { RichMenuStatusChip } from "@/components/rich-menu/RichMenuStatusChip";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 type RichMenuWithRelations = RichMenu & {
-  lineAccount: LineAccount;
+  lineAccount: Pick<LineAccount, "id" | "name">;
   _count: { areas: number };
 };
 
@@ -212,7 +213,9 @@ function RichMenuCardItem({
             <dt className="text-default-500">Areas</dt>
             <dd className="text-foreground">{rm._count.areas}</dd>
             <dt className="text-default-500">สถานะ</dt>
-            <dd className="text-foreground">{rm.status}</dd>
+            <dd>
+              <RichMenuStatusChip status={rm.status} />
+            </dd>
           </dl>
         </div>
         <div className="border-t border-default-200 px-4 py-3 justify-center flex">
@@ -363,7 +366,9 @@ export function RichMenusTable({
                   <TableCell className="text-center">
                     {rm._count.areas}
                   </TableCell>
-                  <TableCell className="text-center">{rm.status}</TableCell>
+                  <TableCell className="text-center">
+                    <RichMenuStatusChip status={rm.status} />
+                  </TableCell>
                   <TableCell className="text-center space-x-2">
                     <Button
                       as={NextLink}

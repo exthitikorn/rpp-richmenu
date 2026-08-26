@@ -3,6 +3,7 @@ import { CreateLineAccountForm } from "./CreateLineAccountForm";
 
 import { isSystemAdmin, lineAccountWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { lineAccountPublicSelect } from "@/lib/line-account-select";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
@@ -15,7 +16,8 @@ export default async function LineAccountsPage() {
   const systemAdmin = isSystemAdmin(user);
   const lineAccounts = await prisma.lineAccount.findMany({
     where: lineAccountWhere(user),
-    include: {
+    select: {
+      ...lineAccountPublicSelect,
       assignments: {
         include: {
           user: {
@@ -24,6 +26,11 @@ export default async function LineAccountsPage() {
         },
       },
       _count: { select: { richMenus: true } },
+      richMenus: {
+        where: { isDefault: true },
+        select: { id: true, name: true },
+        take: 1,
+      },
     },
     orderBy: { createdAt: "desc" },
   });

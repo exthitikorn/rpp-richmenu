@@ -134,7 +134,7 @@ export function ProfileForm({
         <CardHeader>
           <h2 className="text-lg font-semibold">ข้อมูลโปรไฟล์</h2>
           <p className="text-sm text-default-500">
-            แก้ไขชื่อที่ใช้แสดงในระบบ (รหัสผ่านจัดการผ่านบัญชีโรงพยาบาล)
+            &nbsp;แก้ไขชื่อที่ใช้แสดงในระบบ (รหัสผ่านจัดการผ่านบัญชีโรงพยาบาล)
           </p>
         </CardHeader>
         <CardBody className="space-y-4">

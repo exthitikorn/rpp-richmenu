@@ -32,7 +32,7 @@ export default async function DeployLogsPage({
       include: {
         richMenu: {
           include: {
-            lineAccount: true,
+            lineAccount: { select: { name: true } },
           },
         },
       },

@@ -41,6 +41,7 @@ bun.lockb
 
 # agents-skills
 .agents
+.superpowers
 
 # env
 .env
@@ -58,4 +59,4 @@ CLAUDE.md
 .vscode
 
 # docs
-/docs
+docs/

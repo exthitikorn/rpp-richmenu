@@ -20,7 +20,7 @@ export function MobileAppDrawer({
 }: MobileAppDrawerProps) {
   return (
     <Drawer isOpen={isOpen} placement="left" onOpenChange={onOpenChange}>
-      <DrawerContent className="max-w-[280px]">
+      <DrawerContent className="max-w-[288px]">
         <DrawerHeader className="border-b border-default-200">
           เมนู
         </DrawerHeader>

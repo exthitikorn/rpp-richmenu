@@ -289,6 +289,22 @@ export async function linkRichMenuToUser(
   }
 }
 
+/** Unlink per-user rich menu; 404 = already none (ok). */
+export async function unlinkRichMenuFromUser(
+  accessToken: string,
+  userId: string,
+): Promise<void> {
+  const res = await lineFetch(`/user/${userId}/richmenu`, accessToken, {
+    method: "DELETE",
+  });
+
+  if (!res.ok && res.status !== 404) {
+    const err = await res.text();
+
+    throw new Error(`LINE API unlinkRichMenuFromUser: ${res.status} ${err}`);
+  }
+}
+
 export type LineListedRichMenu = {
   richMenuId: string;
   name: string;

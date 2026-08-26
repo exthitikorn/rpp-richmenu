@@ -164,8 +164,15 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   session: { strategy: "jwt", maxAge: 8 * 60 * 60 },
-  secret:
-    process.env.NEXTAUTH_SECRET ?? "development-secret-change-in-production",
+  secret: (() => {
+    const secret = process.env.NEXTAUTH_SECRET;
+
+    if (!secret) {
+      throw new Error("NEXTAUTH_SECRET is required");
+    }
+
+    return secret;
+  })(),
 };
 
 declare module "next-auth" {

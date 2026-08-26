@@ -1,8 +1,9 @@
-import { createHmac } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
 
 import { NextResponse } from "next/server";
 
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/secrets";
 
 function verifySignature(
   body: string,
@@ -13,8 +14,12 @@ function verifySignature(
   const hash = createHmac("sha256", channelSecret)
     .update(body)
     .digest("base64");
+  const a = Buffer.from(hash);
+  const b = Buffer.from(signature);
 
-  return hash === signature;
+  if (a.length !== b.length) return false;
+
+  return timingSafeEqual(new Uint8Array(a), new Uint8Array(b));
 }
 
 /**
@@ -44,15 +49,18 @@ export async function POST(
     request.headers.get("X-Line-Signature");
 
   const rawBody = await request.text();
-  const lineAccount = await prisma.lineAccount.findFirst({
+  const lineAccount = await prisma.lineAccount.findUnique({
     where: { channelId },
+    select: { id: true, channelSecret: true },
   });
 
   if (!lineAccount) {
     return NextResponse.json({ error: "Unknown channel" }, { status: 404 });
   }
 
-  if (!verifySignature(rawBody, lineAccount.channelSecret, signature)) {
+  const channelSecret = decryptSecret(lineAccount.channelSecret);
+
+  if (!verifySignature(rawBody, channelSecret, signature)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -82,6 +90,17 @@ export async function POST(
     const parsed = parseClickData(event.postback.data);
 
     if (!parsed) continue;
+
+    const menu = await prisma.richMenu.findFirst({
+      where: {
+        id: parsed.richMenuId,
+        lineAccountId: lineAccount.id,
+      },
+      select: { id: true },
+    });
+
+    if (!menu) continue;
+
     await prisma.clickEvent.create({
       data: {
         lineAccountId: lineAccount.id,

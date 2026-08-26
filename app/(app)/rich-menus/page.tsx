@@ -7,6 +7,10 @@ import { RichMenusTable } from "./RichMenusTable";
 
 import { lineAccountWhere, richMenuWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  lineAccountNameSelect,
+  lineAccountPublicSelect,
+} from "@/lib/line-account-select";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
@@ -29,13 +33,14 @@ export default async function RichMenusPage({
         ...(lineAccountId ? { lineAccountId } : {}),
       },
       include: {
-        lineAccount: true,
+        lineAccount: { select: lineAccountNameSelect },
         _count: { select: { areas: true } },
       },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.lineAccount.findMany({
       where: lineAccountWhere(user),
+      select: lineAccountPublicSelect,
       orderBy: { name: "asc" },
     }),
   ]);

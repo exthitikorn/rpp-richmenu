@@ -122,41 +122,89 @@ export function CreateLineAccountForm() {
                 ระบบจะตรวจสอบ Channel ID, Secret และ Access Token กับ LINE
                 ก่อนบันทึก
               </p>
-              <div className="rounded-medium border border-default-200 bg-default-50 p-3 text-sm text-default-700">
-                <p className="font-medium text-default-900">
-                  แหล่งที่มาข้อมูลสำหรับกรอกฟอร์ม
+              <aside className="rounded-large border border-primary-100 bg-primary-50/60 p-4 text-sm text-default-700">
+                <p className="font-semibold text-default-900">
+                  วิธีหาค่าจาก LINE Developers
                 </p>
-                <ul className="mt-1 list-disc space-y-1 pl-5">
-                  <li>
-                    เข้าหน้า{" "}
-                    <a
-                      className="text-primary underline"
-                      href="https://developers.line.biz/console/"
-                      rel="noreferrer"
-                      target="_blank"
+                <p className="mt-1 text-default-600">
+                  ใช้เฉพาะ{" "}
+                  <span className="font-medium text-default-800">
+                    Messaging API channel
+                  </span>{" "}
+                  ของ LINE Official Account — ไม่ใช้ Channel จาก LINE Login
+                </p>
+                <ol className="mt-3 space-y-2.5">
+                  <li className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
                     >
-                      LINE Developers Console
-                    </a>{" "}
-                    แล้วเลือก Provider และ Channel ของ OA ที่ต้องการ
-                  </li>
-                  <li>
-                    `Channel ID` และ `Channel Secret` อยู่ที่หน้า{" "}
-                    <span className="font-medium">
-                      Basic settings &gt; Channel basic settings
+                      1
+                    </span>
+                    <span>
+                      เปิด{" "}
+                      <a
+                        className="font-medium text-primary underline underline-offset-2"
+                        href="https://developers.line.biz/console/"
+                        rel="noreferrer"
+                        target="_blank"
+                      >
+                        LINE Developers Console
+                      </a>{" "}
+                      → เลือก Provider → เลือก Messaging API channel ของ OA
                     </span>
                   </li>
-                  <li>
-                    `Channel Access Token` สร้าง/คัดลอกจากหน้า{" "}
-                    <span className="font-medium">
-                      Messaging API &gt; Channel access token
+                  <li className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
+                    >
+                      2
+                    </span>
+                    <span>
+                      <span className="font-medium text-default-800">
+                        Channel ID
+                      </span>{" "}
+                      และ{" "}
+                      <span className="font-medium text-default-800">
+                        Channel Secret
+                      </span>
+                      : แท็บ <span className="font-medium">Basic settings</span>{" "}
+                      → ส่วน Channel basic settings
                     </span>
                   </li>
-                  <li>
-                    ชื่อ (แสดงในระบบ) เป็นชื่อที่ใช้แยกบัญชีในระบบนี้ เช่น
-                    สาขา/แคมเปญ
+                  <li className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
+                    >
+                      3
+                    </span>
+                    <span>
+                      <span className="font-medium text-default-800">
+                        Channel Access Token
+                      </span>
+                      : แท็บ <span className="font-medium">Messaging API</span>{" "}
+                      → Channel access token (รองรับ long-lived และ v2.1)
+                    </span>
                   </li>
-                </ul>
-              </div>
+                  <li className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground"
+                    >
+                      4
+                    </span>
+                    <span>
+                      <span className="font-medium text-default-800">
+                        ชื่อ (แสดงในระบบ)
+                      </span>{" "}
+                      ตั้งเองในแอปนี้ เช่น สาขา / แคมเปญ — ไม่ต้องตรงกับชื่อบน
+                      LINE
+                    </span>
+                  </li>
+                </ol>
+              </aside>
             </ModalBody>
             <ModalFooter>
               <Button

@@ -46,7 +46,7 @@ model User {
 model LineAccount {
   id                  String                  @id @default(cuid())
   name                String
-  channelId           String
+  channelId           String                  @unique
   channelSecret       String
   accessToken         String
   createdAt           DateTime                @default(now())

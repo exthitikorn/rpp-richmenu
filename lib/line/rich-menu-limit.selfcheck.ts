@@ -28,4 +28,4 @@ assert.equal(badgeToneForRemaining(full.remaining, full.count), "danger");
 assert.equal(summarizeRichMenuLimit(-3).count, 0);
 assert.equal(summarizeRichMenuLimit(-3).remaining, 1000);
 
-console.log("rich-menu-limit self-check ok");
+// console.log("rich-menu-limit self-check ok");

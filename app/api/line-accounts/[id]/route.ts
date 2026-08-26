@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSystemAdmin } from "@/lib/access";
 import { verifyLineCredentialUpdates } from "@/lib/line/verify-credentials";
 import { prisma } from "@/lib/prisma";
+import { encryptSecret } from "@/lib/secrets";
 
 const optionalCredential = z
   .string()
@@ -67,8 +68,10 @@ export async function PATCH(
       where: { id },
       data: {
         name,
-        ...(channelSecret ? { channelSecret } : {}),
-        ...(accessToken ? { accessToken } : {}),
+        ...(channelSecret
+          ? { channelSecret: encryptSecret(channelSecret) }
+          : {}),
+        ...(accessToken ? { accessToken: encryptSecret(accessToken) } : {}),
       },
     });
 

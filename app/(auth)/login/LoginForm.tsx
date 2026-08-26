@@ -8,6 +8,7 @@ import { Input } from "@heroui/input";
 
 import { AuthCard } from "@/components/layouts/AuthCard";
 import { siteConfig } from "@/config/site";
+import { sanitizeCallbackUrl } from "@/lib/auth-redirect";
 
 const FALLBACK_ERROR =
   "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง หรือไม่สามารถเชื่อมต่อ LDAP ได้";
@@ -19,7 +20,7 @@ interface LoginFormProps {
 export function LoginForm({ lineLoginEnabled = false }: LoginFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"));
   const urlError = searchParams.get("error");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

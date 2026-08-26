@@ -72,10 +72,10 @@ export const Navbar = ({ onMenuOpen }: NavbarProps) => {
           >
             <Logo size={32} />
             <div className="min-w-0">
-              <p className="truncate text-xs font-medium text-default-500">
+              <p className="truncate text-xs font-medium text-primary">
                 {siteConfig.hospitalName}
               </p>
-              <p className="truncate text-sm font-semibold leading-tight">
+              <p className="truncate text-sm font-semibold leading-tight text-primary">
                 {siteConfig.name}
               </p>
             </div>
@@ -94,7 +94,7 @@ export const Navbar = ({ onMenuOpen }: NavbarProps) => {
                 size="sm"
                 variant="light"
               >
-                <span className="flex items-center gap-2 text-left text-default-700">
+                <span className="flex items-center gap-2 text-left text-primary">
                   <Avatar
                     className="shrink-0"
                     name={profileLabel}
@@ -105,7 +105,7 @@ export const Navbar = ({ onMenuOpen }: NavbarProps) => {
                     <span className="block truncate text-sm font-medium leading-tight">
                       {profileLabel}
                     </span>
-                    <span className="mt-0.5 block truncate text-xs font-normal text-default-500">
+                    <span className="mt-0.5 block truncate text-xs font-normal text-primary/70">
                       {department} · {roleLabel}
                     </span>
                   </span>

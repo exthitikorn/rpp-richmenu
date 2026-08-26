@@ -4,6 +4,7 @@ import { z } from "zod";
 import { requireSystemAdmin } from "@/lib/access";
 import { verifyLineCredentials } from "@/lib/line/verify-credentials";
 import { prisma } from "@/lib/prisma";
+import { encryptSecret } from "@/lib/secrets";
 
 const bodySchema = z.object({
   name: z.string().min(1, "กรุณาระบุชื่อ"),
@@ -44,8 +45,8 @@ export async function POST(request: Request) {
       data: {
         name,
         channelId,
-        channelSecret,
-        accessToken,
+        channelSecret: encryptSecret(channelSecret),
+        accessToken: encryptSecret(accessToken),
       },
     });
 
@@ -64,6 +65,19 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { success: false, error: "Forbidden" },
         { status: 403 },
+      );
+    }
+
+    // Prisma P2002 unique constraint
+    if (
+      typeof e === "object" &&
+      e !== null &&
+      "code" in e &&
+      (e as { code?: string }).code === "P2002"
+    ) {
+      return NextResponse.json(
+        { success: false, error: "Channel ID นี้มีในระบบแล้ว" },
+        { status: 409 },
       );
     }
 

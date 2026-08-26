@@ -18,7 +18,9 @@ export async function getCurrentUser() {
     where: { id: session.user.id },
     include: {
       lineAccountAssignments: {
-        include: { lineAccount: true },
+        include: {
+          lineAccount: { select: { id: true, name: true } },
+        },
       },
     },
   });

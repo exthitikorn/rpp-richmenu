@@ -1,13 +1,15 @@
-import { notFound } from "next/navigation";
+import NextLink from "next/link";
+import { Button } from "@heroui/button";
 
 import { EditRichMenuHeaderMeta } from "./EditRichMenuHeaderMeta";
 
 import { lineAccountWhere, richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
+import { getRichMenuAliasId } from "@/lib/richmenu/alias";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
+import { ErrorState } from "@/components/ui/ErrorState";
 import { ImportRichMenuForm } from "@/app/(app)/import/ImportRichMenuForm";
 
 export default async function RichMenuEditPage({
@@ -23,14 +25,30 @@ export default async function RichMenuEditPage({
     where: richMenuByIdWhere(user, id),
     include: {
       areas: { orderBy: { order: "asc" } },
-      lineAccount: true,
+      lineAccount: { select: { id: true, name: true } },
     },
   });
 
-  if (!richMenu) notFound();
+  if (!richMenu) {
+    return (
+      <PageShell>
+        <PageHeader title="แก้ไข Rich Menu" />
+        <ErrorState
+          action={
+            <Button as={NextLink} href="/rich-menus" variant="flat">
+              กลับไปรายการ Rich Menu
+            </Button>
+          }
+          description="ไม่พบ Rich Menu หรือคุณไม่มีสิทธิ์เข้าถึง LINE OA ของเมนูนี้"
+          title="คุณไม่มีสิทธิ์เข้าถึงหน้านี้"
+        />
+      </PageShell>
+    );
+  }
 
   const lineAccounts = await prisma.lineAccount.findMany({
     where: lineAccountWhere(user),
+    select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
 

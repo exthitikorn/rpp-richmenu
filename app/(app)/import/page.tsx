@@ -2,6 +2,7 @@ import { ImportRichMenuForm } from "./ImportRichMenuForm";
 
 import { lineAccountWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { lineAccountNameSelect } from "@/lib/line-account-select";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
@@ -17,6 +18,7 @@ export default async function ImportPage({
   if (!user) return null;
   const lineAccounts = await prisma.lineAccount.findMany({
     where: lineAccountWhere(user),
+    select: lineAccountNameSelect,
     orderBy: { name: "asc" },
   });
 

@@ -11,6 +11,7 @@ import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
+import { Chip } from "@heroui/chip";
 import { Input } from "@heroui/input";
 import { Link } from "@heroui/link";
 import {
@@ -32,11 +33,17 @@ import {
 
 import { EmptyState } from "@/components/ui/EmptyState";
 
-type LineAccountWithRelations = LineAccount & {
+type LineAccountPublic = Pick<
+  LineAccount,
+  "id" | "name" | "channelId" | "createdAt" | "updatedAt"
+>;
+
+type LineAccountWithRelations = LineAccountPublic & {
   assignments: (LineAccountAssignment & {
     user: Pick<User, "id" | "name" | "email" | "ldapUsername">;
   })[];
   _count: { richMenus: number };
+  richMenus: { id: string; name: string }[];
 };
 
 type ApiResponse = {
@@ -56,6 +63,30 @@ function formatAssignees(la: LineAccountWithRelations) {
       return user.name ?? user.ldapUsername ?? user.email ?? "—";
     })
     .join(", ");
+}
+
+function DefaultRichMenuChip({ la }: { la: LineAccountWithRelations }) {
+  const defaultMenu = la.richMenus[0];
+
+  if (!defaultMenu) {
+    return (
+      <Chip color="default" size="sm" variant="flat">
+        ยังไม่มี default
+      </Chip>
+    );
+  }
+
+  return (
+    <Chip
+      classNames={{ base: "max-w-full", content: "truncate" }}
+      color="success"
+      size="sm"
+      title={defaultMenu.name}
+      variant="flat"
+    >
+      {defaultMenu.name}
+    </Chip>
+  );
 }
 
 function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
@@ -281,12 +312,9 @@ function LineAccountCardItem({
             {la.name}
           </Link>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-            <dt className="text-default-500">Channel ID</dt>
-            <dd
-              className="truncate font-mono text-default-700"
-              title={la.channelId}
-            >
-              {la.channelId}
+            <dt className="text-default-500">Default Rich Menu</dt>
+            <dd>
+              <DefaultRichMenuChip la={la} />
             </dd>
             <dt className="text-default-500">Rich Menus</dt>
             <dd className="text-foreground">{la._count.richMenus}</dd>
@@ -363,7 +391,9 @@ export function LineAccountList({
             >
               <TableHeader>
                 <TableColumn className="text-center">ชื่อ</TableColumn>
-                <TableColumn className="text-center">Channel ID</TableColumn>
+                <TableColumn className="text-center">
+                  Default Rich Menu
+                </TableColumn>
                 <TableColumn className="text-center">Rich Menus</TableColumn>
                 <TableColumn className="text-center">
                   ผู้ได้รับสิทธิ์
@@ -382,8 +412,8 @@ export function LineAccountList({
                         {la.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-default-400 truncate text-center">
-                      {la.channelId}
+                    <TableCell className="text-center">
+                      <DefaultRichMenuChip la={la} />
                     </TableCell>
                     <TableCell className="text-center">
                       {la._count.richMenus}
@@ -416,7 +446,9 @@ export function LineAccountList({
             >
               <TableHeader>
                 <TableColumn className="text-center">ชื่อ</TableColumn>
-                <TableColumn className="text-center">Channel ID</TableColumn>
+                <TableColumn className="text-center">
+                  Default Rich Menu
+                </TableColumn>
                 <TableColumn className="text-center">Rich Menus</TableColumn>
                 <TableColumn className="text-center">
                   ผู้ได้รับสิทธิ์
@@ -434,8 +466,8 @@ export function LineAccountList({
                         {la.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="text-default-400 truncate text-center">
-                      {la.channelId}
+                    <TableCell className="text-center">
+                      <DefaultRichMenuChip la={la} />
                     </TableCell>
                     <TableCell className="text-center">
                       {la._count.richMenus}

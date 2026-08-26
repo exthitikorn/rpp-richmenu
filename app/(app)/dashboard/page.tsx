@@ -1,7 +1,9 @@
+import NextLink from "next/link";
 import { Card, CardBody, CardHeader } from "@heroui/card";
+import { Button } from "@heroui/button";
 
-import { AnalyticsCharts } from "../analytics/AnalyticsCharts";
-
+import { AnalyticsCharts } from "./AnalyticsCharts";
+import { DashboardRangeLinks } from "./DashboardRangeLinks";
 import {
   type RichMenuAnalyticsMenu,
   RichMenuAnalyticsSection,
@@ -9,37 +11,65 @@ import {
 
 import {
   clickEventWhere,
+  deployLogWhere,
   isSystemAdmin,
   lineAccountWhere,
   richMenuWhere,
 } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import {
+  parseDashboardRange,
+  rangeLabel,
+  rangeStartDate,
+} from "@/lib/dashboard-range";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
 import { siteConfig } from "@/config/site";
+import { DeployStatus, RichMenuStatus } from "@/app/generated/prisma/client";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
   const user = await getCurrentUser();
 
   if (!user) return null;
 
+  const { range: rangeParam } = await searchParams;
+  const range = parseDashboardRange(rangeParam);
+  const start = rangeStartDate(range);
   const systemAdmin = isSystemAdmin(user);
   const lineWhere = lineAccountWhere(user);
   const menuWhere = richMenuWhere(user);
-  const clicksWhere = clickEventWhere(user);
+  const clicksBase = clickEventWhere(user);
+  const clicksWhere = start
+    ? { ...clicksBase, createdAt: { gte: start } }
+    : clicksBase;
+  const deployWhere = deployLogWhere(user);
 
   const [
     lineAccountCount,
-    richMenuCount,
+    deployedMenuCount,
     totalClicks,
+    uniqueUserGroups,
     byAreaRaw,
     byMenuRaw,
     pendingSummary,
+    failedDeploys,
+    accountsMissingDefault,
+    recentDeploys,
   ] = await Promise.all([
     prisma.lineAccount.count({ where: lineWhere }),
-    prisma.richMenu.count({ where: menuWhere }),
+    prisma.richMenu.count({
+      where: { ...menuWhere, status: RichMenuStatus.DEPLOYED },
+    }),
     prisma.clickEvent.count({ where: clicksWhere }),
+    prisma.clickEvent.groupBy({
+      by: ["lineUserId"],
+      where: clicksWhere,
+    }),
     prisma.clickEvent.groupBy({
       by: ["richMenuId", "areaIndex"],
       where: clicksWhere,
@@ -64,15 +94,46 @@ export default async function DashboardPage() {
                 createdAt: true,
               },
             }),
-            prisma.user.count({
-              where: { isApproved: false },
-            }),
+            prisma.user.count({ where: { isApproved: false } }),
           ]);
 
           return { users, count };
         })()
       : Promise.resolve({ users: [], count: 0 }),
+    prisma.deployLog.findMany({
+      where: { ...deployWhere, status: DeployStatus.FAILED },
+      orderBy: { deployedAt: "desc" },
+      take: 5,
+      include: {
+        richMenu: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.lineAccount.findMany({
+      where: {
+        ...lineWhere,
+        NOT: { richMenus: { some: { isDefault: true } } },
+      },
+      select: { id: true, name: true },
+      take: 8,
+      orderBy: { name: "asc" },
+    }),
+    prisma.deployLog.findMany({
+      where: deployWhere,
+      orderBy: { deployedAt: "desc" },
+      take: 10,
+      include: {
+        richMenu: {
+          select: {
+            id: true,
+            name: true,
+            lineAccount: { select: { name: true } },
+          },
+        },
+      },
+    }),
   ]);
+
+  const uniqueUsers = uniqueUserGroups.length;
 
   const richMenuIds = Array.from(
     new Set(byMenuRaw.map((m) => m.richMenuId)),
@@ -84,7 +145,7 @@ export default async function DashboardPage() {
           where: { id: { in: richMenuIds } },
           include: {
             areas: { orderBy: { order: "asc" } },
-            lineAccount: true,
+            lineAccount: { select: { name: true } },
           },
         })
       : [];
@@ -138,8 +199,6 @@ export default async function DashboardPage() {
           clickCount: areaCounts?.get(index) ?? 0,
         }));
 
-      const menuTotalClicks = totalClicksByMenu.get(menu.id) ?? 0;
-
       return {
         id: menu.id,
         name: menu.name,
@@ -147,12 +206,13 @@ export default async function DashboardPage() {
         width: menu.width,
         height: menu.height,
         imageUrl: menu.imageUrl,
-        totalClicks: menuTotalClicks,
+        totalClicks: totalClicksByMenu.get(menu.id) ?? 0,
         areas,
       };
     },
   );
 
+  const periodText = rangeLabel(range);
   const overviewMetrics = [
     {
       key: "lineAccounts",
@@ -161,55 +221,101 @@ export default async function DashboardPage() {
         ? "จำนวนบัญชี LINE ทั้งหมดในระบบ"
         : "จำนวนบัญชี LINE ที่คุณได้รับสิทธิ์",
       value: lineAccountCount,
+      valueClass: "text-line-green",
+      barClass: "bg-line-green",
     },
     {
-      key: "richMenus",
-      label: "Rich Menu",
-      description: systemAdmin
-        ? "จำนวน Rich Menu ทั้งหมดในระบบ"
-        : "จำนวน Rich Menu ในบัญชี LINE ที่คุณเข้าถึงได้",
-      value: richMenuCount,
+      key: "deployedMenus",
+      label: "Rich Menu ที่ deploy",
+      description: "สถานะ DEPLOYED ในขอบเขตที่เข้าถึงได้",
+      value: deployedMenuCount,
+      valueClass: "text-primary",
+      barClass: "bg-primary",
     },
     {
       key: "clicks",
-      label: "การกดทั้งหมด",
-      description: systemAdmin
-        ? "จำนวนการกด Rich Menu รวมทั้งระบบ"
-        : "จำนวนการกด Rich Menu ในบัญชี LINE ที่คุณเข้าถึงได้",
+      label: "การกด",
+      description: `ในช่วง ${periodText}`,
       value: totalClicks,
+      valueClass: "text-secondary-700",
+      barClass: "bg-secondary",
+    },
+    {
+      key: "uniqueUsers",
+      label: "ผู้ใช้ไม่ซ้ำ",
+      description: `LINE user ที่กดในช่วง ${periodText}`,
+      value: uniqueUsers,
+      valueClass: "text-primary-700",
+      barClass: "bg-gradient-to-r from-primary to-secondary",
     },
   ];
+
+  const hasAttention =
+    (systemAdmin && pendingSummary.count > 0) ||
+    failedDeploys.length > 0 ||
+    accountsMissingDefault.length > 0;
+
+  const hasAnalytics = byMenu.length > 0 && byArea.length > 0;
+
+  const menuMeta = new Map(
+    richMenus.map((menu) => [
+      menu.id,
+      { name: menu.name, lineAccountName: menu.lineAccount.name },
+    ]),
+  );
+  const topMenus = [...byMenu]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5)
+    .map((item, index) => {
+      const meta = menuMeta.get(item.richMenuId);
+
+      return {
+        rank: index + 1,
+        id: item.richMenuId,
+        name: meta?.name ?? menuNames[item.richMenuId] ?? item.richMenuId,
+        lineAccountName: meta?.lineAccountName ?? "—",
+        count: item.count,
+        share:
+          totalClicks > 0 ? Math.round((item.count / totalClicks) * 100) : 0,
+      };
+    });
+  const topMenuMax = topMenus[0]?.count ?? 0;
 
   return (
     <PageShell className="space-y-8">
       <PageHeader
+        actions={<DashboardRangeLinks current={range} />}
         badges={
           <>
-            <span className="inline-flex items-center rounded-full border border-default-200/80 bg-background/80 px-3 py-1 text-xs font-medium text-default-600 shadow-sm">
-              อัปเดตข้อมูลแบบเรียลไทม์
+            <span className="inline-flex items-center rounded-full border border-primary-200/70 bg-primary-50/80 px-3 py-1 text-xs font-medium text-primary-700 shadow-sm">
+              {periodText}
             </span>
-            <span className="inline-flex items-center rounded-full border border-default-200/80 bg-background/80 px-3 py-1 text-xs font-medium text-default-600 shadow-sm">
-              รวม {overviewMetrics[3]?.value.toLocaleString("th-TH")} การกด
+            <span className="inline-flex items-center rounded-full border border-secondary-200/80 bg-secondary-50/90 px-3 py-1 text-xs font-medium text-secondary-700 shadow-sm">
+              {totalClicks.toLocaleString("th-TH")} การกด
             </span>
           </>
         }
         description={
           systemAdmin
-            ? `สวัสดี, ${user.name ?? user.email} — ดูภาพรวมสถิติทั้งระบบได้ที่นี่`
-            : `สวัสดี, ${user.name ?? user.email} — ดูสถิติการใช้งาน Rich Menu และบัญชี LINE ที่คุณได้รับสิทธิ์ได้ที่นี่`
+            ? `สวัสดี, ${user.name ?? user.email} — ภาพรวม KPI สุขภาพระบบ และสถิติคลิก`
+            : `สวัสดี, ${user.name ?? user.email} — ภาพรวมบัญชี LINE ที่คุณเข้าถึงได้`
         }
         title="แดชบอร์ดภาพรวม"
-        variant="hero"
       />
+
       <section className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {overviewMetrics.map((metric) => (
             <Card
               key={metric.key}
-              className="group relative overflow-hidden border border-default-200 bg-content1 shadow-none transition-colors hover:border-primary-200/70"
+              className="group relative overflow-hidden border border-default-200 shadow-none"
             >
-              <CardHeader className="flex flex-col gap-1 pb-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-default-500">
+              <div
+                aria-hidden
+                className={`absolute inset-x-0 top-0 h-1 ${metric.barClass}`}
+              />
+              <CardHeader className="flex flex-col gap-1 pb-1 pt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-default-600">
                   {metric.label}
                 </p>
                 <p className="text-[0.75rem] text-default-400">
@@ -217,7 +323,9 @@ export default async function DashboardPage() {
                 </p>
               </CardHeader>
               <CardBody className="flex items-center justify-center pt-1">
-                <p className="text-3xl font-bold tracking-tight text-primary">
+                <p
+                  className={`text-3xl font-bold tracking-tight ${metric.valueClass}`}
+                >
                   {metric.value.toLocaleString("th-TH")}
                 </p>
               </CardBody>
@@ -226,77 +334,158 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      {systemAdmin && pendingSummary.count > 0 ? (
-        <Card className="border border-warning-300/30 bg-gradient-to-br from-warning-50/50 via-background to-background shadow-sm">
-          <CardHeader className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-warning-700">
-                ผู้ใช้รออนุมัติ
-              </p>
-              <p className="text-sm text-default-500">
-                มีผู้ใช้รออนุมัติทั้งหมด{" "}
-                <span className="font-semibold">
-                  {pendingSummary.count.toLocaleString("th-TH")}
-                </span>{" "}
-                คน (แสดงรายการล่าสุด 5 คน)
-              </p>
-            </div>
-            <span className="mt-1 inline-flex items-center rounded-full border border-warning-300/40 bg-warning-100/60 px-3 py-1 text-xs font-medium text-warning-700">
-              {pendingSummary.count.toLocaleString("th-TH")} คนรออนุมัติ
-            </span>
-          </CardHeader>
-          <CardBody>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <caption className="sr-only">
-                  รายการผู้ใช้ที่รอการอนุมัติล่าสุด
-                </caption>
-                <thead>
-                  <tr className="border-b border-default-200 text-left text-xs text-default-500">
-                    <th className="py-2 pr-4" scope="col">
-                      อีเมล
-                    </th>
-                    <th className="py-2 pr-4" scope="col">
-                      ชื่อ
-                    </th>
-                    <th className="py-2 pr-4" scope="col">
-                      วันที่สร้าง
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pendingSummary.users.map((u) => (
-                    <tr
-                      key={u.id}
-                      className="border-b border-default-100 last:border-0 odd:bg-default-50/40"
-                    >
-                      <td className="py-1.5 pr-4">{u.email}</td>
-                      <td className="py-1.5 pr-4">{u.name ?? "—"}</td>
-                      <td className="py-1.5 pr-4 text-default-500">
-                        {u.createdAt.toLocaleString("th-TH")}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
-      ) : null}
-
-      {byMenu.length > 0 && byArea.length > 0 ? (
+      {hasAttention ? (
         <section className="space-y-4">
           <div className="flex flex-col gap-1">
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-default-500">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-primary-700">
+              <span
+                aria-hidden
+                className="inline-block h-4 w-1 rounded-full bg-secondary"
+              />
+              งานที่ต้องทำ
+            </h2>
+            <p className="text-sm text-default-500">
+              รายการที่ควรตรวจในขอบเขตที่คุณเข้าถึงได้
+            </p>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-2">
+            {systemAdmin && pendingSummary.count > 0 ? (
+              <Card className="border border-warning-300 shadow-none">
+                <CardHeader className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-warning-700">
+                      ผู้ใช้รออนุมัติ
+                    </p>
+                    <p className="text-sm text-default-500">
+                      {pendingSummary.count.toLocaleString("th-TH")} คน
+                      (แสดงล่าสุด 5 คน)
+                    </p>
+                  </div>
+                  <Button
+                    as={NextLink}
+                    color="warning"
+                    href="/users"
+                    size="sm"
+                    variant="flat"
+                  >
+                    ไปหน้าผู้ใช้
+                  </Button>
+                </CardHeader>
+                <CardBody>
+                  <ul className="space-y-1.5 text-sm">
+                    {pendingSummary.users.map((u) => (
+                      <li
+                        key={u.id}
+                        className="flex justify-between gap-2 border-b border-default-100 py-1 last:border-0"
+                      >
+                        <span className="truncate">
+                          {u.name ?? u.email ?? "—"}
+                        </span>
+                        <span className="shrink-0 text-xs text-default-500">
+                          {u.createdAt.toLocaleDateString("th-TH")}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+            ) : null}
+
+            {failedDeploys.length > 0 ? (
+              <Card className="border border-danger-300 shadow-none">
+                <CardHeader className="flex items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-danger-700">
+                      Deploy ล้มเหลวล่าสุด
+                    </p>
+                    <p className="text-sm text-default-500">
+                      {failedDeploys.length} รายการ
+                    </p>
+                  </div>
+                  <Button
+                    as={NextLink}
+                    color="danger"
+                    href="/deploy-logs"
+                    size="sm"
+                    variant="flat"
+                  >
+                    ดูทั้งหมด
+                  </Button>
+                </CardHeader>
+                <CardBody>
+                  <ul className="space-y-1.5 text-sm">
+                    {failedDeploys.map((log) => (
+                      <li
+                        key={log.id}
+                        className="border-b border-default-100 py-1 last:border-0"
+                      >
+                        <NextLink
+                          className="font-medium text-primary hover:underline"
+                          href={`/rich-menus/${log.richMenu.id}/edit`}
+                        >
+                          {log.richMenu.name}
+                        </NextLink>
+                        <p className="truncate text-xs text-default-500">
+                          {log.message ?? "ไม่มีรายละเอียด"} ·{" "}
+                          {log.deployedAt.toLocaleString("th-TH")}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+            ) : null}
+
+            {accountsMissingDefault.length > 0 ? (
+              <Card className="border border-default-200 shadow-none lg:col-span-2">
+                <CardHeader>
+                  <div className="space-y-1">
+                    <p className="text-sm font-semibold text-secondary-700">
+                      บัญชียังไม่มี Rich Menu default
+                    </p>
+                    <p className="text-sm text-default-500">
+                      {accountsMissingDefault.length} บัญชี
+                    </p>
+                  </div>
+                </CardHeader>
+                <CardBody>
+                  <ul className="flex flex-wrap gap-2">
+                    {accountsMissingDefault.map((account) => (
+                      <li key={account.id}>
+                        <Button
+                          as={NextLink}
+                          className="border-secondary-200 text-secondary-800"
+                          href={`/rich-menus?lineAccountId=${account.id}`}
+                          size="sm"
+                          variant="bordered"
+                        >
+                          {account.name}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </CardBody>
+              </Card>
+            ) : null}
+          </div>
+        </section>
+      ) : null}
+
+      {hasAnalytics ? (
+        <section className="space-y-4">
+          <div className="flex flex-col gap-1">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-primary-700">
+              <span
+                aria-hidden
+                className="inline-block h-4 w-1 rounded-full bg-primary"
+              />
               {siteConfig.labels.analyticsTitle}
             </h2>
             <p className="text-sm text-default-500">
-              {systemAdmin
-                ? "วิเคราะห์สถิติการกด Rich Menu ทั้งระบบ"
-                : "วิเคราะห์สถิติการกด Rich Menu ในบัญชี LINE ที่คุณเข้าถึงได้"}
+              สถิติการกดในช่วง {periodText}
             </p>
           </div>
-          <Card className="border border-default-200 bg-gradient-to-br from-background via-background to-primary-50/30 shadow-sm">
+          <Card className="border border-default-200 shadow-none">
             <CardHeader>
               <p className="font-semibold">สถิติภาพรวมการกด Rich Menu</p>
             </CardHeader>
@@ -314,7 +503,139 @@ export default async function DashboardPage() {
             totalClicks={totalClicks}
           />
         </section>
-      ) : null}
+      ) : (
+        <Card className="border border-default-200 shadow-none">
+          <CardBody>
+            <p className="text-sm text-default-500">
+              ยังไม่มีข้อมูลการคลิกในช่วง {periodText}
+            </p>
+          </CardBody>
+        </Card>
+      )}
+
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Card className="border border-default-200 shadow-none lg:col-span-2">
+          <CardHeader className="flex items-start justify-between gap-3">
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">กิจกรรม Deploy ล่าสุด</p>
+              <p className="text-sm text-default-500">10 รายการล่าสุด</p>
+            </div>
+            <Button
+              as={NextLink}
+              color="primary"
+              href="/deploy-logs"
+              size="sm"
+              variant="flat"
+            >
+              ดูทั้งหมด
+            </Button>
+          </CardHeader>
+          <CardBody>
+            {recentDeploys.length === 0 ? (
+              <p className="text-sm text-default-500">ยังไม่มีประวัติ deploy</p>
+            ) : (
+              <ul className="divide-y divide-default-100 text-sm">
+                {recentDeploys.map((log) => (
+                  <li
+                    key={log.id}
+                    className="flex flex-wrap items-baseline justify-between gap-2 py-2 first:pt-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <NextLink
+                        className="font-medium text-primary hover:underline"
+                        href={`/rich-menus/${log.richMenu.id}/edit`}
+                      >
+                        {log.richMenu.name}
+                      </NextLink>
+                      <p className="text-xs text-default-500">
+                        {log.richMenu.lineAccount.name}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right text-xs">
+                      <span
+                        className={
+                          log.status === DeployStatus.SUCCESS
+                            ? "inline-flex rounded-full bg-success-100 px-2 py-0.5 font-medium text-success-700"
+                            : log.status === DeployStatus.FAILED
+                              ? "inline-flex rounded-full bg-danger-100 px-2 py-0.5 font-medium text-danger-700"
+                              : "inline-flex rounded-full bg-default-100 px-2 py-0.5 font-medium text-default-600"
+                        }
+                      >
+                        {log.status}
+                      </span>
+                      <p className="mt-1 text-default-400">
+                        {log.deployedAt.toLocaleString("th-TH")}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardBody>
+        </Card>
+
+        <Card className="border border-default-200 shadow-none">
+          <CardHeader>
+            <div className="space-y-1">
+              <p className="text-sm font-semibold">Top Rich Menu</p>
+              <p className="text-sm text-default-500">
+                กดมากสุดในช่วง {periodText}
+              </p>
+            </div>
+          </CardHeader>
+          <CardBody>
+            {topMenus.length === 0 ? (
+              <p className="text-sm text-default-500">
+                ยังไม่มีข้อมูลการคลิกในช่วงนี้
+              </p>
+            ) : (
+              <ol className="space-y-3">
+                {topMenus.map((menu) => {
+                  const widthPercent =
+                    topMenuMax > 0
+                      ? Math.max((menu.count / topMenuMax) * 100, 8)
+                      : 8;
+
+                  return (
+                    <li key={menu.id} className="space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            <span className="mr-1.5 text-secondary-600">
+                              #{menu.rank}
+                            </span>
+                            <NextLink
+                              className="text-primary hover:underline"
+                              href={`/rich-menus/${menu.id}/edit`}
+                            >
+                              {menu.name}
+                            </NextLink>
+                          </p>
+                          <p className="truncate text-xs text-default-500">
+                            {menu.lineAccountName}
+                          </p>
+                        </div>
+                        <div className="shrink-0 text-right text-xs">
+                          <p className="font-semibold text-secondary-700">
+                            {menu.count.toLocaleString("th-TH")}
+                          </p>
+                          <p className="text-default-400">{menu.share}%</p>
+                        </div>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-secondary-100/80">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-secondary to-primary"
+                          style={{ width: `${widthPercent}%` }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            )}
+          </CardBody>
+        </Card>
+      </section>
     </PageShell>
   );
 }

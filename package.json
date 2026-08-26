@@ -1,5 +1,5 @@
 {
-  "name": "next-app-template",
+  "name": "rpp-richmenu",
   "version": "0.0.1",
   "private": true,
   "scripts": {
@@ -7,6 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint --fix",
+    "check:security": "npx --yes tsx lib/security-checks.ts",
     "postinstall": "prisma generate"
   },
   "dependencies": {

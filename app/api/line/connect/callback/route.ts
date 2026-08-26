@@ -1,8 +1,19 @@
+import { timingSafeEqual } from "crypto";
+
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+function safeEqual(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+
+  if (ba.length !== bb.length) return false;
+
+  return timingSafeEqual(new Uint8Array(ba), new Uint8Array(bb));
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -21,7 +32,11 @@ export async function GET(request: Request) {
   const cookieStore = await cookies();
   const storedState = cookieStore.get("line_oauth_state")?.value;
 
-  if (!returnedState || !storedState || returnedState !== storedState) {
+  if (
+    !returnedState ||
+    !storedState ||
+    !safeEqual(returnedState, storedState)
+  ) {
     return NextResponse.redirect(new URL("/profile", request.url));
   }
 
@@ -57,20 +72,34 @@ export async function GET(request: Request) {
 
   const tokenJson = (await tokenRes.json()) as {
     id_token?: string;
-    access_token?: string;
   };
 
   if (!tokenJson.id_token) {
     return NextResponse.redirect(new URL("/profile", request.url));
   }
 
-  const [, payloadBase64] = tokenJson.id_token.split(".");
-  const payloadJson = Buffer.from(payloadBase64, "base64").toString("utf8");
-  const payload = JSON.parse(payloadJson) as {
+  const verifyRes = await fetch("https://api.line.me/oauth2/v2.1/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      id_token: tokenJson.id_token,
+      client_id: channelId,
+    }),
+  });
+
+  if (!verifyRes.ok) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
+
+  const payload = (await verifyRes.json()) as {
     sub: string;
     name?: string;
     picture?: string;
   };
+
+  if (!payload.sub) {
+    return NextResponse.redirect(new URL("/profile", request.url));
+  }
 
   const existing = await prisma.user.findFirst({
     where: { lineUserId: payload.sub },

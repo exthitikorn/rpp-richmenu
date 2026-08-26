@@ -67,7 +67,7 @@
 
 ### 3. กราฟ Analytics ไม่มีทางเลือกสำหรับ screen reader
 
-**ไฟล์:** `app/(app)/analytics/AnalyticsCharts.tsx`
+**ไฟล์:** `app/(app)/dashboard/AnalyticsCharts.tsx`
 
 กราฟ Recharts ไม่มี:
 
@@ -159,7 +159,7 @@
 
 ### 10. ปุ่ม Area ใน Preview ไม่บอกสถานะที่เลือก
 
-**ไฟล์:** `components/rich-menu-editor/RichMenuPreview.tsx`
+**ไฟล์:** `app/(app)/import/ImportRichMenuCanvas.tsx` (เดิม `components/rich-menu-editor/RichMenuPreview.tsx` — ลบแล้ว)
 
 มีเพียง `aria-label={`Area ${index + 1}`}` ไม่มีสถานะ selected
 
@@ -217,7 +217,7 @@ Container ใช้ `role="list"` แต่ลูกเป็น `<Card>` ไม
 | สีข้อความ `text-default-400` | อาจ contrast ไม่ถึง 4.5:1 บนพื้นหลังอ่อน — ควรตรวจสอบ |
 | ปุ่มคัดลอก | การคัดลอก clipboard อาจไม่มี feedback ผ่าน `aria-live` (toast ช่วยเฉพาะผู้เห็น) |
 | Heatmap overlay | ตัวเลขคลิกแสดงบนภาพแต่ไม่มีโครงสร้างที่นำทางได้ด้วย AT |
-| หัวข้อใน AreaActionForm | ใช้ `<span>` แทน heading — โครงสร้าง heading ใน editor อ่อน |
+| หัวข้อใน ImportRichMenuAreaPanel | ใช้ `<span>` / `<p>` แทน heading — โครงสร้าง heading ใน editor อ่อน |
 | Theme switch | บังคับ `forcedTheme: "light"` — ถ้าตั้งใจไม่รองรับ dark mode ก็โอเค; `theme-switch.tsx` อาจเป็น dead code |
 
 ---
@@ -244,9 +244,9 @@ Container ใช้ `role="list"` แต่ลูกเป็น `<Card>` ไม
 |------|---------|
 | `app/layout.tsx` | `lang`, layout ของ `<main>` |
 | `components/navbar.tsx` | aria-label เดสก์ท็อป, `<li>` semantics |
-| `app/(app)/analytics/AnalyticsCharts.tsx` | กราฟไม่ accessible |
+| `app/(app)/dashboard/AnalyticsCharts.tsx` | กราฟไม่ accessible |
 | `app/(app)/import/ImportRichMenuForm.tsx` | pointer-only editor |
-| `components/rich-menu-editor/RichMenuPreview.tsx` | `aria-pressed`, label ภาษาไทย |
+| `app/(app)/import/ImportRichMenuCanvas.tsx` | `aria-pressed`, label ภาษาไทย |
 | `app/error.tsx` | ภาษาผสม |
 | `app/(app)/profile/page.tsx` | title ภาษาอังกฤษ |
 | `app/(app)/settings/SettingsForm.tsx` | ปุ่มอัปโหลดไฟล์ |

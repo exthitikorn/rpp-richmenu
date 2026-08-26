@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { lineAccountByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { getRichMenuAliasId } from "@/lib/rich-menu/alias";
+import { getRichMenuAliasId } from "@/lib/richmenu/alias";
 
 export async function GET(request: Request) {
   try {
