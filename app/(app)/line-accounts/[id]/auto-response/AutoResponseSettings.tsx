@@ -2,7 +2,7 @@
 
 import type { RuleRow } from "./types";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -18,8 +18,6 @@ import {
   TableRow,
 } from "@heroui/table";
 import { Textarea } from "@heroui/input";
-
-import { KeywordRuleForm } from "./KeywordRuleForm";
 
 import { useAppToast } from "@/components/AppToastProvider";
 import { PageHeader } from "@/components/page-header";
@@ -57,8 +55,6 @@ export function AutoResponseSettings({
   const [settings, setSettings] = useState(initialSettings);
   const [rules, setRules] = useState(initialRules);
   const [savingSettings, setSavingSettings] = useState(false);
-  const [formOpen, setFormOpen] = useState(false);
-  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
 
   async function saveSettings() {
     setSavingSettings(true);
@@ -137,28 +133,6 @@ export function AutoResponseSettings({
     void navigator.clipboard.writeText(webhookUrl);
     toast.success("คัดลอก Webhook URL แล้ว");
   }
-
-  const handleRuleSaved = useCallback(
-    (rule: RuleRow) => {
-      setRules((prev) => {
-        const idx = prev.findIndex((r) => r.id === rule.id);
-
-        if (idx >= 0) {
-          const next = [...prev];
-
-          next[idx] = rule;
-
-          return next.sort((a, b) => a.keyword.localeCompare(b.keyword));
-        }
-
-        return [...prev, rule].sort((a, b) =>
-          a.keyword.localeCompare(b.keyword),
-        );
-      });
-      router.refresh();
-    },
-    [router],
-  );
 
   return (
     <div className="space-y-6">
@@ -242,10 +216,11 @@ export function AutoResponseSettings({
           <Button
             color="primary"
             variant="flat"
-            onPress={() => {
-              setEditingRuleId(null);
-              setFormOpen(true);
-            }}
+            onPress={() =>
+              router.push(
+                `/line-accounts/${lineAccountId}/auto-response/rules/new`,
+              )
+            }
           >
             เพิ่ม Keyword
           </Button>
@@ -289,10 +264,11 @@ export function AutoResponseSettings({
                           <Button
                             size="sm"
                             variant="light"
-                            onPress={() => {
-                              setEditingRuleId(rule.id);
-                              setFormOpen(true);
-                            }}
+                            onPress={() =>
+                              router.push(
+                                `/line-accounts/${lineAccountId}/auto-response/rules/${rule.id}`,
+                              )
+                            }
                           >
                             แก้ไข
                           </Button>
@@ -326,14 +302,6 @@ export function AutoResponseSettings({
           กลับ
         </Button>
       </div>
-
-      <KeywordRuleForm
-        editingRuleId={editingRuleId}
-        isOpen={formOpen}
-        lineAccountId={lineAccountId}
-        onOpenChange={setFormOpen}
-        onSaved={handleRuleSaved}
-      />
     </div>
   );
 }

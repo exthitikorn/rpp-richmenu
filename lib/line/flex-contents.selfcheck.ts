@@ -1,5 +1,10 @@
 import assert from "node:assert/strict";
-import { emptyBubble, emptyCarousel, flexContentsSchema } from "./flex-contents";
+
+import {
+  emptyBubble,
+  emptyCarousel,
+  flexContentsSchema,
+} from "./flex-contents";
 
 assert.equal(emptyBubble().type, "bubble");
 assert.equal(emptyCarousel().type, "carousel");
