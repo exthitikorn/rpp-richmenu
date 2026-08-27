@@ -120,7 +120,9 @@ export function appendChild(
   const contents = (parent as Record<string, unknown>).contents;
   if (!Array.isArray(contents)) return root;
 
-  return setAtPath(root, `${parentPath}.contents`, [...contents, node]);
+  const contentsPath =
+    parentPath === "" ? "contents" : `${parentPath}.contents`;
+  return setAtPath(root, contentsPath, [...contents, node]);
 }
 
 export function defaultNode(
