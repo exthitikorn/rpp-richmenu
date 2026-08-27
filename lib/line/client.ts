@@ -345,3 +345,32 @@ export async function deleteRichMenu(
     throw new Error(`LINE API deleteRichMenu: ${res.status} ${err}`);
   }
 }
+
+/** @see https://developers.line.biz/en/reference/messaging-api/#get-bot-info */
+export async function getBotInfo(accessToken: string): Promise<{
+  displayName: string;
+  pictureUrl?: string;
+}> {
+  const res = await lineFetch("/info", accessToken, { method: "GET" });
+
+  if (!res.ok) {
+    const err = await res.text();
+
+    throw new Error(`LINE API getBotInfo: ${res.status} ${err}`);
+  }
+
+  const data = (await res.json()) as {
+    displayName?: string;
+    pictureUrl?: string;
+  };
+  const displayName = data.displayName?.trim() ?? "";
+
+  if (!displayName) {
+    throw new Error("ไม่สามารถดึงข้อมูลโปรไฟล์จาก LINE ได้");
+  }
+
+  return {
+    displayName,
+    ...(data.pictureUrl ? { pictureUrl: data.pictureUrl } : {}),
+  };
+}

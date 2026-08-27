@@ -4,6 +4,7 @@ import { Button } from "@heroui/button";
 
 import { AnalyticsCharts } from "./AnalyticsCharts";
 import { DashboardRangeLinks } from "./DashboardRangeLinks";
+import { PendingLineAccountRequestsCard } from "./PendingLineAccountRequestsCard";
 import {
   type RichMenuAnalyticsMenu,
   RichMenuAnalyticsSection,
@@ -26,7 +27,11 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { PageShell } from "@/components/layouts/PageShell";
 import { siteConfig } from "@/config/site";
-import { DeployStatus, RichMenuStatus } from "@/app/generated/prisma/client";
+import {
+  DeployStatus,
+  LineAccountRequestStatus,
+  RichMenuStatus,
+} from "@/app/generated/prisma/client";
 
 export default async function DashboardPage({
   searchParams,
@@ -57,6 +62,7 @@ export default async function DashboardPage({
     byAreaRaw,
     byMenuRaw,
     pendingSummary,
+    pendingLineAccountRequests,
     failedDeploys,
     accountsMissingDefault,
     recentDeploys,
@@ -100,6 +106,36 @@ export default async function DashboardPage({
           return { users, count };
         })()
       : Promise.resolve({ users: [], count: 0 }),
+    systemAdmin
+      ? (async () => {
+          const [requests, count] = await Promise.all([
+            prisma.lineAccountRequest.findMany({
+              where: { status: LineAccountRequestStatus.PENDING },
+              orderBy: { createdAt: "desc" },
+              take: 5,
+              select: {
+                id: true,
+                name: true,
+                channelId: true,
+                createdAt: true,
+                requestedBy: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    ldapUsername: true,
+                  },
+                },
+              },
+            }),
+            prisma.lineAccountRequest.count({
+              where: { status: LineAccountRequestStatus.PENDING },
+            }),
+          ]);
+
+          return { requests, count };
+        })()
+      : Promise.resolve({ requests: [], count: 0 }),
     prisma.deployLog.findMany({
       where: { ...deployWhere, status: DeployStatus.FAILED },
       orderBy: { deployedAt: "desc" },
@@ -252,6 +288,7 @@ export default async function DashboardPage({
 
   const hasAttention =
     (systemAdmin && pendingSummary.count > 0) ||
+    (systemAdmin && pendingLineAccountRequests.count > 0) ||
     failedDeploys.length > 0 ||
     accountsMissingDefault.length > 0;
 
@@ -389,6 +426,13 @@ export default async function DashboardPage({
                   </ul>
                 </CardBody>
               </Card>
+            ) : null}
+
+            {systemAdmin && pendingLineAccountRequests.count > 0 ? (
+              <PendingLineAccountRequestsCard
+                count={pendingLineAccountRequests.count}
+                requests={pendingLineAccountRequests.requests}
+              />
             ) : null}
 
             {failedDeploys.length > 0 ? (

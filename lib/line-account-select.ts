@@ -2,6 +2,7 @@
 export const lineAccountPublicSelect = {
   id: true,
   name: true,
+  pictureUrl: true,
   channelId: true,
   createdAt: true,
   updatedAt: true,

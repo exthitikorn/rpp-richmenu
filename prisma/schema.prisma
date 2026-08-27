@@ -21,6 +21,13 @@ enum DeployStatus {
   FAILED
 }
 
+enum LineAccountRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model User {
   id                  String                  @id @default(cuid())
   ldapUsername        String?                 @unique
@@ -38,23 +45,51 @@ model User {
   lineDisplayName     String?
   linePictureUrl      String?                 @db.Text
 
-  lineAccountAssignments LineAccountAssignment[]
-  createdAt              DateTime                @default(now())
-  updatedAt              DateTime                @updatedAt
+  lineAccountAssignments     LineAccountAssignment[]
+  requestedLineAccountRequests LineAccountRequest[] @relation("LineAccountRequestRequestedBy")
+  reviewedLineAccountRequests  LineAccountRequest[] @relation("LineAccountRequestReviewedBy")
+  createdAt                  DateTime                @default(now())
+  updatedAt                  DateTime                @updatedAt
 }
 
 model LineAccount {
   id                  String                  @id @default(cuid())
   name                String
+  pictureUrl          String?                 @db.Text
   channelId           String                  @unique
-  channelSecret       String
-  accessToken         String
+  channelSecret       String                  @db.Text
+  accessToken         String                  @db.Text
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 
   assignments         LineAccountAssignment[]
   richMenus           RichMenu[]
   clickEvents         ClickEvent[]
+  lineAccountRequests LineAccountRequest[]
+}
+
+model LineAccountRequest {
+  id              String                   @id @default(cuid())
+  name            String
+  channelId       String
+  channelSecret   String                   @db.Text
+  accessToken     String                   @db.Text
+  status          LineAccountRequestStatus @default(PENDING)
+  requestedById   String
+  reviewedById    String?
+  rejectionReason String?                  @db.Text
+  reviewedAt      DateTime?
+  lineAccountId   String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  requestedBy User         @relation("LineAccountRequestRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  reviewedBy  User?        @relation("LineAccountRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  lineAccount LineAccount? @relation(fields: [lineAccountId], references: [id], onDelete: SetNull)
+
+  @@index([requestedById, status])
+  @@index([status, createdAt])
+  @@index([channelId, status])
 }
 
 model LineAccountAssignment {

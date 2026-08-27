@@ -9,6 +9,7 @@ import type {
 import { useState } from "react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
+import { Avatar } from "@heroui/avatar";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Chip } from "@heroui/chip";
@@ -35,7 +36,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 type LineAccountPublic = Pick<
   LineAccount,
-  "id" | "name" | "channelId" | "createdAt" | "updatedAt"
+  "id" | "name" | "pictureUrl" | "channelId" | "createdAt" | "updatedAt"
 >;
 
 type LineAccountWithRelations = LineAccountPublic & {
@@ -92,14 +93,12 @@ function DefaultRichMenuChip({ la }: { la: LineAccountWithRelations }) {
 function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
-  const [name, setName] = useState(la.name);
   const [channelSecret, setChannelSecret] = useState("");
   const [accessToken, setAccessToken] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   function handleOpen() {
-    setName(la.name);
     setChannelSecret("");
     setAccessToken("");
     setError("");
@@ -116,7 +115,6 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
           channelSecret: channelSecret.trim() || undefined,
           accessToken: accessToken.trim() || undefined,
         }),
@@ -162,13 +160,9 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
                   {error}
                 </p>
               )}
-              <Input
-                isRequired
-                label="ชื่อ (แสดงในระบบ)"
-                labelPlacement="outside"
-                value={name}
-                onValueChange={setName}
-              />
+              <p className="text-sm text-default-600">
+                ชื่อและรูปโปรไฟล์ดึงจาก LINE อัตโนมัติเมื่อเปิดหน้ารายละเอียด
+              </p>
               <Input
                 isReadOnly
                 description="ไม่สามารถเปลี่ยนได้หลังสร้างแล้ว"
@@ -293,6 +287,26 @@ function DeleteLineAccountButton({
   );
 }
 
+function LineAccountNameCell({ la }: { la: LineAccountWithRelations }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2">
+      <Avatar
+        className="shrink-0"
+        name={la.name}
+        size="sm"
+        src={la.pictureUrl ?? undefined}
+      />
+      <Link
+        as={NextLink}
+        className="min-w-0 truncate font-medium"
+        href={`/line-accounts/${la.id}`}
+      >
+        {la.name}
+      </Link>
+    </div>
+  );
+}
+
 function LineAccountCardItem({
   la,
   systemAdmin,
@@ -304,13 +318,21 @@ function LineAccountCardItem({
     <Card className="w-full shadow-sm" role="listitem">
       <CardBody className="gap-0 p-0">
         <div className="p-4 pb-3">
-          <Link
-            as={NextLink}
-            className="text-base font-semibold text-foreground hover:opacity-80"
-            href={`/line-accounts/${la.id}`}
-          >
-            {la.name}
-          </Link>
+          <div className="flex min-w-0 items-center gap-3">
+            <Avatar
+              className="shrink-0"
+              name={la.name}
+              size="md"
+              src={la.pictureUrl ?? undefined}
+            />
+            <Link
+              as={NextLink}
+              className="min-w-0 truncate text-base font-semibold text-foreground hover:opacity-80"
+              href={`/line-accounts/${la.id}`}
+            >
+              {la.name}
+            </Link>
+          </div>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <dt className="text-default-500">Default Rich Menu</dt>
             <dd>
@@ -341,16 +363,24 @@ function LineAccountCardItem({
 export function LineAccountList({
   lineAccounts,
   systemAdmin,
+  hasRequestHint = false,
 }: {
   lineAccounts: LineAccountWithRelations[];
   systemAdmin: boolean;
+  hasRequestHint?: boolean;
 }) {
   if (lineAccounts.length === 0) {
     return (
       <Card className="w-full min-w-0 overflow-hidden border border-default-200 shadow-none">
         <CardBody>
           <EmptyState
-            description={systemAdmin ? "เพิ่มจากปุ่มด้านบน" : undefined}
+            description={
+              systemAdmin
+                ? "เพิ่มจากปุ่มด้านบน"
+                : hasRequestHint
+                  ? "กด ขอเพิ่มบัญชี เพื่อส่งคำขอให้ผู้ดูแลระบบอนุมัติ"
+                  : undefined
+            }
             title={
               systemAdmin
                 ? "ยังไม่มี LINE Account"
@@ -404,13 +434,7 @@ export function LineAccountList({
                 {lineAccounts.map((la) => (
                   <TableRow key={la.id}>
                     <TableCell>
-                      <Link
-                        as={NextLink}
-                        className="font-medium"
-                        href={`/line-accounts/${la.id}`}
-                      >
-                        {la.name}
-                      </Link>
+                      <LineAccountNameCell la={la} />
                     </TableCell>
                     <TableCell className="text-center">
                       <DefaultRichMenuChip la={la} />
@@ -458,13 +482,7 @@ export function LineAccountList({
                 {lineAccounts.map((la) => (
                   <TableRow key={la.id}>
                     <TableCell>
-                      <Link
-                        as={NextLink}
-                        className="font-medium"
-                        href={`/line-accounts/${la.id}`}
-                      >
-                        {la.name}
-                      </Link>
+                      <LineAccountNameCell la={la} />
                     </TableCell>
                     <TableCell className="text-center">
                       <DefaultRichMenuChip la={la} />

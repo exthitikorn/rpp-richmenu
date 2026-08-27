@@ -2,12 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { requireSystemAdmin } from "@/lib/access";
+import { fetchLineAccountProfile } from "@/lib/line/bot-profile";
 import { verifyLineCredentials } from "@/lib/line/verify-credentials";
 import { prisma } from "@/lib/prisma";
 import { encryptSecret } from "@/lib/secrets";
 
 const bodySchema = z.object({
-  name: z.string().min(1, "กรุณาระบุชื่อ"),
   channelId: z.string().min(1, "กรุณาระบุ Channel ID"),
   channelSecret: z.string().min(1, "กรุณาระบุ Channel Secret"),
   accessToken: z.string().min(1, "กรุณาระบุ Access Token"),
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
-    const { name, channelId, channelSecret, accessToken } = parsed.data;
+    const { channelId, channelSecret, accessToken } = parsed.data;
 
     const verified = await verifyLineCredentials({
       channelId,
@@ -41,9 +41,26 @@ export async function POST(request: Request) {
       );
     }
 
+    let profile;
+
+    try {
+      profile = await fetchLineAccountProfile(accessToken);
+    } catch (e) {
+      const message =
+        e instanceof Error
+          ? e.message
+          : "ไม่สามารถดึงข้อมูลโปรไฟล์จาก LINE ได้";
+
+      return NextResponse.json(
+        { success: false, error: message },
+        { status: 400 },
+      );
+    }
+
     await prisma.lineAccount.create({
       data: {
-        name,
+        name: profile.name,
+        pictureUrl: profile.pictureUrl,
         channelId,
         channelSecret: encryptSecret(channelSecret),
         accessToken: encryptSecret(accessToken),

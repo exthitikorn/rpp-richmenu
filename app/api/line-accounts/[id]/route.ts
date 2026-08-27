@@ -12,7 +12,6 @@ const optionalCredential = z
   .transform((v) => (v === "" ? undefined : v));
 
 const bodySchema = z.object({
-  name: z.string().min(1, "กรุณาระบุชื่อ"),
   channelSecret: optionalCredential.optional(),
   accessToken: optionalCredential.optional(),
 });
@@ -49,7 +48,7 @@ export async function PATCH(
       return NextResponse.json({ success: false, error: msg }, { status: 400 });
     }
 
-    const { name, channelSecret, accessToken } = parsed.data;
+    const { channelSecret, accessToken } = parsed.data;
 
     const verified = await verifyLineCredentialUpdates({
       channelId: account.channelId,
@@ -64,10 +63,16 @@ export async function PATCH(
       );
     }
 
+    if (!channelSecret && !accessToken) {
+      return NextResponse.json(
+        { success: false, error: "ไม่มีข้อมูลที่ต้องอัปเดต" },
+        { status: 400 },
+      );
+    }
+
     await prisma.lineAccount.update({
       where: { id },
       data: {
-        name,
         ...(channelSecret
           ? { channelSecret: encryptSecret(channelSecret) }
           : {}),

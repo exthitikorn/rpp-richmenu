@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import NextLink from "next/link";
+import { Avatar } from "@heroui/avatar";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
@@ -11,8 +12,10 @@ import { LineRichMenusOnLine } from "./LineRichMenusOnLine";
 import { RichMenusTable } from "@/app/(app)/rich-menus/RichMenusTable";
 import { lineAccountByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
+import { fetchLineAccountProfile } from "@/lib/line/bot-profile";
 import { lineAccountNameSelect } from "@/lib/line-account-select";
 import { prisma } from "@/lib/prisma";
+import { decryptSecret } from "@/lib/secrets";
 import { PageHeader } from "@/components/page-header";
 
 function webhookUrlForChannel(channelId: string): string | null {
@@ -42,7 +45,9 @@ export default async function LineAccountDetailPage({
     select: {
       id: true,
       name: true,
+      pictureUrl: true,
       channelId: true,
+      accessToken: true,
       assignments: {
         include: {
           user: {
@@ -61,6 +66,32 @@ export default async function LineAccountDetailPage({
   });
 
   if (!account) notFound();
+
+  let name = account.name;
+  let pictureUrl = account.pictureUrl;
+
+  try {
+    const profile = await fetchLineAccountProfile(
+      decryptSecret(account.accessToken),
+    );
+
+    if (
+      profile.name !== account.name ||
+      profile.pictureUrl !== account.pictureUrl
+    ) {
+      await prisma.lineAccount.update({
+        where: { id: account.id },
+        data: {
+          name: profile.name,
+          pictureUrl: profile.pictureUrl,
+        },
+      });
+    }
+    name = profile.name;
+    pictureUrl = profile.pictureUrl;
+  } catch {
+    // best-effort: keep DB values
+  }
 
   return (
     <div className="space-y-6">
@@ -81,7 +112,8 @@ export default async function LineAccountDetailPage({
           </div>
         }
         description={`ผู้ได้รับสิทธิ์ ${account.assignments.length} คน`}
-        title={account.name}
+        leading={<Avatar name={name} size="lg" src={pictureUrl ?? undefined} />}
+        title={name}
       />
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="min-w-0 space-y-6">
@@ -112,7 +144,7 @@ export default async function LineAccountDetailPage({
         </div>
         <aside className="lg:sticky lg:top-20">
           <DefaultRichMenuChatPreview
-            accountName={account.name}
+            accountName={name}
             lineAccountId={account.id}
           />
         </aside>

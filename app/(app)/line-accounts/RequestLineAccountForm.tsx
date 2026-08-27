@@ -15,7 +15,7 @@ import {
 
 import { useAppToast } from "@/components/AppToastProvider";
 
-export function CreateLineAccountForm() {
+export function RequestLineAccountForm() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const router = useRouter();
   const toast = useAppToast();
@@ -30,7 +30,7 @@ export function CreateLineAccountForm() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/line-accounts", {
+      const res = await fetch("/api/line-account-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -42,7 +42,7 @@ export function CreateLineAccountForm() {
       const data = (await res.json()) as { success?: boolean; error?: string };
 
       if (!res.ok || !data.success) {
-        const message = data.error ?? "สร้างไม่สำเร็จ";
+        const message = data.error ?? "ส่งคำขอไม่สำเร็จ";
 
         setError(message);
         toast.error(message);
@@ -55,7 +55,7 @@ export function CreateLineAccountForm() {
       setChannelSecret("");
       setAccessToken("");
       setLoading(false);
-      toast.success("สร้าง LINE Account เรียบร้อยแล้ว");
+      toast.success("ส่งคำขอเรียบร้อยแล้ว รอผู้ดูแลระบบอนุมัติ");
       router.refresh();
     } catch {
       setError("เกิดข้อผิดพลาด");
@@ -66,8 +66,8 @@ export function CreateLineAccountForm() {
 
   return (
     <>
-      <Button color="primary" onPress={onOpen}>
-        เพิ่ม LINE Account
+      <Button color="primary" variant="flat" onPress={onOpen}>
+        ขอเพิ่มบัญชี
       </Button>
       <Modal
         backdrop="blur"
@@ -78,7 +78,7 @@ export function CreateLineAccountForm() {
       >
         <ModalContent>
           <form onSubmit={handleSubmit}>
-            <ModalHeader>เพิ่ม LINE Official Account</ModalHeader>
+            <ModalHeader>ขอเพิ่ม LINE Official Account</ModalHeader>
             <ModalBody>
               {error && (
                 <p className="text-danger text-sm" role="alert">
@@ -109,8 +109,8 @@ export function CreateLineAccountForm() {
                 onValueChange={setAccessToken}
               />
               <p className="text-default-500 text-sm">
-                ระบบจะดึงชื่อและรูปโปรไฟล์จาก LINE อัตโนมัติ และตรวจสอบ Channel
-                ID, Secret และ Access Token ก่อนบันทึก
+                ระบบจะดึงชื่อและรูปโปรไฟล์จาก LINE อัตโนมัติ ตรวจสอบ credential
+                แล้วส่งคำขอให้ผู้ดูแลระบบอนุมัติ
               </p>
               <aside className="rounded-large border border-primary-100 bg-primary-50/60 p-4 text-sm text-default-700">
                 <p className="font-semibold text-default-900">
@@ -190,7 +190,7 @@ export function CreateLineAccountForm() {
                 ยกเลิก
               </Button>
               <Button color="primary" isLoading={loading} type="submit">
-                บันทึก
+                ส่งคำขอ
               </Button>
             </ModalFooter>
           </form>
