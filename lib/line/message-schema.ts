@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { flexContentsSchema } from "./flex-contents";
+
 export const autoResponseSettingsSchema = z.object({
   autoResponseEnabled: z.boolean(),
   fallbackMessage: z
@@ -49,13 +51,18 @@ export const flexFormSchema = z.discriminatedUnion("pattern", [
   flexJsonFormSchema,
 ]);
 
+export const flexBuilderSchema = z.object({
+  altText: z.string().trim().min(1, "กรุณาระบุข้อความสำรอง"),
+  contents: flexContentsSchema,
+});
+
 export const createKeywordRuleSchema = z
   .object({
     keyword: z.string().trim().min(1, "กรุณาระบุ keyword"),
     isEnabled: z.boolean().default(true),
     responseType: z.enum(["TEXT", "FLEX"]),
     text: z.string().trim().optional(),
-    flex: flexFormSchema.optional(),
+    flex: flexBuilderSchema.optional(),
   })
   .superRefine((val, ctx) => {
     if (val.responseType === "TEXT") {

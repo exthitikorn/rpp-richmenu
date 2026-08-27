@@ -5,7 +5,7 @@ import type {
 } from "@/app/generated/prisma/client";
 import type { z } from "zod";
 
-import { buildFlexPayloadFromForm } from "./flex-builder";
+import { flexContentsSchema } from "./flex-contents";
 import { normalizeKeyword } from "./keyword-match";
 import {
   createKeywordRuleSchema,
@@ -42,22 +42,24 @@ export function buildStoredKeywordRulePayload(
     };
   }
 
-  let flexPayload;
+  let payload;
 
   try {
-    flexPayload = buildFlexPayloadFromForm(parsed.flex!);
+    const contents = flexContentsSchema.parse(parsed.flex!.contents);
+
+    payload = storedFlexPayloadSchema.parse({
+      altText: parsed.flex!.altText,
+      contents,
+    });
   } catch {
     throw new Error("INVALID_FLEX");
   }
-
-  const payload = storedFlexPayloadSchema.parse(flexPayload);
-  const flexSource = parsed.flex!.pattern === "json" ? "JSON" : "FORM";
 
   return {
     keyword,
     isEnabled: parsed.isEnabled ?? true,
     responseType: "FLEX",
     responsePayload: payload as Prisma.InputJsonValue,
-    flexSource,
+    flexSource: "JSON",
   };
 }
