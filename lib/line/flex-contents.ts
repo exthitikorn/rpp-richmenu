@@ -1,81 +1,68 @@
 import { z } from "zod";
 
-const httpsUrl = z
-  .string()
-  .url()
-  .refine((u) => u.startsWith("https://"), {
-    message: "URL ต้องขึ้นต้นด้วย https://",
+/** Loose Flex contents — accepts LINE Flex Message Simulator JSON. */
+export const flexContentsSchema = z
+  .object({
+    type: z.enum(["bubble", "carousel"], {
+      message: "root ต้องเป็น bubble หรือ carousel",
+    }),
+  })
+  .passthrough()
+  .superRefine((val, ctx) => {
+    if (val.type !== "carousel") return;
+
+    const contents = (val as { contents?: unknown }).contents;
+
+    if (!Array.isArray(contents)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "carousel ต้องมี contents เป็น array",
+        path: ["contents"],
+      });
+
+      return;
+    }
+
+    if (contents.length < 2 || contents.length > 12) {
+      ctx.addIssue({
+        code: "custom",
+        message: "carousel ต้องมี 2–12 บับเบิล",
+        path: ["contents"],
+      });
+    }
   });
 
-const textSchema = z.strictObject({
-  type: z.literal("text"),
-  text: z.string(),
-  wrap: z.boolean().optional(),
-  weight: z.string().optional(),
-  size: z.string().optional(),
-  color: z.string().optional(),
-});
-
-const imageSchema = z.strictObject({
-  type: z.literal("image"),
-  url: httpsUrl,
-  size: z.string().optional(),
-  aspectRatio: z.string().optional(),
-  aspectMode: z.enum(["cover", "fit"]).optional(),
-});
-
-const buttonSchema = z.strictObject({
-  type: z.literal("button"),
-  action: z.strictObject({
-    type: z.literal("uri"),
-    label: z.string().trim().min(1),
-    uri: httpsUrl,
-  }),
-});
-
-const separatorSchema = z.strictObject({
-  type: z.literal("separator"),
-  margin: z.string().optional(),
-  color: z.string().optional(),
-});
-
-let boxSchema: z.ZodTypeAny;
-
-// z.union: ZodTypeAny (lazy box) is not $ZodTypeDiscriminable, so
-// discriminatedUnion cannot type-check the circular box/node schemas.
-const flexNodeSchema: z.ZodTypeAny = z.lazy(() =>
-  z.union([boxSchema, textSchema, imageSchema, buttonSchema, separatorSchema]),
-);
-
-boxSchema = z.strictObject({
-  type: z.literal("box"),
-  layout: z.enum(["vertical", "horizontal"]),
-  contents: z
-    .array(flexNodeSchema)
-    .min(1, "กล่องต้องมีองค์ประกอบอย่างน้อย 1 รายการ"),
-  spacing: z.string().optional(),
-  margin: z.string().optional(),
-});
-
-const bubbleSchema = z.strictObject({
-  type: z.literal("bubble"),
-  body: boxSchema,
-  hero: imageSchema.optional(),
-  footer: boxSchema.optional(),
-});
-
-const carouselSchema = z.strictObject({
-  type: z.literal("carousel"),
-  contents: z.array(bubbleSchema).min(2).max(10),
-});
-
-export const flexContentsSchema = z.union([bubbleSchema, carouselSchema]);
-
 export type FlexContents = z.infer<typeof flexContentsSchema>;
-export type FlexBubble = z.infer<typeof bubbleSchema>;
-export type FlexCarousel = z.infer<typeof carouselSchema>;
 
-export function emptyBubble(): FlexBubble {
+/**
+ * Accept either raw bubble/carousel, or a full Flex Message
+ * `{ type: "flex", altText?, contents }` from the Simulator export.
+ */
+export function unwrapFlexJson(input: unknown): {
+  contents: unknown;
+  altText?: string;
+} {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    return { contents: input };
+  }
+
+  const rec = input as Record<string, unknown>;
+
+  if (
+    rec.type === "flex" &&
+    rec.contents !== null &&
+    typeof rec.contents === "object"
+  ) {
+    return {
+      contents: rec.contents,
+      altText: typeof rec.altText === "string" ? rec.altText : undefined,
+    };
+  }
+
+  return { contents: input };
+}
+
+export function emptyBubble(): FlexContents {
   return {
     type: "bubble",
     body: {
@@ -83,13 +70,6 @@ export function emptyBubble(): FlexBubble {
       layout: "vertical",
       contents: [{ type: "text", text: "ข้อความ", wrap: true }],
     },
-  };
-}
-
-export function emptyCarousel(): FlexCarousel {
-  return {
-    type: "carousel",
-    contents: [emptyBubble(), emptyBubble()],
   };
 }
 

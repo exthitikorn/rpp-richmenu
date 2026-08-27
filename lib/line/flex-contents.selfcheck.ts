@@ -2,15 +2,12 @@ import assert from "node:assert/strict";
 
 import {
   emptyBubble,
-  emptyCarousel,
   flexContentsSchema,
+  unwrapFlexJson,
 } from "./flex-contents";
 
 assert.equal(emptyBubble().type, "bubble");
-assert.equal(emptyCarousel().type, "carousel");
-assert.equal(emptyCarousel().contents.length, 2);
 assert.ok(flexContentsSchema.safeParse(emptyBubble()).success);
-assert.ok(flexContentsSchema.safeParse(emptyCarousel()).success);
 
 assert.ok(
   flexContentsSchema.safeParse({
@@ -23,54 +20,49 @@ assert.ok(
   }).success,
 );
 
-assert.equal(
+// Simulator-style extras must be accepted
+assert.ok(
   flexContentsSchema.safeParse({
     type: "bubble",
-    body: {
-      type: "box",
-      layout: "vertical",
-      contents: [{ type: "video", url: "https://example.com/a.mp4" }],
-    },
-  }).success,
-  false,
-);
-
-assert.equal(
-  flexContentsSchema.safeParse({
-    type: "bubble",
-    body: { type: "box", layout: "vertical", contents: [] },
-  }).success,
-  false,
-);
-
-assert.equal(
-  flexContentsSchema.safeParse({
-    type: "bubble",
+    size: "mega",
     header: {
       type: "box",
       layout: "vertical",
       contents: [{ type: "text", text: "h" }],
     },
+    hero: {
+      type: "image",
+      url: "https://example.com/a.jpg",
+      size: "full",
+      aspectMode: "cover",
+    },
     body: {
       type: "box",
       layout: "vertical",
-      contents: [{ type: "text", text: "hi" }],
+      contents: [
+        { type: "text", text: "hi" },
+        { type: "video", url: "https://example.com/a.mp4" },
+      ],
     },
+    footer: {
+      type: "box",
+      layout: "vertical",
+      contents: [
+        {
+          type: "button",
+          action: { type: "uri", label: "Open", uri: "https://example.com" },
+        },
+      ],
+    },
+    styles: { body: { backgroundColor: "#FFFFFF" } },
   }).success,
-  false,
 );
 
-assert.equal(
+assert.ok(
   flexContentsSchema.safeParse({
-    type: "bubble",
-    styles: { body: { backgroundColor: "#fff" } },
-    body: {
-      type: "box",
-      layout: "vertical",
-      contents: [{ type: "text", text: "hi" }],
-    },
+    type: "carousel",
+    contents: [emptyBubble(), emptyBubble()],
   }).success,
-  false,
 );
 
 assert.equal(
@@ -79,6 +71,19 @@ assert.equal(
     contents: [emptyBubble()],
   }).success,
   false,
-); // need 2–10
+);
+
+assert.equal(flexContentsSchema.safeParse({ type: "flex" }).success, false);
+
+{
+  const wrapped = unwrapFlexJson({
+    type: "flex",
+    altText: "hello",
+    contents: emptyBubble(),
+  });
+
+  assert.equal(wrapped.altText, "hello");
+  assert.ok(flexContentsSchema.safeParse(wrapped.contents).success);
+}
 
 console.log("flex-contents.selfcheck: ok");

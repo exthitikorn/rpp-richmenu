@@ -168,15 +168,11 @@ export function AutoResponseChatPreview({
   responseType,
   text,
   contents,
-  selectedPath,
-  onSelectPath,
 }: {
   accountName: string;
   responseType: "TEXT" | "FLEX";
   text: string;
   contents: unknown;
-  selectedPath: string;
-  onSelectPath: (path: string) => void;
 }) {
   const iconBtn = "h-[18px] w-[18px] shrink-0 text-[#1c1c1e]";
   const showText = responseType === "TEXT" && text.trim() !== "";
@@ -243,11 +239,7 @@ export function AutoResponseChatPreview({
             <div className="flex items-end gap-1.5">
               <OaAvatar />
               <div className="min-w-0 flex-1">
-                <FlexMessagePreview
-                  contents={contents}
-                  selectedPath={selectedPath}
-                  onSelectPath={onSelectPath}
-                />
+                <FlexMessagePreview contents={contents} />
               </div>
             </div>
           ) : (

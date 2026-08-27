@@ -365,12 +365,12 @@ function FlexNode({
 
 export function FlexMessagePreview({
   contents,
-  selectedPath,
-  onSelectPath,
+  selectedPath = "",
+  onSelectPath = () => undefined,
 }: {
   contents: unknown;
-  selectedPath: string;
-  onSelectPath: (path: string) => void;
+  selectedPath?: string;
+  onSelectPath?: (path: string) => void;
 }) {
   return (
     <FlexNode

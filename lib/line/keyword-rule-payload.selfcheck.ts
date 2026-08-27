@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
-import { buildStoredKeywordRulePayload } from "./keyword-rule-payload";
 import { emptyBubble } from "./flex-contents";
+import { buildStoredKeywordRulePayload } from "./keyword-rule-payload";
 
 const text = buildStoredKeywordRulePayload({
   keyword: "  Hello ",
@@ -10,20 +10,35 @@ const text = buildStoredKeywordRulePayload({
   text: "สวัสดี",
 });
 
-assert.equal(text.keyword, "hello"); // normalizeKeyword lowercases — verify actual normalize behavior in keyword-match.ts and match it
+assert.equal(text.keyword, "hello");
 assert.equal(text.flexSource, null);
 
 const flex = buildStoredKeywordRulePayload({
   keyword: "menu",
   isEnabled: true,
   responseType: "FLEX",
-  flex: { altText: "เมนู", contents: emptyBubble() },
+  flex: {
+    altText: "เมนู",
+    contents: {
+      type: "bubble",
+      header: {
+        type: "box",
+        layout: "vertical",
+        contents: [{ type: "text", text: "หัว" }],
+      },
+      body: {
+        type: "box",
+        layout: "vertical",
+        contents: [{ type: "text", text: "เนื้อหา" }],
+      },
+    },
+  },
 });
 
 assert.equal(flex.flexSource, "JSON");
 assert.equal((flex.responsePayload as { altText: string }).altText, "เมนู");
 
-function assertInvalidFlex(contents: unknown, altText = "bad") {
+{
   let threw = false;
 
   try {
@@ -31,42 +46,14 @@ function assertInvalidFlex(contents: unknown, altText = "bad") {
       keyword: "x",
       isEnabled: true,
       responseType: "FLEX",
-      flex: { altText, contents },
-    } as Parameters<typeof buildStoredKeywordRulePayload>[0]);
+      flex: { altText: "bad", contents: { type: "flex" } },
+    } as unknown as Parameters<typeof buildStoredKeywordRulePayload>[0]);
   } catch {
     threw = true;
   }
 
   assert.equal(threw, true);
 }
-
-assertInvalidFlex({
-  type: "bubble",
-  body: {
-    type: "box",
-    layout: "vertical",
-    contents: [{ type: "video", url: "https://example.com/v.mp4" }],
-  },
-});
-
-assertInvalidFlex({
-  type: "bubble",
-  body: { type: "box", layout: "vertical", contents: [] },
-});
-
-assertInvalidFlex({
-  type: "bubble",
-  header: {
-    type: "box",
-    layout: "vertical",
-    contents: [{ type: "text", text: "h" }],
-  },
-  body: {
-    type: "box",
-    layout: "vertical",
-    contents: [{ type: "text", text: "hi" }],
-  },
-});
 
 {
   let threw = false;
