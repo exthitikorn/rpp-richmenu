@@ -11,6 +11,7 @@ import { Radio, RadioGroup } from "@heroui/radio";
 import { Switch } from "@heroui/switch";
 import { Tab, Tabs } from "@heroui/tabs";
 
+import { AutoResponseChatPreview } from "./AutoResponseChatPreview";
 import { FlexPropertiesPanel } from "./FlexPropertiesPanel";
 import { FlexStructurePanel } from "./FlexStructurePanel";
 
@@ -351,40 +352,14 @@ export function KeywordRuleBuilder({
           <p className="mb-2 text-sm font-semibold text-default-700">
             ตัวอย่างแชท
           </p>
-          <div
-            aria-label={`จำลองแชท LINE ของ ${accountName ?? "LINE OA"}`}
-            className="mx-auto flex min-h-[420px] w-full max-w-[320px] flex-col overflow-hidden rounded-[2rem] border border-default-300 bg-black shadow-sm"
-          >
-            <div className="flex min-h-0 flex-1 flex-col bg-[#849bb4]">
-              <div className="flex items-center justify-between px-5 pt-2.5 text-[10px] font-semibold text-black">
-                <span>11:48</span>
-              </div>
-              <div className="bg-white/35 px-3 py-1.5 text-[13px] font-semibold text-black">
-                <p className="truncate">{accountName ?? "LINE OA"}</p>
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col gap-2.5 px-2.5 pb-2 pt-2">
-                {responseType === "TEXT" && text.trim() ? (
-                  <div className="flex items-end gap-1.5">
-                    <span
-                      aria-hidden
-                      className="mb-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#ffcc00] text-[8px] font-bold text-[#1c1c1e]"
-                    >
-                      OA
-                    </span>
-                    <div className="whitespace-pre-wrap rounded-2xl rounded-bl-md bg-white px-3 py-2 text-[12px] leading-snug text-black shadow-sm">
-                      {text}
-                    </div>
-                  </div>
-                ) : (
-                  <p className="py-4 text-center text-xs text-white/80">
-                    {responseType === "FLEX"
-                      ? "ตัวอย่าง Flex จะแสดงในขั้นตอนถัดไป"
-                      : "พิมพ์ข้อความเพื่อดูตัวอย่าง"}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
+          <AutoResponseChatPreview
+            accountName={accountName ?? "LINE OA"}
+            contents={contents}
+            responseType={responseType}
+            selectedPath={selectedPath}
+            text={text}
+            onSelectPath={setSelectedPath}
+          />
         </aside>
       </div>
     </div>
