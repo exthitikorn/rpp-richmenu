@@ -1,4 +1,4 @@
-import type { LineRichMenuPayload } from "./types";
+import type { LineOutgoingMessage, LineRichMenuPayload } from "./types";
 
 const LINE_API_BASE = "https://api.line.me/v2/bot";
 const LINE_DATA_API_BASE = "https://api-data.line.me/v2/bot";
@@ -373,4 +373,22 @@ export async function getBotInfo(accessToken: string): Promise<{
     displayName,
     ...(data.pictureUrl ? { pictureUrl: data.pictureUrl } : {}),
   };
+}
+
+export async function replyMessage(
+  accessToken: string,
+  replyToken: string,
+  messages: LineOutgoingMessage[],
+): Promise<void> {
+  const res = await lineFetch("/message/reply", accessToken, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ replyToken, messages }),
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+
+    throw new Error(`LINE API replyMessage: ${res.status} ${err}`);
+  }
 }

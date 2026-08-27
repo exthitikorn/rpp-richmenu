@@ -28,6 +28,16 @@ enum LineAccountRequestStatus {
   CANCELLED
 }
 
+enum KeywordResponseType {
+  TEXT
+  FLEX
+}
+
+enum FlexMessageSource {
+  FORM
+  JSON
+}
+
 model User {
   id                  String                  @id @default(cuid())
   ldapUsername        String?                 @unique
@@ -62,10 +72,15 @@ model LineAccount {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
 
-  assignments         LineAccountAssignment[]
-  richMenus           RichMenu[]
-  clickEvents         ClickEvent[]
-  lineAccountRequests LineAccountRequest[]
+  autoResponseEnabled  Boolean @default(false)
+  fallbackMessage      String? @db.Text
+
+  assignments            LineAccountAssignment[]
+  richMenus              RichMenu[]
+  clickEvents            ClickEvent[]
+  lineAccountRequests    LineAccountRequest[]
+  keywordResponseRules   KeywordResponseRule[]
+  unmatchedMessages      UnmatchedMessage[]
 }
 
 model LineAccountRequest {
@@ -168,4 +183,33 @@ model ClickEvent {
   richMenu    RichMenu    @relation(fields: [richMenuId], references: [id])
 
   @@index([lineAccountId, richMenuId, createdAt])
+}
+
+model KeywordResponseRule {
+  id              String              @id @default(cuid())
+  lineAccountId   String
+  keyword         String
+  isEnabled       Boolean             @default(true)
+  responseType    KeywordResponseType
+  responsePayload Json
+  flexSource      FlexMessageSource?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  lineAccount LineAccount @relation(fields: [lineAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([lineAccountId, keyword])
+  @@index([lineAccountId, isEnabled])
+}
+
+model UnmatchedMessage {
+  id            String   @id @default(cuid())
+  lineAccountId String
+  lineUserId    String
+  messageText   String   @db.Text
+  createdAt     DateTime @default(now())
+
+  lineAccount LineAccount @relation(fields: [lineAccountId], references: [id], onDelete: Cascade)
+
+  @@index([lineAccountId, createdAt])
 }
