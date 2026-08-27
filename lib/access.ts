@@ -83,6 +83,37 @@ export function deployLogWhere(
   };
 }
 
+export function keywordResponseRuleWhere(
+  user: UserWithAssignments,
+): Prisma.KeywordResponseRuleWhereInput {
+  if (isSystemAdmin(user)) return {};
+
+  return {
+    lineAccount: {
+      assignments: { some: { userId: user.id } },
+    },
+  };
+}
+
+export function keywordResponseRuleByIdWhere(
+  user: UserWithAssignments,
+  id: string,
+): Prisma.KeywordResponseRuleWhereInput {
+  return { id, ...keywordResponseRuleWhere(user) };
+}
+
+export function unmatchedMessageWhere(
+  user: UserWithAssignments,
+): Prisma.UnmatchedMessageWhereInput {
+  if (isSystemAdmin(user)) return {};
+
+  return {
+    lineAccount: {
+      assignments: { some: { userId: user.id } },
+    },
+  };
+}
+
 export async function requireSystemAdmin(): Promise<UserWithAssignments> {
   const user = await getCurrentUser();
 

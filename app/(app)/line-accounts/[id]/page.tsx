@@ -105,6 +105,14 @@ export default async function LineAccountDetailPage({
             >
               นำเข้า Rich Menu
             </Button>
+            <Button
+              as={NextLink}
+              color="primary"
+              href={`/line-accounts/${account.id}/auto-response`}
+              variant="flat"
+            >
+              ตอบกลับอัตโนมัติ
+            </Button>
             <LineAccountWebhookCopy
               channelId={account.channelId}
               webhookUrl={webhookUrlForChannel(account.channelId)}

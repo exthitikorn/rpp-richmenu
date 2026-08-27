@@ -2,6 +2,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 
 import { NextResponse } from "next/server";
 
+import { handleAutoResponse } from "@/lib/line/handle-auto-response";
 import { prisma } from "@/lib/prisma";
 import { decryptSecret } from "@/lib/secrets";
 
@@ -51,7 +52,13 @@ export async function POST(
   const rawBody = await request.text();
   const lineAccount = await prisma.lineAccount.findUnique({
     where: { channelId },
-    select: { id: true, channelSecret: true },
+    select: {
+      id: true,
+      channelSecret: true,
+      accessToken: true,
+      autoResponseEnabled: true,
+      fallbackMessage: true,
+    },
   });
 
   if (!lineAccount) {
@@ -67,8 +74,10 @@ export async function POST(
   let body: {
     events?: Array<{
       type: string;
-      source?: { userId?: string };
+      replyToken?: string;
+      source?: { type?: string; userId?: string };
       postback?: { data?: string };
+      message?: { type?: string; text?: string };
     }>;
   };
 
@@ -82,33 +91,37 @@ export async function POST(
 
   for (const event of events) {
     if (
-      event.type !== "postback" ||
-      !event.source?.userId ||
-      !event.postback?.data
-    )
-      continue;
-    const parsed = parseClickData(event.postback.data);
+      event.type === "postback" &&
+      event.source?.userId &&
+      event.postback?.data
+    ) {
+      const parsed = parseClickData(event.postback.data);
 
-    if (!parsed) continue;
+      if (!parsed) continue;
 
-    const menu = await prisma.richMenu.findFirst({
-      where: {
-        id: parsed.richMenuId,
-        lineAccountId: lineAccount.id,
-      },
-      select: { id: true },
-    });
+      const menu = await prisma.richMenu.findFirst({
+        where: {
+          id: parsed.richMenuId,
+          lineAccountId: lineAccount.id,
+        },
+        select: { id: true },
+      });
 
-    if (!menu) continue;
+      if (!menu) continue;
 
-    await prisma.clickEvent.create({
-      data: {
-        lineAccountId: lineAccount.id,
-        richMenuId: parsed.richMenuId,
-        areaIndex: parsed.areaIndex,
-        lineUserId: event.source.userId,
-      },
-    });
+      await prisma.clickEvent.create({
+        data: {
+          lineAccountId: lineAccount.id,
+          richMenuId: parsed.richMenuId,
+          areaIndex: parsed.areaIndex,
+          lineUserId: event.source.userId,
+        },
+      });
+    }
+
+    if (event.type === "message" && event.message?.type === "text") {
+      await handleAutoResponse(lineAccount, event);
+    }
   }
 
   return NextResponse.json({ ok: true });

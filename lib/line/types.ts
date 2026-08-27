@@ -27,6 +27,14 @@ export interface LineAccountCredentials {
   accessToken: string;
 }
 
+export type LineOutgoingMessage =
+  | { type: "text"; text: string }
+  | {
+      type: "flex";
+      altText: string;
+      contents: Record<string, unknown>;
+    };
+
 /** คืน action ที่กรองเฉพาะฟิลด์ที่ LINE รองรับ เพื่อไม่ให้ฟิลด์เก่า (เช่น text) ทำให้ LINE ตีผิดเป็น message */
 export function normalizeRichMenuAction(
   actionType: string,
