@@ -58,5 +58,7 @@ CLAUDE.md
 #vscode
 .vscode
 
-# docs
-docs/
+# docs (keep superpowers specs/plans tracked)
+docs/*
+!docs/superpowers/
+!docs/superpowers/**/
