@@ -114,16 +114,22 @@ export function KeywordRuleBuilder({
   const [editorTab, setEditorTab] = useState<EditorTab>(flexStart.editorTab);
   const [jsonDraft, setJsonDraft] = useState(flexStart.jsonDraft);
   const [jsonError, setJsonError] = useState(flexStart.jsonError);
+  const [builderLocked, setBuilderLocked] = useState(
+    flexStart.editorTab === "json" && flexStart.jsonError !== "",
+  );
   const [saving, setSaving] = useState(false);
 
-  function applyJsonDraft(): FlexContents | null {
+  function applyJsonDraft(options?: {
+    toastOnError?: boolean;
+  }): FlexContents | null {
+    const toastOnError = options?.toastOnError ?? true;
     let parsedJson: unknown;
 
     try {
       parsedJson = JSON.parse(jsonDraft);
     } catch {
       setJsonError("JSON ไม่ถูกต้อง — แก้ก่อนกลับไปตัวสร้าง");
-      toast.error("JSON ไม่ถูกต้อง");
+      if (toastOnError) toast.error("JSON ไม่ถูกต้อง");
 
       return null;
     }
@@ -132,7 +138,7 @@ export function KeywordRuleBuilder({
 
     if (!checked.success) {
       setJsonError("Flex JSON ไม่ถูกต้อง — แก้ก่อนกลับไปตัวสร้าง");
-      toast.error("Flex JSON ไม่ถูกต้อง");
+      if (toastOnError) toast.error("Flex JSON ไม่ถูกต้อง");
 
       return null;
     }
@@ -140,6 +146,7 @@ export function KeywordRuleBuilder({
     setContents(checked.data);
     setSelectedPath(defaultSelectedPath(checked.data));
     setJsonError("");
+    setBuilderLocked(false);
 
     return checked.data;
   }
@@ -289,7 +296,7 @@ export function KeywordRuleBuilder({
                 selectedKey={editorTab}
                 onSelectionChange={(key) => handleEditorTab(String(key))}
               >
-                <Tab key="builder" title="ตัวสร้าง">
+                <Tab key="builder" isDisabled={builderLocked} title="ตัวสร้าง">
                   <FlexStructurePanel
                     contents={contents}
                     selectedPath={selectedPath}
@@ -308,6 +315,7 @@ export function KeywordRuleBuilder({
                     minRows={10}
                     placeholder='{"type":"bubble",...}'
                     value={jsonDraft}
+                    onBlur={() => applyJsonDraft({ toastOnError: false })}
                     onValueChange={(v) => {
                       setJsonDraft(v);
                       setJsonError("");
