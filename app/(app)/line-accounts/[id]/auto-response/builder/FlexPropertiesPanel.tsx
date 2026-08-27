@@ -111,7 +111,7 @@ export function FlexPropertiesPanel({
           onValueChange={(v) => setField("text", v)}
         />
         <Switch
-          isSelected={rec.wrap !== false}
+          isSelected={rec.wrap === true}
           onValueChange={(v) => setField("wrap", v)}
         >
           ขึ้นบรรทัดใหม่

@@ -28,6 +28,10 @@ export type BuilderRule = {
 
 type EditorTab = "builder" | "json";
 
+function defaultSelectedPath(contents: FlexContents): string {
+  return contents.type === "carousel" ? "contents.0.body" : "body";
+}
+
 function asRecord(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -103,7 +107,9 @@ export function KeywordRuleBuilder({
   );
   const [altText, setAltText] = useState(flexStart.altText);
   const [contents, setContents] = useState<FlexContents>(flexStart.contents);
-  const [selectedPath, setSelectedPath] = useState("body");
+  const [selectedPath, setSelectedPath] = useState(() =>
+    defaultSelectedPath(flexStart.contents),
+  );
   const [editorTab, setEditorTab] = useState<EditorTab>(flexStart.editorTab);
   const [jsonDraft, setJsonDraft] = useState(flexStart.jsonDraft);
   const [jsonError, setJsonError] = useState(flexStart.jsonError);
@@ -131,6 +137,7 @@ export function KeywordRuleBuilder({
     }
 
     setContents(checked.data);
+    setSelectedPath(defaultSelectedPath(checked.data));
     setJsonError("");
 
     return checked.data;
@@ -327,12 +334,16 @@ export function KeywordRuleBuilder({
               value={text}
               onValueChange={setText}
             />
-          ) : (
+          ) : editorTab === "builder" ? (
             <FlexPropertiesPanel
               contents={contents}
               selectedPath={selectedPath}
               onChangeContents={(next) => setContents(next as FlexContents)}
             />
+          ) : (
+            <p className="text-sm text-default-500">
+              กำลังแก้ JSON — สลับไปแท็บ Builder เพื่อแก้ properties
+            </p>
           )}
         </section>
 
