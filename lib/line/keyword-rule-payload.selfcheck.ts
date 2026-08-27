@@ -72,4 +72,4 @@ assert.equal((flex.responsePayload as { altText: string }).altText, "เมน�
   assert.equal(threw, true);
 }
 
-console.log("keyword-rule-payload.selfcheck: ok");
+// console.log("keyword-rule-payload.selfcheck: ok");

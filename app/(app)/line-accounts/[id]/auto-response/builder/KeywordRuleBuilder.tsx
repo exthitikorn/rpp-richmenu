@@ -2,7 +2,7 @@
 
 import type { FlexContents } from "@/lib/line/flex-contents";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
@@ -23,6 +23,7 @@ import {
 } from "@/lib/line/flex-contents";
 
 const FLEX_SIMULATOR_URL = "https://developers.line.biz/flex-simulator/";
+const JSON_APPLY_MS = 350;
 
 export type BuilderRule = {
   id: string;
@@ -42,6 +43,38 @@ function payloadText(payload: unknown): string {
   const rec = asRecord(payload);
 
   return typeof rec?.text === "string" ? rec.text : "";
+}
+
+function parseFlexDraft(
+  draft: string,
+):
+  | { ok: true; contents: FlexContents; altText?: string }
+  | { ok: false; error: string } {
+  let parsedJson: unknown;
+
+  try {
+    parsedJson = JSON.parse(draft);
+  } catch {
+    return { ok: false, error: "JSON ไม่ถูกต้อง" };
+  }
+
+  const unwrapped = unwrapFlexJson(parsedJson);
+  const checked = flexContentsSchema.safeParse(unwrapped.contents);
+
+  if (!checked.success) {
+    const issue = checked.error.issues[0];
+
+    return {
+      ok: false,
+      error: issue?.message ?? "Flex JSON ไม่ถูกต้อง",
+    };
+  }
+
+  return {
+    ok: true,
+    contents: checked.data,
+    altText: unwrapped.altText,
+  };
 }
 
 function hydrateFlex(payload: unknown): {
@@ -68,7 +101,7 @@ function hydrateFlex(payload: unknown): {
     altText,
     contents: emptyBubble(),
     jsonDraft: JSON.stringify(raw, null, 2),
-    jsonError: "Flex JSON ไม่ถูกต้อง — แก้แล้วกดใช้ JSON",
+    jsonError: "Flex JSON ไม่ถูกต้อง — แก้ในช่อง JSON",
   };
 }
 
@@ -108,45 +141,27 @@ export function KeywordRuleBuilder({
   const [jsonError, setJsonError] = useState(flexStart.jsonError);
   const [saving, setSaving] = useState(false);
 
-  function applyJsonDraft(options?: {
-    toastOnError?: boolean;
-  }): FlexContents | null {
-    const toastOnError = options?.toastOnError ?? true;
-    let parsedJson: unknown;
+  useEffect(() => {
+    if (responseType !== "FLEX") return;
 
-    try {
-      parsedJson = JSON.parse(jsonDraft);
-    } catch {
-      setJsonError("JSON ไม่ถูกต้อง");
-      if (toastOnError) toast.error("JSON ไม่ถูกต้อง");
+    const timer = setTimeout(() => {
+      const parsed = parseFlexDraft(jsonDraft);
 
-      return null;
-    }
+      if (!parsed.ok) {
+        setJsonError(parsed.error);
 
-    const unwrapped = unwrapFlexJson(parsedJson);
+        return;
+      }
 
-    if (unwrapped.altText && !altText.trim()) {
-      setAltText(unwrapped.altText);
-    }
+      setJsonError("");
+      setContents(parsed.contents);
+      if (parsed.altText) {
+        setAltText((prev) => (prev.trim() ? prev : parsed.altText!));
+      }
+    }, JSON_APPLY_MS);
 
-    const checked = flexContentsSchema.safeParse(unwrapped.contents);
-
-    if (!checked.success) {
-      const issue = checked.error.issues[0];
-      const msg = issue?.message ?? "Flex JSON ไม่ถูกต้อง";
-
-      setJsonError(msg);
-      if (toastOnError) toast.error(msg);
-
-      return null;
-    }
-
-    setContents(checked.data);
-    setJsonDraft(JSON.stringify(checked.data, null, 2));
-    setJsonError("");
-
-    return checked.data;
-  }
+    return () => clearTimeout(timer);
+  }, [jsonDraft, responseType]);
 
   async function handleSave() {
     setSaving(true);
@@ -157,19 +172,34 @@ export function KeywordRuleBuilder({
       if (responseType === "TEXT") {
         body = { keyword, isEnabled, responseType: "TEXT", text };
       } else {
-        const nextContents = applyJsonDraft();
+        const parsed = parseFlexDraft(jsonDraft);
 
-        if (!nextContents) {
+        if (!parsed.ok) {
+          setJsonError(parsed.error);
+          toast.error(parsed.error);
           setSaving(false);
 
           return;
+        }
+
+        const nextAlt = altText.trim() || parsed.altText?.trim() || "";
+
+        if (!nextAlt) {
+          toast.error("กรุณาระบุข้อความสำรอง");
+          setSaving(false);
+
+          return;
+        }
+
+        if (parsed.altText && !altText.trim()) {
+          setAltText(parsed.altText);
         }
 
         body = {
           keyword,
           isEnabled,
           responseType: "FLEX",
-          flex: { altText, contents: nextContents },
+          flex: { altText: nextAlt, contents: parsed.contents },
         };
       }
 
@@ -207,29 +237,22 @@ export function KeywordRuleBuilder({
       <Card className="border border-default-200 shadow-none">
         <CardBody className="gap-4 p-4">
           <PageHeader
-            actions={
-              <div className="flex gap-2">
-                <Button as={NextLink} href={listHref} variant="light">
-                  กลับ
-                </Button>
-                <Button
-                  color="primary"
-                  isLoading={saving}
-                  onPress={() => void handleSave()}
-                >
-                  บันทึก
-                </Button>
-              </div>
-            }
             description={accountName}
             title={mode === "edit" ? "แก้ไข Keyword" : "เพิ่ม Keyword"}
           />
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
+          <div
+            className={
+              responseType === "FLEX"
+                ? "grid grid-cols-1 gap-4 lg:grid-cols-[minmax(260px,300px)_minmax(0,1fr)_320px] lg:items-start"
+                : "grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
+            }
+          >
             <section className="space-y-4">
               <Input
                 isRequired
                 label="Keyword"
+                labelPlacement="outside"
                 placeholder="ใส่ keyword ที่ต้องการตอบกลับ"
                 value={keyword}
                 onValueChange={setKeyword}
@@ -239,8 +262,8 @@ export function KeywordRuleBuilder({
               </Switch>
               <RadioGroup
                 classNames={{
-                  base: "flex-row flex-wrap items-center gap-x-4 gap-y-2",
-                  label: "mb-0 shrink-0",
+                  base: "flex flex-col gap-2",
+                  label: "mb-0",
                   wrapper: "gap-4",
                 }}
                 label="ประเภทข้อความตอบ"
@@ -273,67 +296,79 @@ export function KeywordRuleBuilder({
                     value={altText}
                     onValueChange={setAltText}
                   />
-                  <div className="rounded-lg border border-default-200 bg-default-50 px-3 py-2 text-sm text-default-700">
-                    ออกแบบ Flex ที่{" "}
-                    <Link
-                      isExternal
-                      showAnchorIcon
-                      href={FLEX_SIMULATOR_URL}
-                      size="sm"
-                    >
-                      Flex Message Simulator
-                    </Link>{" "}
-                    แล้วคัดลอก JSON มาวางด้านล่าง (root ต้องเป็น{" "}
-                    <code className="text-xs">bubble</code> หรือ{" "}
-                    <code className="text-xs">carousel</code>)
-                  </div>
-                  <Textarea
-                    classNames={{ input: "font-mono text-xs" }}
-                    description="วาง contents (bubble/carousel) หรือทั้ง Flex Message จาก Simulator"
-                    label="JSON เนื้อหา Flex"
-                    labelPlacement="outside"
-                    minRows={16}
-                    placeholder='{"type":"bubble",...}'
-                    value={jsonDraft}
-                    onBlur={() => applyJsonDraft({ toastOnError: false })}
-                    onValueChange={(v) => {
-                      setJsonDraft(v);
-                      setJsonError("");
-                    }}
-                  />
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      onPress={() => {
-                        if (applyJsonDraft()) {
-                          toast.success("ใช้ JSON แล้ว — ดูตัวอย่างทางขวา");
-                        }
-                      }}
-                    >
-                      ใช้ JSON
-                    </Button>
-                    {jsonError ? (
-                      <p className="text-sm text-danger" role="alert">
-                        {jsonError}
-                      </p>
-                    ) : null}
-                  </div>
+                  <ol className="list-decimal space-y-1 rounded-lg border border-default-200 bg-default-50 px-3 py-2 pl-7 text-sm text-default-700">
+                    <li>
+                      ออกแบบที่{" "}
+                      <Link
+                        isExternal
+                        showAnchorIcon
+                        href={FLEX_SIMULATOR_URL}
+                        size="sm"
+                      >
+                        Flex Message Simulator
+                      </Link>
+                    </li>
+                    <li>วาง JSON ตรงกลาง</li>
+                    <li>ตัวอย่างอัปเดตเอง</li>
+                  </ol>
                 </>
               )}
             </section>
 
-            <aside>
+            {responseType === "FLEX" ? (
+              <section className="flex flex-col gap-2">
+                <Textarea
+                  classNames={{
+                    inputWrapper: "min-h-[calc(100vh-14rem)] items-start",
+                    input:
+                      "min-h-[calc(100vh-16rem)] font-mono text-xs leading-relaxed!",
+                  }}
+                  label="JSON เนื้อหา Flex"
+                  labelPlacement="outside"
+                  minRows={40}
+                  placeholder='{"type":"bubble",...}'
+                  value={jsonDraft}
+                  onValueChange={setJsonDraft}
+                />
+                {jsonError ? (
+                  <p className="text-sm text-danger" role="alert">
+                    {jsonError}
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
+
+            <aside className="w-full lg:w-[320px]">
               <p className="mb-2 text-sm font-semibold text-default-700">
                 ตัวอย่างแชท
               </p>
               <AutoResponseChatPreview
                 accountName={accountName ?? "LINE OA"}
                 contents={contents}
+                keyword={keyword}
                 responseType={responseType}
                 text={text}
               />
             </aside>
+          </div>
+
+          <div className="flex justify-center gap-3 border-t border-default-200 pt-4">
+            <Button
+              as={NextLink}
+              className="text-white"
+              color="warning"
+              href={listHref}
+              variant="solid"
+            >
+              กลับ
+            </Button>
+            <Button
+              color="primary"
+              isLoading={saving}
+              onPress={() => void handleSave()}
+            >
+              บันทึก
+            </Button>
           </div>
         </CardBody>
       </Card>

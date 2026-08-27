@@ -5,6 +5,7 @@ import type { CSSProperties, MouseEvent, ReactNode } from "react";
 import clsx from "clsx";
 
 const TEXT_SIZE_PX: Record<string, string> = {
+  xxs: "10px",
   xs: "11px",
   sm: "13px",
   md: "14px",
@@ -75,6 +76,20 @@ function aspectRatioCss(value: unknown): string | undefined {
   if (!match) return undefined;
 
   return `${match[1]} / ${match[2]}`;
+}
+
+function flexGrow(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value)
+    ? value
+    : undefined;
+}
+
+function spanDecoration(value: unknown): string | undefined {
+  const d = str(value);
+
+  if (d === "underline" || d === "line-through") return d;
+
+  return undefined;
 }
 
 function selectedOutline(
@@ -186,6 +201,16 @@ function FlexNode({
         selectedPath={selectedPath}
         onSelectPath={onSelectPath}
       >
+        {rec.header != null ? (
+          <div className="border-b border-default-100 px-3 py-2">
+            <FlexNode
+              node={rec.header}
+              path={joinPath(path, "header")}
+              selectedPath={selectedPath}
+              onSelectPath={onSelectPath}
+            />
+          </div>
+        ) : null}
         {rec.hero != null ? (
           <FlexNode
             node={rec.hero}
@@ -219,7 +244,9 @@ function FlexNode({
   }
 
   if (type === "box") {
-    const layout = str(rec.layout) === "horizontal" ? "horizontal" : "vertical";
+    // LINE: vertical | horizontal | baseline (baseline = row, align to text baseline)
+    const layoutRaw = str(rec.layout);
+    const isRow = layoutRaw === "horizontal" || layoutRaw === "baseline";
     const children = Array.isArray(rec.contents) ? rec.contents : [];
     const gap = spacingPx(rec.spacing);
     const margin = spacingPx(rec.margin);
@@ -231,10 +258,16 @@ function FlexNode({
         selectedPath={selectedPath}
         style={{
           display: "flex",
-          flexDirection: layout === "horizontal" ? "row" : "column",
-          alignItems: layout === "horizontal" ? "center" : "stretch",
+          flexDirection: isRow ? "row" : "column",
+          alignItems:
+            layoutRaw === "baseline"
+              ? "baseline"
+              : isRow
+                ? "center"
+                : "stretch",
           gap: gap ?? "4px",
           marginTop: margin,
+          flex: flexGrow(rec.flex),
           minHeight: children.length === 0 ? 20 : undefined,
         }}
         onSelectPath={onSelectPath}
@@ -255,6 +288,8 @@ function FlexNode({
   if (type === "text") {
     const size = TEXT_SIZE_PX[str(rec.size)] ?? "13px";
     const wrap = rec.wrap === true;
+    // LINE: if contents (spans) is set, text is ignored
+    const spans = Array.isArray(rec.contents) ? rec.contents : null;
 
     return (
       <NodeFrame
@@ -267,10 +302,34 @@ function FlexNode({
           whiteSpace: wrap ? "pre-wrap" : "nowrap",
           overflow: wrap ? "visible" : "hidden",
           textOverflow: wrap ? undefined : "ellipsis",
+          flex: flexGrow(rec.flex),
+          marginTop: spacingPx(rec.margin),
         }}
         onSelectPath={onSelectPath}
       >
-        {str(rec.text) || " "}
+        {spans && spans.length > 0
+          ? spans.map((spanNode, index) => {
+              const span = asRecord(spanNode);
+
+              if (!span || span.type !== "span") return null;
+
+              return (
+                <span
+                  key={index}
+                  style={{
+                    color: str(span.color) || undefined,
+                    fontSize: TEXT_SIZE_PX[str(span.size)] || undefined,
+                    fontWeight: span.weight === "bold" ? 700 : undefined,
+                    fontStyle:
+                      str(span.style) === "italic" ? "italic" : undefined,
+                    textDecoration: spanDecoration(span.decoration),
+                  }}
+                >
+                  {str(span.text)}
+                </span>
+              );
+            })
+          : str(rec.text) || " "}
       </NodeFrame>
     );
   }
@@ -294,6 +353,7 @@ function FlexNode({
           width,
           aspectRatio: ratio,
           marginTop: spacingPx(rec.margin),
+          flex: flexGrow(rec.flex),
         }}
         onSelectPath={onSelectPath}
       >
@@ -316,6 +376,89 @@ function FlexNode({
     );
   }
 
+  if (type === "video") {
+    const url = str(rec.url);
+    const previewUrl = str(rec.previewUrl);
+    const ratio = aspectRatioCss(rec.aspectRatio) ?? "16 / 9";
+
+    return (
+      <NodeFrame
+        className="overflow-hidden bg-default-100"
+        path={path}
+        selectedPath={selectedPath}
+        style={{
+          width: "100%",
+          aspectRatio: ratio,
+        }}
+        onSelectPath={onSelectPath}
+      >
+        {url ? (
+          <video
+            controls
+            muted
+            playsInline
+            className="h-full w-full object-cover"
+            poster={previewUrl || undefined}
+            preload="metadata"
+            src={url}
+          />
+        ) : rec.altContent != null ? (
+          <FlexNode
+            node={rec.altContent}
+            path={joinPath(path, "altContent")}
+            selectedPath={selectedPath}
+            onSelectPath={onSelectPath}
+          />
+        ) : previewUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            className="h-full w-full object-cover"
+            draggable={false}
+            src={previewUrl}
+          />
+        ) : (
+          <Placeholder type="video" />
+        )}
+      </NodeFrame>
+    );
+  }
+
+  if (type === "icon") {
+    const url = str(rec.url);
+    const height = TEXT_SIZE_PX[str(rec.size)] ?? TEXT_SIZE_PX.md;
+    const ratio = aspectRatioCss(rec.aspectRatio) ?? "1 / 1";
+
+    return (
+      <NodeFrame
+        className="shrink-0 overflow-hidden"
+        path={path}
+        selectedPath={selectedPath}
+        style={{
+          height,
+          aspectRatio: ratio,
+          marginTop: spacingPx(rec.margin),
+          flex: flexGrow(rec.flex),
+        }}
+        onSelectPath={onSelectPath}
+      >
+        {url ? (
+          // ponytail: arbitrary https URLs; next/image needs a host allowlist
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            alt=""
+            className="h-full w-full"
+            draggable={false}
+            src={url}
+            style={{ objectFit: "contain" }}
+          />
+        ) : (
+          <Placeholder type="icon" />
+        )}
+      </NodeFrame>
+    );
+  }
+
   if (type === "button") {
     const action = asRecord(rec.action);
     const label = str(action?.label) || "ปุ่ม";
@@ -325,7 +468,10 @@ function FlexNode({
         className="rounded-md border border-[#06c755] px-2 py-1.5 text-center text-[13px] font-medium text-[#06c755]"
         path={path}
         selectedPath={selectedPath}
-        style={{ marginTop: spacingPx(rec.margin) }}
+        style={{
+          marginTop: spacingPx(rec.margin),
+          flex: flexGrow(rec.flex),
+        }}
         onSelectPath={onSelectPath}
       >
         {label}
@@ -341,6 +487,7 @@ function FlexNode({
         style={{
           marginTop: spacingPx(rec.margin),
           marginBottom: spacingPx(rec.margin),
+          flex: flexGrow(rec.flex),
         }}
         onSelectPath={onSelectPath}
       >
@@ -348,6 +495,36 @@ function FlexNode({
           className="h-px w-full"
           style={{ backgroundColor: str(rec.color) || "#EEEEEE" }}
         />
+      </NodeFrame>
+    );
+  }
+
+  // Deprecated in LINE docs but still valid in JSON
+  if (type === "filler") {
+    return (
+      <NodeFrame
+        path={path}
+        selectedPath={selectedPath}
+        style={{ flex: flexGrow(rec.flex) ?? 1, minWidth: 0, minHeight: 0 }}
+        onSelectPath={onSelectPath}
+      >
+        {null}
+      </NodeFrame>
+    );
+  }
+
+  // Legacy spacer (removed from current LINE docs; keep for old JSON)
+  if (type === "spacer") {
+    const height = spacingPx(rec.size) ?? SPACING_PX.md;
+
+    return (
+      <NodeFrame
+        path={path}
+        selectedPath={selectedPath}
+        style={{ height, width: "100%", flexShrink: 0 }}
+        onSelectPath={onSelectPath}
+      >
+        {null}
       </NodeFrame>
     );
   }

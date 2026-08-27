@@ -163,25 +163,34 @@ function OaAvatar() {
   );
 }
 
+const MOCK_W = 1170;
+const MOCK_H = 2532;
+
 export function AutoResponseChatPreview({
   accountName,
   responseType,
   text,
   contents,
+  keyword = "",
 }: {
   accountName: string;
   responseType: "TEXT" | "FLEX";
   text: string;
   contents: unknown;
+  keyword?: string;
 }) {
   const iconBtn = "h-[18px] w-[18px] shrink-0 text-[#1c1c1e]";
+  const keywordTrim = keyword.trim();
+  const showKeyword = keywordTrim !== "";
   const showText = responseType === "TEXT" && text.trim() !== "";
   const showFlex = responseType === "FLEX";
+  const showReply = showText || showFlex;
 
   return (
     <div
       aria-label={`จำลองแชท LINE ของ ${accountName}`}
-      className="mx-auto flex h-[560px] w-full max-w-[320px] flex-col overflow-hidden rounded-[2rem] border border-default-300 bg-black shadow-sm"
+      className="mx-auto flex w-full max-w-[320px] flex-col overflow-hidden rounded-[2rem] border border-default-300 bg-black shadow-sm"
+      style={{ aspectRatio: `${MOCK_W} / ${MOCK_H}` }}
     >
       <div className="relative flex min-h-0 flex-1 flex-col bg-[#849bb4]">
         <div
@@ -227,6 +236,15 @@ export function AutoResponseChatPreview({
             </span>
           </div>
 
+          {showKeyword ? (
+            <div className="flex items-end justify-end gap-1.5">
+              <span className="mb-0.5 text-[10px] text-[#e8eef3]">11:48</span>
+              <div className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-[#95ec69] px-3 py-2 text-[12px] leading-snug text-black shadow-sm">
+                {keywordTrim}
+              </div>
+            </div>
+          ) : null}
+
           {showText ? (
             <div className="flex items-end gap-1.5">
               <OaAvatar />
@@ -242,11 +260,13 @@ export function AutoResponseChatPreview({
                 <FlexMessagePreview contents={contents} />
               </div>
             </div>
-          ) : (
+          ) : null}
+
+          {!showKeyword && !showReply ? (
             <p className="py-4 text-center text-xs text-white/80">
-              พิมพ์ข้อความเพื่อดูตัวอย่าง
+              กรอก keyword เพื่อดูตัวอย่าง
             </p>
-          )}
+          ) : null}
         </div>
       </div>
 

@@ -86,4 +86,4 @@ assert.equal(flexContentsSchema.safeParse({ type: "flex" }).success, false);
   assert.ok(flexContentsSchema.safeParse(wrapped.contents).success);
 }
 
-console.log("flex-contents.selfcheck: ok");
+// console.log("flex-contents.selfcheck: ok");
