@@ -7,7 +7,10 @@ import sizeOf from "image-size";
 import { richMenuByIdWhere } from "@/lib/access";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { validateImageSize } from "@/lib/richmenu/parser";
+import {
+  validateImageByteSize,
+  validateImageSize,
+} from "@/lib/richmenu/parser";
 import { RichMenuStatus } from "@/app/generated/prisma/client";
 
 export async function POST(
@@ -55,6 +58,19 @@ export async function POST(
     }
 
     const imageBuffer = await imageFile.arrayBuffer();
+
+    try {
+      validateImageByteSize(imageBuffer.byteLength);
+    } catch (e) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: e instanceof Error ? e.message : "ขนาดไฟล์รูปไม่ถูกต้อง",
+        },
+        { status: 400 },
+      );
+    }
+
     const dimensions = sizeOf(new Uint8Array(imageBuffer));
 
     if (!dimensions.width || !dimensions.height) {

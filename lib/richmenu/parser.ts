@@ -21,6 +21,9 @@ export function parseRichMenuJson(jsonString: string): RichMenuJson {
   return parsed.data;
 }
 
+/** LINE Messaging API rich menu image max file size */
+export const LINE_RICH_MENU_IMAGE_MAX_BYTES = 1024 * 1024;
+
 export function validateImageSize(
   width: number,
   height: number,
@@ -30,6 +33,16 @@ export function validateImageSize(
   if (width !== expectedWidth || height !== expectedHeight) {
     throw new Error(
       `ขนาดรูปไม่ตรงกับ Rich Menu: ได้ ${width}×${height}, ต้องการ ${expectedWidth}×${expectedHeight}`,
+    );
+  }
+}
+
+export function validateImageByteSize(byteLength: number): void {
+  if (byteLength > LINE_RICH_MENU_IMAGE_MAX_BYTES) {
+    const mb = (byteLength / (1024 * 1024)).toFixed(2);
+
+    throw new Error(
+      `ขนาดไฟล์รูปเกิน 1 MB (ได้ ${mb} MB) — LINE จำกัดไม่เกิน 1 MB กรุณาบีบอัดเป็น JPEG/PNG แล้วอัปโหลดใหม่`,
     );
   }
 }

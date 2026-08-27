@@ -20,6 +20,7 @@ import {
 } from "@/lib/line/sync-default-rich-menu";
 import { normalizeRichMenuAction } from "@/lib/line/types";
 import { getRichMenuAliasId } from "@/lib/richmenu/alias";
+import { validateImageByteSize } from "@/lib/richmenu/parser";
 import { decryptSecret } from "@/lib/secrets";
 import { isAllowedTrackingTarget } from "@/lib/auth-redirect";
 import { signTrackingTarget } from "@/lib/tracking-redirect";
@@ -160,19 +161,22 @@ export async function POST(
       ({ buffer: imageBuffer, contentType } = await readLocalUploadImage(
         richMenu.imageUrl,
       ));
-    } catch {
+      validateImageByteSize(imageBuffer.byteLength);
+    } catch (e) {
+      const error =
+        e instanceof Error && e.message.includes("1 MB")
+          ? e.message
+          : "อ่านรูปไม่สำเร็จ";
+
       await prisma.deployLog.create({
         data: {
           richMenuId: richMenu.id,
           status: DeployStatus.FAILED,
-          message: "อ่านรูปไม่สำเร็จ",
+          message: truncateMessageToBytes(error, 191),
         },
       });
 
-      return NextResponse.json(
-        { success: false, error: "อ่านรูปไม่สำเร็จ" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, error }, { status: 400 });
     }
 
     const accessToken = decryptSecret(richMenu.lineAccount.accessToken);

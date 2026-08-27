@@ -28,6 +28,7 @@ import {
 } from "./import-rich-menu-types";
 
 import { getRichMenuAliasId } from "@/lib/richmenu/alias";
+import { validateImageByteSize } from "@/lib/richmenu/parser";
 import { useAppToast } from "@/components/AppToastProvider";
 
 export function ImportRichMenuForm({
@@ -288,6 +289,18 @@ export function ImportRichMenuForm({
       return;
     }
 
+    if (imageFile) {
+      try {
+        validateImageByteSize(imageFile.size);
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : "ขนาดไฟล์รูปไม่ถูกต้อง",
+        );
+
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const normalizedAreas = normalizeAreasForSubmit(areas);
@@ -448,14 +461,24 @@ export function ImportRichMenuForm({
           <section
             className={
               isEditMode
-                ? "grid gap-4 md:grid-cols-2 xl:grid-cols-3"
-                : "grid gap-4 md:grid-cols-2 xl:grid-cols-4"
+                ? "grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3"
+                : "grid items-start gap-4 md:grid-cols-2 xl:grid-cols-4"
             }
           >
-            {isEditMode ? null : (
+            {isEditMode ? null : isLineAccountLocked ? (
+              <Input
+                isReadOnly
+                isRequired
+                label="LINE Account"
+                labelPlacement="outside"
+                value={
+                  lineAccounts.find((la) => la.id === lineAccountId)?.name ?? ""
+                }
+              />
+            ) : (
               <Select
                 isRequired
-                isDisabled={isLineAccountLocked}
+                classNames={{ trigger: "min-h-10" }}
                 label="LINE Account"
                 labelPlacement="outside"
                 placeholder="เลือก account"
@@ -478,11 +501,33 @@ export function ImportRichMenuForm({
 
             <Input
               accept="image/jpeg,image/png"
+              description="JPEG/PNG ไม่เกิน 1 MB (ข้อจำกัดของ LINE)"
               isRequired={!isEditMode}
               label={isEditMode ? "เปลี่ยนรูป" : "รูป Rich Menu"}
               labelPlacement="outside"
               type="file"
-              onChange={(e) => setImageFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+
+                if (!file) {
+                  setImageFile(null);
+
+                  return;
+                }
+
+                try {
+                  validateImageByteSize(file.size);
+                  setImageFile(file);
+                } catch (err) {
+                  toast.error(
+                    err instanceof Error
+                      ? err.message
+                      : "ขนาดไฟล์รูปไม่ถูกต้อง",
+                  );
+                  e.target.value = "";
+                  setImageFile(null);
+                }
+              }}
             />
 
             <Input

@@ -74,6 +74,12 @@ export async function uploadRichMenuImage(
   if (!res.ok) {
     const err = await res.text();
 
+    if (res.status === 413) {
+      throw new Error(
+        "ขนาดไฟล์รูปเกิน 1 MB — LINE จำกัดไม่เกิน 1 MB กรุณาบีบอัดแล้วอัปโหลดใหม่",
+      );
+    }
+
     throw new Error(`LINE API uploadRichMenuImage: ${res.status} ${err}`);
   }
 }
