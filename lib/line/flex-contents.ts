@@ -41,8 +41,10 @@ const separatorSchema = z.object({
 
 let boxSchema: z.ZodTypeAny;
 
+// z.union: ZodTypeAny (lazy box) is not $ZodTypeDiscriminable, so
+// discriminatedUnion cannot type-check the circular box/node schemas.
 const flexNodeSchema: z.ZodTypeAny = z.lazy(() =>
-  z.discriminatedUnion("type", [
+  z.union([
     boxSchema,
     textSchema,
     imageSchema,
@@ -74,15 +76,17 @@ const carouselSchema = z.object({
 export const flexContentsSchema = z.union([bubbleSchema, carouselSchema]);
 
 export type FlexContents = z.infer<typeof flexContentsSchema>;
+export type FlexBubble = z.infer<typeof bubbleSchema>;
+export type FlexCarousel = z.infer<typeof carouselSchema>;
 
-export function emptyBubble(): FlexContents {
+export function emptyBubble(): FlexBubble {
   return {
     type: "bubble",
     body: { type: "box", layout: "vertical", contents: [] },
   };
 }
 
-export function emptyCarousel(): FlexContents {
+export function emptyCarousel(): FlexCarousel {
   return {
     type: "carousel",
     contents: [emptyBubble(), emptyBubble()],
