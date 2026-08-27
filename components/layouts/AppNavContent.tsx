@@ -1,7 +1,9 @@
 "use client";
 
 import NextLink from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { Chip } from "@heroui/chip";
 import { Link } from "@heroui/link";
 import clsx from "clsx";
 import { useSession } from "next-auth/react";
@@ -47,6 +49,41 @@ export function AppNavContent({
   const visibleNavItems = appNavItems.filter(
     (item) => !item.systemAdminOnly || systemAdmin,
   );
+  const [pendingUserCount, setPendingUserCount] = useState(0);
+
+  useEffect(() => {
+    if (!systemAdmin) {
+      setPendingUserCount(0);
+
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/users/pending-count");
+        const json = (await res.json()) as {
+          success?: boolean;
+          data?: { count?: number };
+        };
+
+        if (
+          !cancelled &&
+          json.success &&
+          typeof json.data?.count === "number"
+        ) {
+          setPendingUserCount(json.data.count);
+        }
+      } catch {
+        if (!cancelled) setPendingUserCount(0);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [systemAdmin, pathname]);
 
   return (
     <div className={clsx("flex flex-col gap-1 flex-1", className)}>
@@ -68,6 +105,8 @@ export function AppNavContent({
         <ul className="flex flex-col gap-1">
           {visibleNavItems.map((item) => {
             const isActive = isPathActive(pathname, item.href);
+            const showPendingChip =
+              item.href === "/users" && pendingUserCount > 0;
 
             return (
               <li key={item.href}>
@@ -83,7 +122,19 @@ export function AppNavContent({
                   href={item.href}
                   onClick={onNavigate}
                 >
-                  {item.label}
+                  <span className="flex w-full items-center justify-between gap-2">
+                    <span>{item.label}</span>
+                    {showPendingChip ? (
+                      <Chip
+                        aria-label={`ผู้ใช้รออนุมัติ ${pendingUserCount} คน`}
+                        color="danger"
+                        size="sm"
+                        variant="flat"
+                      >
+                        {pendingUserCount.toLocaleString("th-TH")}
+                      </Chip>
+                    ) : null}
+                  </span>
                 </Link>
               </li>
             );

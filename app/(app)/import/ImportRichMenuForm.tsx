@@ -562,7 +562,7 @@ export function ImportRichMenuForm({
               onZoomPercentChange={setZoomPercent}
             />
 
-            <aside className="order-1 space-y-3 xl:order-2">
+            <aside className="order-1 min-w-0 space-y-3 xl:order-2">
               <ImportRichMenuAreaPanel
                 areas={areas}
                 availableAliases={availableAliases}

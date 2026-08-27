@@ -168,6 +168,13 @@ export function ImportRichMenuAreaPanel({
                   />
                   <Select
                     disallowEmptySelection
+                    className="min-w-0 max-w-full"
+                    classNames={{
+                      base: "min-w-0 max-w-full",
+                      trigger: "min-w-0",
+                      value: "truncate",
+                      innerWrapper: "min-w-0",
+                    }}
                     isLoading={loadingAliases}
                     label="Rich Menu ปลายทาง"
                     labelPlacement="outside"
@@ -176,6 +183,29 @@ export function ImportRichMenuAreaPanel({
                         ? "กำลังโหลด..."
                         : "เลือก Rich Menu ปลายทาง"
                     }
+                    renderValue={() => {
+                      const aliasId = selectedArea.richMenuAliasId;
+                      const alias =
+                        availableAliases.find((a) => a.aliasId === aliasId) ??
+                        (aliasId
+                          ? {
+                              name: "Alias ปัจจุบัน",
+                              lineAccountName: "Custom",
+                              aliasId,
+                            }
+                          : null);
+
+                      if (!alias) return null;
+
+                      return (
+                        <span
+                          className="block min-w-0 truncate"
+                          title={`${alias.name} (${alias.lineAccountName}) · ${alias.aliasId}`}
+                        >
+                          {alias.name} ({alias.lineAccountName})
+                        </span>
+                      );
+                    }}
                     selectedKeys={
                       selectedArea.richMenuAliasId
                         ? [selectedArea.richMenuAliasId]
@@ -220,11 +250,11 @@ export function ImportRichMenuAreaPanel({
                         key={alias.aliasId}
                         textValue={`${alias.name} ${alias.lineAccountName} ${alias.aliasId}`}
                       >
-                        <div className="flex flex-col">
-                          <span className="text-sm">
+                        <div className="flex min-w-0 flex-col">
+                          <span className="truncate text-sm">
                             {alias.name} ({alias.lineAccountName})
                           </span>
-                          <span className="font-mono text-xs text-default-500">
+                          <span className="truncate font-mono text-xs text-default-500">
                             {alias.aliasId}
                           </span>
                         </div>

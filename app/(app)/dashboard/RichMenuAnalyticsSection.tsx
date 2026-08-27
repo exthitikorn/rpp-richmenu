@@ -139,7 +139,7 @@ export function RichMenuAnalyticsSection({ menus, totalClicks }: Props) {
     .slice(0, 5);
 
   return (
-    <Card className="border border-default-200 shadow-none">
+    <Card className="h-full border border-default-200 shadow-none">
       <CardHeader className="flex flex-col gap-3 border-b border-default-200 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <p className="text-sm font-semibold">Heat map การกด Rich Menu</p>

@@ -33,6 +33,81 @@ import {
   RichMenuStatus,
 } from "@/app/generated/prisma/client";
 
+type RecentDeploy = {
+  id: string;
+  status: DeployStatus;
+  deployedAt: Date;
+  richMenu: {
+    id: string;
+    name: string;
+    lineAccount: { name: string };
+  };
+};
+
+function RecentDeploysCard({ deploys }: { deploys: RecentDeploy[] }) {
+  return (
+    <Card className="h-full border border-default-200 shadow-none">
+      <CardHeader className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold">กิจกรรม Deploy ล่าสุด</p>
+          <p className="text-sm text-default-500">5 รายการล่าสุด</p>
+        </div>
+        <Button
+          as={NextLink}
+          color="primary"
+          href="/deploy-logs"
+          size="sm"
+          variant="flat"
+        >
+          ดูทั้งหมด
+        </Button>
+      </CardHeader>
+      <CardBody>
+        {deploys.length === 0 ? (
+          <p className="text-sm text-default-500">ยังไม่มีประวัติ deploy</p>
+        ) : (
+          <ul className="divide-y divide-default-100 text-sm">
+            {deploys.map((log) => (
+              <li
+                key={log.id}
+                className="flex items-baseline justify-between gap-3 py-1.5 first:pt-0 last:pb-0"
+              >
+                <div className="min-w-0">
+                  <NextLink
+                    className="font-medium text-primary hover:underline"
+                    href={`/rich-menus/${log.richMenu.id}/edit`}
+                  >
+                    {log.richMenu.name}
+                  </NextLink>
+                  <p className="truncate text-xs text-default-500">
+                    {log.richMenu.lineAccount.name}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right text-xs">
+                  <span
+                    className={
+                      log.status === DeployStatus.SUCCESS
+                        ? "inline-flex rounded-full bg-success-100 px-2 py-0.5 font-medium text-success-700"
+                        : log.status === DeployStatus.FAILED
+                          ? "inline-flex rounded-full bg-danger-100 px-2 py-0.5 font-medium text-danger-700"
+                          : "inline-flex rounded-full bg-default-100 px-2 py-0.5 font-medium text-default-600"
+                    }
+                  >
+                    {log.status}
+                  </span>
+                  <p className="mt-1 text-default-400">
+                    {log.deployedAt.toLocaleString("th-TH")}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -61,10 +136,8 @@ export default async function DashboardPage({
     uniqueUserGroups,
     byAreaRaw,
     byMenuRaw,
-    pendingSummary,
     pendingLineAccountRequests,
     failedDeploys,
-    accountsMissingDefault,
     recentDeploys,
   ] = await Promise.all([
     prisma.lineAccount.count({ where: lineWhere }),
@@ -86,26 +159,6 @@ export default async function DashboardPage({
       where: clicksWhere,
       _count: true,
     }),
-    systemAdmin
-      ? (async () => {
-          const [users, count] = await Promise.all([
-            prisma.user.findMany({
-              where: { isApproved: false },
-              orderBy: { createdAt: "desc" },
-              take: 5,
-              select: {
-                id: true,
-                email: true,
-                name: true,
-                createdAt: true,
-              },
-            }),
-            prisma.user.count({ where: { isApproved: false } }),
-          ]);
-
-          return { users, count };
-        })()
-      : Promise.resolve({ users: [], count: 0 }),
     systemAdmin
       ? (async () => {
           const [requests, count] = await Promise.all([
@@ -144,19 +197,10 @@ export default async function DashboardPage({
         richMenu: { select: { id: true, name: true } },
       },
     }),
-    prisma.lineAccount.findMany({
-      where: {
-        ...lineWhere,
-        NOT: { richMenus: { some: { isDefault: true } } },
-      },
-      select: { id: true, name: true },
-      take: 8,
-      orderBy: { name: "asc" },
-    }),
     prisma.deployLog.findMany({
       where: deployWhere,
       orderBy: { deployedAt: "desc" },
-      take: 10,
+      take: 5,
       include: {
         richMenu: {
           select: {
@@ -287,36 +331,18 @@ export default async function DashboardPage({
   ];
 
   const hasAttention =
-    (systemAdmin && pendingSummary.count > 0) ||
     (systemAdmin && pendingLineAccountRequests.count > 0) ||
-    failedDeploys.length > 0 ||
-    accountsMissingDefault.length > 0;
+    failedDeploys.length > 0;
 
   const hasAnalytics = byMenu.length > 0 && byArea.length > 0;
 
-  const menuMeta = new Map(
-    richMenus.map((menu) => [
-      menu.id,
-      { name: menu.name, lineAccountName: menu.lineAccount.name },
-    ]),
-  );
-  const topMenus = [...byMenu]
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-    .map((item, index) => {
-      const meta = menuMeta.get(item.richMenuId);
-
-      return {
-        rank: index + 1,
-        id: item.richMenuId,
-        name: meta?.name ?? menuNames[item.richMenuId] ?? item.richMenuId,
-        lineAccountName: meta?.lineAccountName ?? "—",
-        count: item.count,
-        share:
-          totalClicks > 0 ? Math.round((item.count / totalClicks) * 100) : 0,
-      };
-    });
-  const topMenuMax = topMenus[0]?.count ?? 0;
+  const menuMeta: Record<string, { name: string; lineAccountName: string }> =
+    Object.fromEntries(
+      richMenus.map((menu) => [
+        menu.id,
+        { name: menu.name, lineAccountName: menu.lineAccount.name },
+      ]),
+    );
 
   return (
     <PageShell className="space-y-8">
@@ -386,48 +412,6 @@ export default async function DashboardPage({
             </p>
           </div>
           <div className="grid gap-4 lg:grid-cols-2">
-            {systemAdmin && pendingSummary.count > 0 ? (
-              <Card className="border border-warning-300 shadow-none">
-                <CardHeader className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-warning-700">
-                      ผู้ใช้รออนุมัติ
-                    </p>
-                    <p className="text-sm text-default-500">
-                      {pendingSummary.count.toLocaleString("th-TH")} คน
-                      (แสดงล่าสุด 5 คน)
-                    </p>
-                  </div>
-                  <Button
-                    as={NextLink}
-                    color="warning"
-                    href="/users"
-                    size="sm"
-                    variant="flat"
-                  >
-                    ไปหน้าผู้ใช้
-                  </Button>
-                </CardHeader>
-                <CardBody>
-                  <ul className="space-y-1.5 text-sm">
-                    {pendingSummary.users.map((u) => (
-                      <li
-                        key={u.id}
-                        className="flex justify-between gap-2 border-b border-default-100 py-1 last:border-0"
-                      >
-                        <span className="truncate">
-                          {u.name ?? u.email ?? "—"}
-                        </span>
-                        <span className="shrink-0 text-xs text-default-500">
-                          {u.createdAt.toLocaleDateString("th-TH")}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardBody>
-              </Card>
-            ) : null}
-
             {systemAdmin && pendingLineAccountRequests.count > 0 ? (
               <PendingLineAccountRequestsCard
                 count={pendingLineAccountRequests.count}
@@ -479,38 +463,6 @@ export default async function DashboardPage({
                 </CardBody>
               </Card>
             ) : null}
-
-            {accountsMissingDefault.length > 0 ? (
-              <Card className="border border-default-200 shadow-none lg:col-span-2">
-                <CardHeader>
-                  <div className="space-y-1">
-                    <p className="text-sm font-semibold text-secondary-700">
-                      บัญชียังไม่มี Rich Menu default
-                    </p>
-                    <p className="text-sm text-default-500">
-                      {accountsMissingDefault.length} บัญชี
-                    </p>
-                  </div>
-                </CardHeader>
-                <CardBody>
-                  <ul className="flex flex-wrap gap-2">
-                    {accountsMissingDefault.map((account) => (
-                      <li key={account.id}>
-                        <Button
-                          as={NextLink}
-                          className="border-secondary-200 text-secondary-800"
-                          href={`/rich-menus?lineAccountId=${account.id}`}
-                          size="sm"
-                          variant="bordered"
-                        >
-                          {account.name}
-                        </Button>
-                      </li>
-                    ))}
-                  </ul>
-                </CardBody>
-              </Card>
-            ) : null}
           </div>
         </section>
       ) : null}
@@ -529,157 +481,38 @@ export default async function DashboardPage({
               สถิติการกดในช่วง {periodText}
             </p>
           </div>
-          <Card className="border border-default-200 shadow-none">
-            <CardHeader>
-              <p className="font-semibold">สถิติภาพรวมการกด Rich Menu</p>
-            </CardHeader>
-            <CardBody>
-              <AnalyticsCharts
-                byArea={byArea}
-                byMenu={byMenu}
-                menuNames={menuNames}
-              />
-            </CardBody>
-          </Card>
-
-          <RichMenuAnalyticsSection
-            menus={richMenuAnalyticsMenus}
+          <AnalyticsCharts
+            byArea={byArea}
+            byMenu={byMenu}
+            menuMeta={menuMeta}
+            menuNames={menuNames}
             totalClicks={totalClicks}
           />
+
+          <div className="grid gap-4 lg:grid-cols-3">
+            <div className="min-w-0 lg:col-span-2 [&_>_*]:h-full">
+              <RichMenuAnalyticsSection
+                menus={richMenuAnalyticsMenus}
+                totalClicks={totalClicks}
+              />
+            </div>
+            <RecentDeploysCard deploys={recentDeploys} />
+          </div>
         </section>
       ) : (
-        <Card className="border border-default-200 shadow-none">
-          <CardBody>
-            <p className="text-sm text-default-500">
-              ยังไม่มีข้อมูลการคลิกในช่วง {periodText}
-            </p>
-          </CardBody>
-        </Card>
+        <>
+          <Card className="border border-default-200 shadow-none">
+            <CardBody>
+              <p className="text-sm text-default-500">
+                ยังไม่มีข้อมูลการคลิกในช่วง {periodText}
+              </p>
+            </CardBody>
+          </Card>
+          <section className="max-w-2xl">
+            <RecentDeploysCard deploys={recentDeploys} />
+          </section>
+        </>
       )}
-
-      <section className="grid gap-4 lg:grid-cols-3">
-        <Card className="border border-default-200 shadow-none lg:col-span-2">
-          <CardHeader className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-sm font-semibold">กิจกรรม Deploy ล่าสุด</p>
-              <p className="text-sm text-default-500">10 รายการล่าสุด</p>
-            </div>
-            <Button
-              as={NextLink}
-              color="primary"
-              href="/deploy-logs"
-              size="sm"
-              variant="flat"
-            >
-              ดูทั้งหมด
-            </Button>
-          </CardHeader>
-          <CardBody>
-            {recentDeploys.length === 0 ? (
-              <p className="text-sm text-default-500">ยังไม่มีประวัติ deploy</p>
-            ) : (
-              <ul className="divide-y divide-default-100 text-sm">
-                {recentDeploys.map((log) => (
-                  <li
-                    key={log.id}
-                    className="flex flex-wrap items-baseline justify-between gap-2 py-2 first:pt-0 last:pb-0"
-                  >
-                    <div className="min-w-0">
-                      <NextLink
-                        className="font-medium text-primary hover:underline"
-                        href={`/rich-menus/${log.richMenu.id}/edit`}
-                      >
-                        {log.richMenu.name}
-                      </NextLink>
-                      <p className="text-xs text-default-500">
-                        {log.richMenu.lineAccount.name}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right text-xs">
-                      <span
-                        className={
-                          log.status === DeployStatus.SUCCESS
-                            ? "inline-flex rounded-full bg-success-100 px-2 py-0.5 font-medium text-success-700"
-                            : log.status === DeployStatus.FAILED
-                              ? "inline-flex rounded-full bg-danger-100 px-2 py-0.5 font-medium text-danger-700"
-                              : "inline-flex rounded-full bg-default-100 px-2 py-0.5 font-medium text-default-600"
-                        }
-                      >
-                        {log.status}
-                      </span>
-                      <p className="mt-1 text-default-400">
-                        {log.deployedAt.toLocaleString("th-TH")}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-
-        <Card className="border border-default-200 shadow-none">
-          <CardHeader>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold">Top Rich Menu</p>
-              <p className="text-sm text-default-500">
-                กดมากสุดในช่วง {periodText}
-              </p>
-            </div>
-          </CardHeader>
-          <CardBody>
-            {topMenus.length === 0 ? (
-              <p className="text-sm text-default-500">
-                ยังไม่มีข้อมูลการคลิกในช่วงนี้
-              </p>
-            ) : (
-              <ol className="space-y-3">
-                {topMenus.map((menu) => {
-                  const widthPercent =
-                    topMenuMax > 0
-                      ? Math.max((menu.count / topMenuMax) * 100, 8)
-                      : 8;
-
-                  return (
-                    <li key={menu.id} className="space-y-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-medium">
-                            <span className="mr-1.5 text-secondary-600">
-                              #{menu.rank}
-                            </span>
-                            <NextLink
-                              className="text-primary hover:underline"
-                              href={`/rich-menus/${menu.id}/edit`}
-                            >
-                              {menu.name}
-                            </NextLink>
-                          </p>
-                          <p className="truncate text-xs text-default-500">
-                            {menu.lineAccountName}
-                          </p>
-                        </div>
-                        <div className="shrink-0 text-right text-xs">
-                          <p className="font-semibold text-secondary-700">
-                            {menu.count.toLocaleString("th-TH")}
-                          </p>
-                          <p className="text-default-400">{menu.share}%</p>
-                        </div>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-secondary-100/80">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-secondary to-primary"
-                          style={{ width: `${widthPercent}%` }}
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ol>
-            )}
-          </CardBody>
-        </Card>
-      </section>
     </PageShell>
   );
 }
