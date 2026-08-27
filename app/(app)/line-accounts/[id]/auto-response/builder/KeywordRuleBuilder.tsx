@@ -11,6 +11,9 @@ import { Radio, RadioGroup } from "@heroui/radio";
 import { Switch } from "@heroui/switch";
 import { Tab, Tabs } from "@heroui/tabs";
 
+import { FlexPropertiesPanel } from "./FlexPropertiesPanel";
+import { FlexStructurePanel } from "./FlexStructurePanel";
+
 import { useAppToast } from "@/components/AppToastProvider";
 import { PageHeader } from "@/components/page-header";
 import { emptyBubble, flexContentsSchema } from "@/lib/line/flex-contents";
@@ -100,7 +103,7 @@ export function KeywordRuleBuilder({
   );
   const [altText, setAltText] = useState(flexStart.altText);
   const [contents, setContents] = useState<FlexContents>(flexStart.contents);
-  const [selectedPath] = useState("body");
+  const [selectedPath, setSelectedPath] = useState("body");
   const [editorTab, setEditorTab] = useState<EditorTab>(flexStart.editorTab);
   const [jsonDraft, setJsonDraft] = useState(flexStart.jsonDraft);
   const [jsonError, setJsonError] = useState(flexStart.jsonError);
@@ -165,11 +168,23 @@ export function KeywordRuleBuilder({
           return;
         }
 
+        const checked = flexContentsSchema.safeParse(nextContents);
+
+        if (!checked.success) {
+          const issue = checked.error.issues[0];
+          const where = issue?.path?.length ? `${issue.path.join(".")}: ` : "";
+
+          toast.error(`${where}${issue?.message ?? "Flex JSON ไม่ถูกต้อง"}`);
+          setSaving(false);
+
+          return;
+        }
+
         body = {
           keyword,
           isEnabled,
           responseType: "FLEX",
-          flex: { altText, contents: nextContents },
+          flex: { altText, contents: checked.data },
         };
       }
 
@@ -267,11 +282,14 @@ export function KeywordRuleBuilder({
                 onSelectionChange={(key) => handleEditorTab(String(key))}
               >
                 <Tab key="builder" title="ตัวสร้าง">
-                  <p className="pt-3 text-sm text-default-500">
-                    ตัวสร้าง Flex จะพร้อมในขั้นตอนถัดไป —
-                    ใส่ข้อความสำรองแล้วบันทึกบับเบิลว่างได้
-                    {selectedPath ? ` (โหนด: ${selectedPath})` : ""}
-                  </p>
+                  <FlexStructurePanel
+                    contents={contents}
+                    selectedPath={selectedPath}
+                    onChangeContents={(next) =>
+                      setContents(next as FlexContents)
+                    }
+                    onSelect={setSelectedPath}
+                  />
                 </Tab>
                 <Tab key="json" title="JSON">
                   <Textarea
@@ -310,9 +328,11 @@ export function KeywordRuleBuilder({
               onValueChange={setText}
             />
           ) : (
-            <p className="text-sm text-default-500">
-              เลือกโหนดทางซ้ายเพื่อแก้ไขคุณสมบัติ
-            </p>
+            <FlexPropertiesPanel
+              contents={contents}
+              selectedPath={selectedPath}
+              onChangeContents={(next) => setContents(next as FlexContents)}
+            />
           )}
         </section>
 
