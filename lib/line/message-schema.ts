@@ -13,7 +13,11 @@ export const autoResponseSettingsSchema = z.object({
 });
 
 export const flexBuilderSchema = z.object({
-  altText: z.string().trim().min(1, "กรุณาระบุข้อความสำรอง"),
+  altText: z
+    .string()
+    .trim()
+    .min(1, "กรุณาระบุข้อความสำรอง")
+    .max(1500, "ข้อความสำรองยาวได้ไม่เกิน 1500 ตัวอักษร"),
   contents: flexContentsSchema,
 });
 
@@ -48,6 +52,6 @@ export const storedTextPayloadSchema = z.object({
 });
 
 export const storedFlexPayloadSchema = z.object({
-  altText: z.string().trim().min(1),
+  altText: z.string().trim().min(1).max(1500),
   contents: z.record(z.string(), z.unknown()),
 });

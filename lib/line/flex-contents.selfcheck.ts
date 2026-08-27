@@ -9,6 +9,8 @@ import {
 assert.equal(emptyBubble().type, "bubble");
 assert.equal(emptyCarousel().type, "carousel");
 assert.equal(emptyCarousel().contents.length, 2);
+assert.ok(flexContentsSchema.safeParse(emptyBubble()).success);
+assert.ok(flexContentsSchema.safeParse(emptyCarousel()).success);
 
 assert.ok(
   flexContentsSchema.safeParse({
@@ -28,6 +30,44 @@ assert.equal(
       type: "box",
       layout: "vertical",
       contents: [{ type: "video", url: "https://example.com/a.mp4" }],
+    },
+  }).success,
+  false,
+);
+
+assert.equal(
+  flexContentsSchema.safeParse({
+    type: "bubble",
+    body: { type: "box", layout: "vertical", contents: [] },
+  }).success,
+  false,
+);
+
+assert.equal(
+  flexContentsSchema.safeParse({
+    type: "bubble",
+    header: {
+      type: "box",
+      layout: "vertical",
+      contents: [{ type: "text", text: "h" }],
+    },
+    body: {
+      type: "box",
+      layout: "vertical",
+      contents: [{ type: "text", text: "hi" }],
+    },
+  }).success,
+  false,
+);
+
+assert.equal(
+  flexContentsSchema.safeParse({
+    type: "bubble",
+    styles: { body: { backgroundColor: "#fff" } },
+    body: {
+      type: "box",
+      layout: "vertical",
+      contents: [{ type: "text", text: "hi" }],
     },
   }).success,
   false,
