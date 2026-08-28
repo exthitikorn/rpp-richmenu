@@ -20,4 +20,4 @@ else
 fi
 
 pm2 save
-echo "==> Done. App running on port ${PORT:-3000}"
+echo "==> Done. PORT is read from .env by Next.js (default 3000)."

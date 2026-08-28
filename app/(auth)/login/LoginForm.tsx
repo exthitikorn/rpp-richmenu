@@ -7,6 +7,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 
 import { AuthCard } from "@/components/layouts/AuthCard";
+import { AuthInfoPanel } from "@/components/layouts/AuthInfoPanel";
 import { siteConfig } from "@/config/site";
 import { sanitizeCallbackUrl } from "@/lib/auth-redirect";
 
@@ -75,6 +76,7 @@ export function LoginForm({ lineLoginEnabled = false }: LoginFormProps) {
 
   return (
     <AuthCard
+      aside={<AuthInfoPanel />}
       header={
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">เข้าสู่ระบบ</h2>

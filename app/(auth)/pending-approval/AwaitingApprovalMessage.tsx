@@ -4,10 +4,12 @@ import { signOut } from "next-auth/react";
 import { Button } from "@heroui/button";
 
 import { AuthCard } from "@/components/layouts/AuthCard";
+import { AuthInfoPanel } from "@/components/layouts/AuthInfoPanel";
 
 export function AwaitingApprovalMessage() {
   return (
     <AuthCard
+      aside={<AuthInfoPanel />}
       header={
         <>
           <h2 className="text-xl font-semibold sm:text-2xl">รอการอนุมัติ</h2>
