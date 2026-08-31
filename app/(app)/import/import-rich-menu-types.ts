@@ -1,3 +1,5 @@
+import { randomId } from "@/lib/random-id";
+
 export type LineAccountOption = {
   id: string;
   name: string;
@@ -115,7 +117,7 @@ export function mapInitialAreasToDrafts(areas: InitialArea[]): AreaDraft[] {
     ) as ActionType;
 
     return {
-      id: crypto.randomUUID(),
+      id: randomId(),
       bounds: {
         x: area.x,
         y: area.y,

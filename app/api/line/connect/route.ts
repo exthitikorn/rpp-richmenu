@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "@/lib/auth";
+import { randomId } from "@/lib/random-id";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const state = crypto.randomUUID();
+  const state = randomId();
   const scope = "openid profile";
 
   const authorizeUrl = new URL("https://access.line.me/oauth2/v2.1/authorize");

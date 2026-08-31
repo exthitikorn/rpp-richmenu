@@ -11,6 +11,8 @@ import {
   type ResizeHandle,
 } from "./import-rich-menu-types";
 
+import { randomId } from "@/lib/random-id";
+
 export function ImportRichMenuCanvas({
   imagePreviewUrl,
   imageSize,
@@ -207,7 +209,7 @@ export function ImportRichMenuCanvas({
 
   function createAreaFromBounds(bounds: AreaDraft["bounds"]) {
     return {
-      id: crypto.randomUUID(),
+      id: randomId(),
       bounds: clampBounds(bounds),
       actionType: "message" as const,
       label: "",
