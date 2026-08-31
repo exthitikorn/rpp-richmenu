@@ -11,6 +11,7 @@ import {
 } from "@heroui/modal";
 
 import { useAppToast } from "@/components/AppToastProvider";
+import { copyToClipboard } from "@/lib/copy-to-clipboard";
 
 function CopyRow({
   label,
@@ -52,9 +53,11 @@ export function LineAccountWebhookCopy({
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const toast = useAppToast();
 
-  const copy = (label: string, value: string) => {
-    void navigator.clipboard.writeText(value);
-    toast.success(`คัดลอก ${label} แล้ว`);
+  const copy = async (label: string, value: string) => {
+    const ok = await copyToClipboard(value);
+
+    if (ok) toast.success(`คัดลอก ${label} แล้ว`);
+    else toast.error(`คัดลอก ${label} ไม่สำเร็จ`);
   };
 
   return (

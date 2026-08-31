@@ -3,6 +3,7 @@
 import { Chip } from "@heroui/chip";
 
 import { useAppToast } from "@/components/AppToastProvider";
+import { copyToClipboard } from "@/lib/copy-to-clipboard";
 
 export function EditRichMenuHeaderMeta({
   aliasId,
@@ -13,9 +14,11 @@ export function EditRichMenuHeaderMeta({
 }) {
   const toast = useAppToast();
 
-  const copyAliasId = () => {
-    void navigator.clipboard.writeText(aliasId);
-    toast.success("คัดลอก Alias ID แล้ว");
+  const copyAliasId = async () => {
+    const ok = await copyToClipboard(aliasId);
+
+    if (ok) toast.success("คัดลอก Alias ID แล้ว");
+    else toast.error("คัดลอก Alias ID ไม่สำเร็จ");
   };
 
   return (

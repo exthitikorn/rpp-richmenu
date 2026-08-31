@@ -20,6 +20,7 @@ import {
 import { Textarea } from "@heroui/input";
 
 import { useAppToast } from "@/components/AppToastProvider";
+import { copyToClipboard } from "@/lib/copy-to-clipboard";
 import { PageHeader } from "@/components/page-header";
 
 type Settings = {
@@ -128,10 +129,12 @@ export function AutoResponseSettings({
     router.refresh();
   }
 
-  function copyWebhook() {
+  async function copyWebhook() {
     if (!webhookUrl) return;
-    void navigator.clipboard.writeText(webhookUrl);
-    toast.success("คัดลอก Webhook URL แล้ว");
+    const ok = await copyToClipboard(webhookUrl);
+
+    if (ok) toast.success("คัดลอก Webhook URL แล้ว");
+    else toast.error("คัดลอก Webhook URL ไม่สำเร็จ");
   }
 
   return (
