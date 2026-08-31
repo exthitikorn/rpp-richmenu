@@ -56,7 +56,7 @@
 | **MariaDB / MySQL** | สำหรับ Prisma |
 | **LDAP / Active Directory** | ใช้ล็อกอินเท่านั้น — **ไม่มี** local password login |
 | **PM2** | สำหรับ production (แนะนำ) |
-| **พอร์ต** | ค่าเริ่มต้น `3000` — เปลี่ยนได้ด้วยตัวแปร `PORT` ใน `.env` (ดู [เปลี่ยนพอร์ต](#เปลี่ยนพอร์ต-port)) |
+| **พอร์ต** | ค่าเริ่มต้น `3007` — เปลี่ยนได้ด้วยตัวแปร `PORT` ใน `.env` (ดู [เปลี่ยนพอร์ต](#เปลี่ยนพอร์ต-port)) |
 | **Disk** | โฟลเดอร์ `storage/uploads` ต้องมีและ writable โดย user ที่รันโปรเซส |
 
 **หมายเหตุเรื่องไฟล์อัปโหลด:** URL สาธารณะยังเป็น `/uploads/...` แต่ไฟล์จริงอยู่ที่ `storage/uploads/` (มี fallback อ่าน `public/uploads/` สำหรับของเก่า)
@@ -147,7 +147,7 @@ npx prisma migrate dev
 npm run dev
 ```
 
-เปิด [http://localhost:3000](http://localhost:3000) แล้วไปที่ `/login`
+เปิด [http://localhost:3007](http://localhost:3007) แล้วไปที่ `/login`
 
 ### ขั้นที่ 8 — ผู้ใช้คนแรก (System Admin)
 
@@ -186,7 +186,7 @@ WHERE ldapUsername = 'your-ldap-username';
 | --- | --- |
 | `DATABASE_URL` | `mysql://user:pass@host:port/dbname` |
 | `NEXTAUTH_SECRET` | JWT signing secret (ยาวสุ่ม ≥ 32 ตัวอักษ) — **ไม่มี fallback** |
-| `NEXTAUTH_URL` | URL เต็มของแอปที่ผู้ใช้ / LINE เข้าถึง (เช่น `http://localhost:3000` หรือ `https://richmenu.example.com`) — **ต้องตรงกับ URL จริง รวมพอร์ตถ้าเปิดตรงไม่ผ่าน proxy** |
+| `NEXTAUTH_URL` | URL เต็มของแอปที่ผู้ใช้ / LINE เข้าถึง (เช่น `http://localhost:3007` หรือ `https://richmenu.example.com`) — **ต้องตรงกับ URL จริง รวมพอร์ตถ้าเปิดตรงไม่ผ่าน proxy** |
 | `LDAP_URL` | LDAP server (`ldap://` หรือแนะนำ `ldaps://`) |
 | `LDAP_BASE_DN` | Base DN สำหรับค้นหาผู้ใช้ |
 | `LDAP_BIND_DN` | DN หรือ UPN ของ service account |
@@ -196,7 +196,7 @@ WHERE ldapUsername = 'your-ldap-username';
 
 | ตัวแปร | ความหมาย |
 | --- | --- |
-| `PORT` | พอร์ตที่แอปฟัง (ค่าเริ่มต้น `3000`) — **ตั้งใน `.env` อย่างเดียว** ไม่ต้องแก้ `ecosystem.config.js` — ดู [เปลี่ยนพอร์ต](#เปลี่ยนพอร์ต-port) |
+| `PORT` | พอร์ตที่แอปฟัง (ค่าเริ่มต้น `3007`) — **ตั้งใน `.env` อย่างเดียว** ไม่ต้องแก้ `ecosystem.config.js` — ดู [เปลี่ยนพอร์ต](#เปลี่ยนพอร์ต-port) |
 | `CREDENTIALS_ENCRYPTION_KEY` | คีย์แยกสำหรับเข้ารหัส `channelSecret` / `accessToken` ในฐานข้อมูล — ถ้าไม่ตั้งจะใช้ `NEXTAUTH_SECRET` แทน (ควรแยก) |
 | `DATABASE_SSL` / `sslaccept=strict` | เปิด SSL กับ DB ตามนโยบาย IT — ใส่ `?sslaccept=strict` ใน `DATABASE_URL` หรือตั้ง `DATABASE_SSL=true` |
 
@@ -226,8 +226,8 @@ WHERE ldapUsername = 'your-ldap-username';
 
 ```env
 DATABASE_URL="mysql://user:pass@127.0.0.1:3306/rpp_richmenu"
-PORT=3000
-NEXTAUTH_URL="http://localhost:3000"
+PORT=3007
+NEXTAUTH_URL="http://localhost:3007"
 NEXTAUTH_SECRET="your-secret-at-least-32-chars"
 CREDENTIALS_ENCRYPTION_KEY="another-long-random-string"
 LDAP_URL="ldaps://your-dc.example.local"
@@ -240,7 +240,7 @@ LDAP_BIND_PASSWORD="..."
 
 ## เปลี่ยนพอร์ต (PORT)
 
-ค่าเริ่มต้นคือ **3000**  
+ค่าเริ่มต้นคือ **3007**  
 **แก้ที่เดียวใน `.env`** — ไม่ต้องแก้ `ecosystem.config.js`  
 Next.js (`npm run dev` / `next start` ผ่าน PM2) โหลด `PORT` จาก `.env` เอง
 
@@ -306,7 +306,7 @@ $env:PORT=8080; npm run dev
 
 ## A3. ติดตั้ง Production (เครื่อง รพ.)
 
-เป้าหมาย: เครื่องใน รพ. ที่ disk คงที่ รันด้วย PM2 (พอร์ตเริ่มต้น `3000` — เปลี่ยนได้ด้วย `PORT` ใน `.env`)
+เป้าหมาย: เครื่องใน รพ. ที่ disk คงที่ รันด้วย PM2 (พอร์ตเริ่มต้น `3007` — เปลี่ยนได้ด้วย `PORT` ใน `.env`)
 
 ### ขั้นที่ 1 — เตรียมเครื่อง
 
@@ -318,7 +318,7 @@ npm install -g pm2
 
 2. สร้าง database สำหรับ production
 3. เตรียม LDAP ที่แอปเข้าถึงได้จากเครื่องนี้
-4. (แนะนำ) เตรียม reverse proxy + HTTPS ชี้ไป `localhost:3000`
+4. (แนะนำ) เตรียม reverse proxy + HTTPS ชี้ไป `localhost:3007`
 
 ### ขั้นที่ 2 — วางโค้ดและตั้งค่า
 
@@ -331,7 +331,7 @@ cp .env.example .env
 
 จุดสำคัญใน `.env` production:
 
-- `PORT` = พอร์ตที่แอปฟัง ใน `.env` (ค่าเริ่มต้น `3000` ถ้าไม่ใส่) — **ไม่ต้องแก้** `ecosystem.config.js`
+- `PORT` = พอร์ตที่แอปฟัง ใน `.env` (ค่าเริ่มต้น `3007` ถ้าไม่ใส่) — **ไม่ต้องแก้** `ecosystem.config.js`
 - `NEXTAUTH_URL` = URL จริงที่ผู้ใช้และ LINE เรียกถึง (รวม `https://`) — ถ้าเข้าแอปตรงโดยไม่ผ่าน proxy ต้องใส่พอร์ตให้ตรงกับ `PORT`
 - `CREDENTIALS_ENCRYPTION_KEY` แยกจาก `NEXTAUTH_SECRET`
 - ใช้ `ldaps://` (หรือ tunnel ที่เข้ารหัส) ถ้าสายไม่น่าเชื่อถือ
@@ -370,14 +370,14 @@ pm2 status
 pm2 logs rpp-richmenu
 ```
 
-แอปควรฟังที่พอร์ตตาม `PORT` ใน `.env` (ค่าเริ่มต้น **3000**) — `instances: 1`, โหมด `fork` (**ห้าม cluster** จนกว่า uploads จะแชร์ข้าม process ได้)
+แอปควรฟังที่พอร์ตตาม `PORT` ใน `.env` (ค่าเริ่มต้น **3007**) — `instances: 1`, โหมด `fork` (**ห้าม cluster** จนกว่า uploads จะแชร์ข้าม process ได้)
 
 ### ขั้นที่ 5 — Reverse proxy (แนะนำ)
 
 ตั้ง nginx (หรือเทียบเท่า) ให้:
 
 - รับ HTTPS จากภายนอก
-- proxy ไป `http://127.0.0.1:$PORT` (เช่น `3000` หรือพอร์ตที่ตั้งใน `.env`)
+- proxy ไป `http://127.0.0.1:$PORT` (เช่น `3007` หรือพอร์ตที่ตั้งใน `.env`)
 - ส่ง header ที่จำเป็นสำหรับ Next.js / WebSocket ตามมาตรฐาน reverse proxy
 
 จากนั้นให้ `NEXTAUTH_URL` ตรงกับ URL สาธารณะ (เช่น `https://richmenu.rpphosp.local`)
@@ -417,7 +417,7 @@ https://your-domain.com/api/webhook/line/{channelId}
 | หัวข้อ | รายละเอียด |
 | --- | --- |
 | **instances** | `1` (`fork`) ใน `ecosystem.config.js` |
-| **พอร์ต** | ค่าเริ่มต้น `3000` — ตั้งด้วย `PORT` ใน `.env` |
+| **พอร์ต** | ค่าเริ่มต้น `3007` — ตั้งด้วย `PORT` ใน `.env` |
 | **Uploads** | `storage/uploads` writable โดย user ที่รัน PM2 |
 | **NEXTAUTH_URL** | URL จริง รวม scheme |
 | **LDAP** | `ldaps://` หรือ tunnel ที่เข้ารหัสเมื่อสายไม่น่าเชื่อถือ |
