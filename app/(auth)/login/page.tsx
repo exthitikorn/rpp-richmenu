@@ -3,16 +3,20 @@ import { redirect } from "next/navigation";
 
 import { LoginForm } from "./LoginForm";
 
-import { getCurrentUser } from "@/lib/auth";
+import { getSession } from "@/lib/auth";
 import { getDefaultLoginCallbackUrl } from "@/lib/auth-redirect";
 import { isLineLoginConfigured } from "@/lib/auth/providers/line.provider";
 import { LoadingState } from "@/components/ui/LoadingState";
 
 export default async function LoginPage() {
-  const user = await getCurrentUser();
+  const session = await getSession();
 
-  if (user) {
-    redirect(getDefaultLoginCallbackUrl());
+  if (session?.user?.id) {
+    redirect(
+      session.user.isApproved
+        ? getDefaultLoginCallbackUrl()
+        : "/pending-approval",
+    );
   }
 
   return (

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { getSession, signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 
@@ -19,7 +19,6 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ lineLoginEnabled = false }: LoginFormProps) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = sanitizeCallbackUrl(searchParams.get("callbackUrl"));
   const urlError = searchParams.get("error");
@@ -62,14 +61,19 @@ export function LoginForm({ lineLoginEnabled = false }: LoginFormProps) {
 
       if (res?.error) {
         setError(typeof res.error === "string" ? res.error : FALLBACK_ERROR);
-        setLoading(false);
 
         return;
       }
-      router.push(callbackUrl);
-      router.refresh();
+
+      const session = await getSession();
+      const destination = session?.user?.isApproved
+        ? callbackUrl
+        : "/pending-approval";
+
+      window.location.assign(destination);
     } catch {
       setError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+    } finally {
       setLoading(false);
     }
   }

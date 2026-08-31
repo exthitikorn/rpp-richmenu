@@ -61,6 +61,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname === "/login") {
+    if (token) {
+      const approved = (token.isApproved as boolean | undefined) === true;
+
+      return NextResponse.redirect(
+        new URL(approved ? "/dashboard" : "/pending-approval", request.url),
+      );
+    }
+
+    return NextResponse.next();
+  }
+
   if (pathname === "/pending-approval") {
     if (!token) {
       const loginUrl = new URL("/login", request.url);
