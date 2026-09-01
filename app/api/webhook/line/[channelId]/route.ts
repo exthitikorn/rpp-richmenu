@@ -65,12 +65,6 @@ export async function POST(
     return NextResponse.json({ error: "Unknown channel" }, { status: 404 });
   }
 
-  const channelSecret = decryptSecret(lineAccount.channelSecret);
-
-  if (!verifySignature(rawBody, channelSecret, signature)) {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
-  }
-
   let body: {
     events?: Array<{
       type: string;
@@ -88,6 +82,18 @@ export async function POST(
   }
 
   const events = body.events ?? [];
+
+  // LINE Verify / communication check posts empty events and expects 200.
+  // https://developers.line.biz/en/docs/messaging-api/verify-webhook-url/
+  if (events.length === 0) {
+    return NextResponse.json({ ok: true });
+  }
+
+  const channelSecret = decryptSecret(lineAccount.channelSecret);
+
+  if (!verifySignature(rawBody, channelSecret, signature)) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
 
   for (const event of events) {
     if (
