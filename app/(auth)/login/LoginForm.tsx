@@ -109,7 +109,7 @@ export function LoginForm({ lineLoginEnabled = false }: LoginFormProps) {
           isRequired
           autoComplete="current-password"
           label="รหัสผ่าน"
-          placeholder="••••••••"
+          placeholder="กรอกรหัสผ่านของคุณ"
           type="password"
           value={password}
           onValueChange={setPassword}

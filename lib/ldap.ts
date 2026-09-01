@@ -234,7 +234,15 @@ export class LDAPService {
         return { success: false, errorCode: "ACCOUNT_DISABLED" };
       }
 
-      if (!this.isUserInAllowedOU(searchResult.objectName)) {
+      const memberOf = getMemberOf(searchResult.attributes);
+      const isAdminGroupMember = this.config.adminGroupDN
+        ? isMemberOfAdminGroup(memberOf, this.config.adminGroupDN)
+        : false;
+
+      if (
+        !this.isUserInAllowedOU(searchResult.objectName) &&
+        !isAdminGroupMember
+      ) {
         return { success: false, errorCode: "USER_NOT_AUTHORIZED" };
       }
 
@@ -256,7 +264,10 @@ export class LDAPService {
         return { success: false, errorCode: "INVALID_CREDENTIALS" };
       }
 
-      const userData = this.parseUserData(searchResult, username);
+      const userData = {
+        ...this.parseUserData(searchResult, username),
+        isAdminGroupMember,
+      };
 
       return { success: true, user: userData };
     } catch (error) {
@@ -284,6 +295,44 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function getMemberOf(
+  attributes: Array<{ type: string; values: string[] }>,
+): string[] {
+  const attr = attributes.find((a) => a.type.toLowerCase() === "memberof");
+
+  return attr?.values ?? [];
+}
+
+/** รองรับ full DN หรือ RDN ต้นทาง (เช่น CN=Domain Admins) */
+function isMemberOfAdminGroup(
+  memberOf: string[],
+  adminGroupDN: string,
+): boolean {
+  const target = adminGroupDN.trim().toLowerCase();
+
+  if (!target) return false;
+
+  return memberOf.some((raw) => {
+    const dn = raw.trim().toLowerCase();
+
+    return dn === target || dn.startsWith(`${target},`);
+  });
+}
+
+if (process.env.NODE_ENV !== "production") {
+  const ok = (cond: boolean, msg: string) => {
+    if (!cond) throw new Error(`ldap group match: ${msg}`);
+  };
+  const domainAdmins = "CN=Domain Admins,CN=Users,DC=rpphosp,DC=local";
+
+  ok(isMemberOfAdminGroup([domainAdmins], "CN=Domain Admins"), "RDN prefix");
+  ok(isMemberOfAdminGroup([domainAdmins], domainAdmins), "full DN");
+  ok(
+    !isMemberOfAdminGroup(["CN=Users,DC=rpphosp,DC=local"], "CN=Domain Admins"),
+    "no false positive",
+  );
+}
+
 /**
  * สร้าง LDAP Service จาก environment variables
  */
@@ -306,6 +355,7 @@ export function createLDAPService(): LDAPService {
     reconnect: optional.LDAP_RECONNECT === "true",
     userOU: optional.LDAP_USER_OU,
     userDomain: optional.LDAP_USER_DOMAIN,
+    adminGroupDN: optional.LDAP_ADMIN_GROUP_DN,
   };
 
   return new LDAPService(config);

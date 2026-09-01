@@ -1,5 +1,7 @@
 import type { LineOutgoingMessage, LineRichMenuPayload } from "./types";
 
+import { lineMessagingFetch } from "./logging";
+
 const LINE_API_BASE = "https://api.line.me/v2/bot";
 const LINE_DATA_API_BASE = "https://api-data.line.me/v2/bot";
 
@@ -8,15 +10,7 @@ async function lineFetch(
   accessToken: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const res = await fetch(`${LINE_API_BASE}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers as Record<string, string>),
-    },
-  });
-
-  return res;
+  return lineMessagingFetch(`${LINE_API_BASE}${path}`, accessToken, options);
 }
 
 async function lineDataFetch(
@@ -24,15 +18,11 @@ async function lineDataFetch(
   accessToken: string,
   options: RequestInit = {},
 ): Promise<Response> {
-  const res = await fetch(`${LINE_DATA_API_BASE}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      ...(options.headers as Record<string, string>),
-    },
-  });
-
-  return res;
+  return lineMessagingFetch(
+    `${LINE_DATA_API_BASE}${path}`,
+    accessToken,
+    options,
+  );
 }
 
 export async function createRichMenu(

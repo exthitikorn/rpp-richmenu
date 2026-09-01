@@ -35,6 +35,8 @@ const providers: NextAuthOptions["providers"] = [
           throw new Error("การเข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูลอีกครั้ง");
         }
 
+        const adminFromLdap = ldapUser.isAdminGroupMember === true;
+
         const user = await prisma.user.upsert({
           where: { ldapUsername: ldapUser.ldapUsername },
           create: {
@@ -42,12 +44,17 @@ const providers: NextAuthOptions["providers"] = [
             name: ldapUser.displayName,
             email: ldapUser.email,
             department: ldapUser.department,
-            isApproved: false,
+            isApproved: adminFromLdap,
+            isSystemAdmin: adminFromLdap,
           },
           update: {
             name: ldapUser.displayName,
             email: ldapUser.email,
             department: ldapUser.department,
+            ...(adminFromLdap && {
+              isApproved: true,
+              isSystemAdmin: true,
+            }),
           },
         });
 

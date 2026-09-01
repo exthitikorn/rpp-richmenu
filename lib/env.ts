@@ -15,6 +15,8 @@ interface OptionalLDAPEnv {
   LDAP_USER_OU?: string;
   /** Domain สำหรับ UPN bind (เช่น rpphosp.local) */
   LDAP_USER_DOMAIN?: string;
+  /** DN ของ AD group สำหรับ auto-approve + system admin */
+  LDAP_ADMIN_GROUP_DN?: string;
 }
 
 /**
@@ -67,6 +69,7 @@ export function validateLDAPEnvironment(): {
       LDAP_RECONNECT: process.env.LDAP_RECONNECT,
       LDAP_USER_OU: process.env.LDAP_USER_OU,
       LDAP_USER_DOMAIN: process.env.LDAP_USER_DOMAIN,
+      LDAP_ADMIN_GROUP_DN: process.env.LDAP_ADMIN_GROUP_DN,
     },
   };
 }

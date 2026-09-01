@@ -12,6 +12,8 @@ export interface LDAPConfig {
   userOU?: string;
   /** Domain สำหรับ UPN bind (เช่น rpphosp.local) */
   userDomain?: string;
+  /** DN ของ AD group — สมาชิกได้รับ isApproved + isSystemAdmin อัตโนมัติ */
+  adminGroupDN?: string;
 }
 
 /** ข้อมูลผู้ใช้จาก LDAP สำหรับ sync กับ User ใน DB */
@@ -21,6 +23,8 @@ export interface LDAPUserData {
   email: string | null;
   department?: string;
   title?: string;
+  /** สมาชิกของ LDAP_ADMIN_GROUP_DN */
+  isAdminGroupMember?: boolean;
 }
 
 export interface LDAPSearchResult {
