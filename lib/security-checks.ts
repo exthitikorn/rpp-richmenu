@@ -66,6 +66,33 @@ async function main() {
     true,
   );
 
+  const { describeBridgeTarget, buildTrackingBridgeHtml } = await import(
+    "./tracking-bridge-html"
+  );
+  const telBridge = describeBridgeTarget("tel:12345");
+
+  assert.equal(telBridge.kind, "tel");
+  assert.equal(telBridge.display, "12345");
+  assert.equal(telBridge.cta, "โทรเลย");
+
+  const mailBridge = describeBridgeTarget("mailto:a@b.com");
+
+  assert.equal(mailBridge.kind, "mailto");
+  assert.equal(mailBridge.display, "a@b.com");
+
+  const html = buildTrackingBridgeHtml("tel:12345");
+
+  assert.match(html, /โรงพยาบาลราชพิพัฒน์/);
+  assert.match(html, /สำนักการแพทย์ กทม\./);
+  assert.match(html, /href="tel:12345"/);
+  assert.match(html, /\/brand\/rpp-logo\.png/);
+
+  const escaped = buildTrackingBridgeHtml("not-a-url<script>alert(1)</script>");
+  const dest = escaped.match(/class="dest">([\s\S]*?)<\/p>/)?.[1] ?? "";
+
+  assert.match(dest, /&lt;script&gt;/);
+  assert.doesNotMatch(dest, /<script>/);
+
   const plain = "line-channel-secret-value";
   const enc = encryptSecret(plain);
 

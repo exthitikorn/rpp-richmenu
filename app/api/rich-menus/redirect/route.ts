@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { isAllowedHttpUrl } from "@/lib/auth-redirect";
 import { prisma } from "@/lib/prisma";
+import { buildTrackingBridgeHtml } from "@/lib/tracking-bridge-html";
 import { verifyTrackingTarget } from "@/lib/tracking-redirect";
 
 const FALLBACK = "https://line.me/";
@@ -12,10 +13,7 @@ function respondToTarget(target: string): NextResponse {
     return NextResponse.redirect(target, { status: 302 });
   }
 
-  const href = JSON.stringify(target);
-  const html = `<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title></title></head><body><p><a href=${href}>เปิดต่อ</a></p><script>location.href=${href}</script></body></html>`;
-
-  return new NextResponse(html, {
+  return new NextResponse(buildTrackingBridgeHtml(target), {
     status: 200,
     headers: {
       "Content-Type": "text/html; charset=utf-8",
