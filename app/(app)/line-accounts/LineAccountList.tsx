@@ -152,7 +152,7 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
         onOpenChange={onOpenChange}
       >
         <ModalContent>
-          <form onSubmit={handleSubmit}>
+          <form autoComplete="off" onSubmit={handleSubmit}>
             <ModalHeader>แก้ไข LINE Account</ModalHeader>
             <ModalBody>
               {error && (
@@ -165,24 +165,30 @@ function EditLineAccountButton({ la }: { la: LineAccountWithRelations }) {
               </p>
               <Input
                 isReadOnly
+                autoComplete="off"
                 description="ไม่สามารถเปลี่ยนได้หลังสร้างแล้ว"
                 label="Channel ID"
                 labelPlacement="outside"
+                name="line-channel-id"
                 value={la.channelId}
               />
               <Input
+                autoComplete="new-password"
                 description="เว้นว่างหากไม่ต้องการเปลี่ยน — ระบบจะตรวจสอบกับ LINE ก่อนบันทึก"
                 label="Channel Secret"
                 labelPlacement="outside"
+                name="line-channel-secret"
                 placeholder="เว้นว่างหากไม่เปลี่ยน"
                 type="password"
                 value={channelSecret}
                 onValueChange={setChannelSecret}
               />
               <Input
+                autoComplete="new-password"
                 description="เว้นว่างหากไม่ต้องการเปลี่ยน — ระบบจะตรวจสอบกับ LINE ก่อนบันทึก"
                 label="Channel Access Token"
                 labelPlacement="outside"
+                name="line-channel-access-token"
                 placeholder="เว้นว่างหากไม่เปลี่ยน"
                 type="password"
                 value={accessToken}

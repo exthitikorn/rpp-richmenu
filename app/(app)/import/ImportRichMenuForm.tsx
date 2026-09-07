@@ -578,9 +578,10 @@ export function ImportRichMenuForm({
               />
 
               {isEditMode && (
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-col gap-2">
                   <Button
-                    color="warning"
+                    className="w-full"
+                    color="danger"
                     isDisabled={areas.length === 0 || clearingAreas}
                     size="sm"
                     variant="flat"
@@ -589,35 +590,21 @@ export function ImportRichMenuForm({
                     ล้าง Areas
                   </Button>
                   <Button
-                    color="success"
-                    isLoading={deploying}
+                    className="w-full"
+                    color="primary"
+                    isLoading={loading}
                     size="sm"
+                    type="submit"
                     variant="flat"
-                    onPress={handleDeploy}
                   >
-                    {editStatus === "DEPLOYED"
-                      ? "Deploy ใหม่ไป LINE"
-                      : "Deploy ไป LINE"}
+                    บันทึกการแก้ไข
                   </Button>
-                  {canSetDefault && (
-                    <Button
-                      color="secondary"
-                      isLoading={settingDefault}
-                      size="sm"
-                      variant={isDefaultRichMenu ? "flat" : "bordered"}
-                      onPress={handleSetDefault}
-                    >
-                      {isDefaultRichMenu
-                        ? "ตั้ง Default อีกครั้ง"
-                        : "ตั้งเป็น Default"}
-                    </Button>
-                  )}
                 </div>
               )}
             </aside>
           </section>
 
-          <div className="flex items-center justify-center gap-3 border-t border-default-200 py-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-default-200 py-3">
             {isEditMode ? (
               <>
                 <Button
@@ -629,9 +616,30 @@ export function ImportRichMenuForm({
                 >
                   ย้อนกลับ
                 </Button>
-                <Button color="primary" isLoading={loading} type="submit">
-                  บันทึกการแก้ไข
-                </Button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    className="text-white"
+                    color="success"
+                    isLoading={deploying}
+                    onPress={handleDeploy}
+                  >
+                    {editStatus === "DEPLOYED"
+                      ? "Deploy ใหม่ไป LINE"
+                      : "Deploy ไป LINE"}
+                  </Button>
+                  {canSetDefault && (
+                    <Button
+                      className="text-white"
+                      color="secondary"
+                      isLoading={settingDefault}
+                      onPress={handleSetDefault}
+                    >
+                      {isDefaultRichMenu
+                        ? "ตั้ง Default อีกครั้ง"
+                        : "ตั้งเป็น Default"}
+                    </Button>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -644,7 +652,12 @@ export function ImportRichMenuForm({
                 >
                   ย้อนกลับ
                 </Button>
-                <Button color="primary" isLoading={loading} type="submit">
+                <Button
+                  className="text-white"
+                  color="primary"
+                  isLoading={loading}
+                  type="submit"
+                >
                   นำเข้า Rich Menu
                 </Button>
               </>

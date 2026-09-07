@@ -77,7 +77,7 @@ export function RequestLineAccountForm() {
         onOpenChange={onOpenChange}
       >
         <ModalContent>
-          <form onSubmit={handleSubmit}>
+          <form autoComplete="off" onSubmit={handleSubmit}>
             <ModalHeader>ขอเพิ่ม LINE Official Account</ModalHeader>
             <ModalBody>
               {error && (
@@ -87,14 +87,18 @@ export function RequestLineAccountForm() {
               )}
               <Input
                 isRequired
+                autoComplete="off"
                 label="Channel ID"
+                name="line-channel-id"
                 placeholder="จาก LINE Developers"
                 value={channelId}
                 onValueChange={setChannelId}
               />
               <Input
                 isRequired
+                autoComplete="new-password"
                 label="Channel Secret"
+                name="line-channel-secret"
                 placeholder="จาก LINE Developers"
                 type="password"
                 value={channelSecret}
@@ -102,7 +106,9 @@ export function RequestLineAccountForm() {
               />
               <Input
                 isRequired
+                autoComplete="new-password"
                 label="Channel Access Token"
+                name="line-channel-access-token"
                 placeholder="จาก LINE Developers"
                 type="password"
                 value={accessToken}
